@@ -1,0 +1,9 @@
+﻿{
+	"server": {
+		"host": "0.0.0.0",
+		"port": 8000 // if this port is not available, next available one will be picked automatically
+	},
+	"files": {
+		"exclude_pattern": "^\\..*" // exclude all that begin with . (dot)
+	}
+}

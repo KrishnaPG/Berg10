@@ -1,0 +1,41 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<meta name="description" content="">
+	<meta name="author" content="">
+	<title>File Browser</title>
+
+	<link href='//fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
+
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/g/bootstrap@3.3.5(css/bootstrap.min.css)">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/fontawesome/4.4.0/css/font-awesome.min.css">	
+	<link rel="stylesheet" href="vendor/jqfiletree/jqueryFileTree.css">
+</head>
+<body>
+	<div class="filetree-basic"></div>
+	<div class="selected-file"></div>
+	<script src="https://cdn.jsdelivr.net/g/jquery@2.1.4,bootstrap@3.3.5"></script>
+	<script src="vendor/jqfiletree/jQueryFileTree.js"></script>
+	<script>
+		$('.filetree-basic').fileTree({
+			expandSpeed: 100,
+			collapseSpeed: 100,
+			expandEasing: 'swing',
+			collapseEasing: 'swing',
+			multiSelect: true,
+			script: function (data) {
+				console.log(data);
+				return "<ul class='jqueryFileTree'  style='display: none;'><li class='file ext_json'><a href='#' rel='/webfiles/bower.json'>bower.json</a></li><li class='file ext_md'><a href='#' rel='/webfiles/CHANGELOG.md'>CHANGELOG.md</a></li><li class='directory collapsed'><a href='#' rel='/webfiles/dist/'>dist</a></li><li class='file ext_js'><a href='#' rel='/webfiles/gulpfile.js'>gulpfile.js</a></li><li class='file ext_md'><a href='#' rel='/webfiles/README.md'>README.md</a></li><li class='directory collapsed'><a href='#' rel='/webfiles/src/'>src</a></li><li class='directory collapsed'><a href='#' rel='/webfiles/tests/'>tests</a></li></ul>";
+			}
+		}, function (file) {
+			console.log(file);
+			// do something with file
+			$('.selected-file').text($('a[rel="' + file + '"]').text());
+		});
+	</script>
+</body>
+</html>
