@@ -14,8 +14,28 @@
 	<link rel="stylesheet" href="vendor/jqfiletree/jqueryFileTree.css">
 </head>
 <body>
+	<!-- Bootstrap Modal with iFrame to load dynamic auth content -->		
+	<div class="modal fade" id="authModal" tabindex="-1" role="dialog" aria-labelledby="authModalLabel">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<!--<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title" id="authModalLabel">Authentication</h4>
+				</div>-->
+				<div class="modal-body">
+					<iframe src="" style="zoom:1.0" width="99.6%" height="360" frameborder="0"></iframe>
+				</div>
+				<!-- div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-primary">Save changes</button>
+				</div -->
+			</div><!-- /.modal-content -->
+		</div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->			
+	
 	<div class="filetree-basic"></div>
 	<div class="selected-file"></div>
+
 	<script src="https://cdn.jsdelivr.net/g/jquery@2.1.4,bootstrap@3.3.5"></script>
 	<script src="vendor/jqfiletree/jQueryFileTree.js"></script>
 	<script>
@@ -34,20 +54,70 @@
 			// do something with file
 			$('.selected-file').text($('a[rel="' + file + '"]').text());
 		});
+
+		var unifile_AUTH_URL = "api/v1.0/www-auth";
+		var unifile_AUTH_SUBMIT_URL = "/api/v1.0/www-auth-submit";
+
 		$(document).ready(function () {
-			ajGetJSON("http://localhost:8001/api/v1.0/www/exec/ls/", function (data) {
-				console.log(data);
+			// prepare ajax
+			$.ajaxSetup({
+				cache: true, async: true, ifModified: false, // better to leave ifModified as false (cache: true should be enough)
+			});
+
+			// try listing the content
+			unifileAction("ls", "/");
+
+			// loa authmodal iframe content
+			$('#authModal').on('show.bs.modal', function () {
+				$('iframe').attr("src", unifile_AUTH_URL);
+			});
+			$('iframe').on('load', function (e) {
+				// iframe page content changed. Could be login complete or login failure
+				var iframeContent = $('iframe').contents();
+				if (this.contentWindow.location.pathname === unifile_AUTH_SUBMIT_URL) {
+					// see if the login completed or not, by looking for submit button
+					if (iframeContent.find('input[type="submit"]').length <= 0) {
+						// login complete - hide the auth page
+						$('#authModal').modal('hide');
+						return;
+					}
+				}
+				// Looks like user is still on login page. Change the title to suite the app
+				var title = iframeContent.find('.title');
+				if (title.length > 0)
+					title[0].innerHTML = "Berg10 Credentials";
 			});
 		});
 
-		function ajGetJSON(url, successcb, failurecb) {
-			$.ajax({ 
-				url: url, cache: true, async: true, ifModified: false, // better to leave ifModified as false (cache: true should be enough)
+		function ajaxGetJSON(url) {
+			return $.ajax({
+				url: url, 
 				type: 'GET',
 				dataType: "json",
+			});
+		}
+
+		function unifileAction(cmd, params) {
+			var url = "api/v1.0/www/exec/" + cmd + params;
+			var req = ajaxGetJSON(url);
+			req.done(function (data) {
+				console.log(data);
+				$('#authModal').modal({ backdrop: 'static', keyboard: false });
+			}).fail(function (jqXHR, textStatus, errorThrown) {
+				if(jqXHR.status == 401) 
+				{
+					//unifileAuth();
+					$('#authModal').modal({backdrop: 'static', keyboard: false });
+					//$(".selected-file").load("api/v1.0/www-auth ");
+				}
 			})
-			.done(function (data, textStatus, jqXHR) { successcb(data); })
-			.fail(function (jqXHR, textStatus, errorThrown) { failurecb ? failurecb(jqXHR, textStatus, errorThrown) : {} });
+		}
+
+		function unifileAuth() {
+			var url = "api/v1.0/www-auth";
+			$.ajax(url).done(function (data) {
+				console.log(data);
+			});
 		}
 	</script>
 </body>
