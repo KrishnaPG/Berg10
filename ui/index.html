@@ -9,8 +9,6 @@
 	<meta name="author" content="">
 	<title>File Browser</title>
 
-	<link href='//fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
-
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/g/bootstrap@3.3.5(css/bootstrap.min.css)">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/fontawesome/4.4.0/css/font-awesome.min.css">	
 	<link rel="stylesheet" href="vendor/jqfiletree/jqueryFileTree.css">
@@ -36,6 +34,21 @@
 			// do something with file
 			$('.selected-file').text($('a[rel="' + file + '"]').text());
 		});
+		$(document).ready(function () {
+			ajGetJSON("http://localhost:8001/api/v1.0/www/exec/ls/", function (data) {
+				console.log(data);
+			});
+		});
+
+		function ajGetJSON(url, successcb, failurecb) {
+			$.ajax({ 
+				url: url, cache: true, async: true, ifModified: false, // better to leave ifModified as false (cache: true should be enough)
+				type: 'GET',
+				dataType: "json",
+			})
+			.done(function (data, textStatus, jqXHR) { successcb(data); })
+			.fail(function (jqXHR, textStatus, errorThrown) { failurecb ? failurecb(jqXHR, textStatus, errorThrown) : {} });
+		}
 	</script>
 </body>
 </html>

@@ -1,18 +1,24 @@
 {
-	"name": "NodejsConsoleApp1",
-	"version": "0.0.0",
-	"description": "NodejsConsoleApp1",
+	"name": "Berg10",
+	"version": "0.0.1",
+	"description": "Berg10",
 	"main": "app.js",
 	"author": {
-		"name": "user",
+		"name": "Cenacle Research India Private Limited",
 		"email": ""
 	},
 	"dependencies": {
+		"body-parser": "^1.14.1",
+		"cookie-parser": "^1.4.0",
+		"compression":  ">=1.6.0",
 		"config": "~1.16.0",
+		"connect-fs2":  ">=0.1.7",
 		"express": "~4.4",
+		"express-session":  "^1.11.3",
 		"lodash": "~2.4",
-		"opener":  "^1.4.1",
+		"multer" : "1.1.0",
+		"opener": "^1.4.1",
 		"portfinder": "^0.4.0",
-		"unifile":  "^0.0.51"
+		"unifile": "^0.0.51"
 	}
 }

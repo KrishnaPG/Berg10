@@ -2,7 +2,65 @@
 
 var http = require('http');
 var _ = require('lodash');
+var unifile = require('unifile');
 var express = require('express');
+var compress = require('compression');
+var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
+var session = require('express-session');
+var FSStore = require('connect-fs2')(session);
+var multer = require('multer');
+
+// init express
+var app = express();
+
+// config
+var options = unifile.defaultConfig;
+options.www.USERS = { "admin": "admin" }; // define users (login/password) wich will be authorized to access the www folder (read and write)
+options.www.ROOT = __dirname + "/ui/";
+options.staticFolders.push({ name: "/",	path: __dirname + "/ui/" });
+
+//// parse data for file upload
+// app.use(options.apiRoot, multer({ dest: 'uploads/', limits: { fileSize: 1024 * 2014 } })); // 1mb max file upload size
+
+// compress all requests
+app.use(compress());
+
+// parse data for post and get requests
+app.use(options.apiRoot, bodyParser.urlencoded({ extended: true, limit: '1mb' }));
+app.use(options.apiRoot, bodyParser.json({ limit: '1mb' }));
+
+// session management: cookie-parser comes *before* session options
+app.use(options.apiRoot, cookieParser());
+app.use(options.apiRoot, session({
+	name: 'Berg10.unifile.sid',
+	store: new FSStore({dir: './sessions', beautify: false}),
+	secret: options.sessionSecret,
+	resave: false,
+	saveUninitialized: false,
+	cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 } // 1 week
+}));
+
+// use unifile as a middleware
+app.use(options.apiRoot, unifile.middleware(express, app, options));
+
+// server 'loop'
+app.listen(8001, function () {
+	console.log('Listening on 8001');
+});
+
+// catch all errors and prevent nodejs to crash, production mode
+process.on('uncaughtException', function (err) {
+	console.log('---------------------');
+	console.error('---------------------', 'Caught exception: ', err, '---------------------');
+	console.log('---------------------');
+});
+
+/*
+var http = require('http');
+var _ = require('lodash');
+var express = require('express');
+
 var fs = require('fs');
 var path = require('path');
 var util = require('util');
@@ -68,3 +126,4 @@ app.get('/files', function (req, res) {
 app.get('/', function (req, res) {
 	res.redirect('/ui/');
 });
+*/
