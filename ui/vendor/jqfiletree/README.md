@@ -12,6 +12,8 @@ DEMO
 ====
 [http://jqueryfiletree.github.io/](http://jqueryfiletree.github.io/)
 
+Originial Demo: [http://labs.abeautifulsite.net/archived/jquery-fileTree/demo/](http://labs.abeautifulsite.net/archived/jquery-fileTree/demo/)
+
 
 INSTALLING
 ==========

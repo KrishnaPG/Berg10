@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge"> 
+		<meta name="viewport" content="width=device-width, initial-scale=1"> 
+		<title>Berg10 - Administration Center</title>
+		<meta name="description" content="Berg10 Administration Center" />
+		<meta name="keywords" content="Berg10" />
+		<meta name="author" content="Cenacle Research" />
+		<link rel="shortcut icon" href="../favicon.ico">
+		<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/normalize/3.0.3/normalize.min.css" />				
+	</head>
+	<body>
+		<div class="container">					
+		</div><!-- /container -->
+
+		<!-- Begin Overlay -->
+		<div class="overlay overlay-hugeinc">		
+			<link rel="stylesheet" type="text/css" href="css/bootloader.css" />
+			<nav>Initializing the system ...</nav>
+			<script src="https://cdn.jsdelivr.net/g/modernizr,classie"></script>
+			<script>		
+				transEndEventNames = {
+					'WebkitTransition': 'webkitTransitionEnd',
+					'MozTransition': 'transitionend',
+					'OTransition': 'oTransitionEnd',
+					'msTransition': 'MSTransitionEnd',
+					'transition': 'transitionend'
+				},
+				transEndEventName = transEndEventNames[ Modernizr.prefixed( 'transition' ) ],
+				support = { transitions : Modernizr.csstransitions };
+
+				function toggleOverlay(overlay) {
+					if( classie.has( overlay, 'open' ) ) {
+						classie.remove( overlay, 'open' );
+						classie.add( overlay, 'closing' );
+						var onEndTransitionFn = function( ev ) {
+							if( support.transitions ) {
+								if( ev.propertyName !== 'visibility' ) return;
+								this.removeEventListener( transEndEventName, onEndTransitionFn );
+							}
+							classie.remove( overlay, 'closing' );
+						};
+						if( support.transitions ) {
+							overlay.addEventListener( transEndEventName, onEndTransitionFn );
+						}
+						else {
+							onEndTransitionFn();
+						}
+					}
+					else if( !classie.has( overlay, 'closing' ) ) {
+						classie.add( overlay, 'open' );
+					}
+				}
+			</script>			
+		</div> <!-- /Overlay -->
+
+		<script type="text/javascript">		
+			var overlay = document.querySelector( 'div.overlay' );
+			var overlayNav = document.querySelector('div.overlay nav');
+			toggleOverlay(overlay);
+			setTimeout(()=>{ overlayNav.innerHTML = "Berg10 - Launching remote probes ..." }, 500);
+		</script>
+	</body>
+</html>

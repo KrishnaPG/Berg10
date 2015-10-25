@@ -36,7 +36,7 @@
 	<div class="filetree-basic"></div>
 	<div class="selected-file"></div>
 
-	<script src="https://cdn.jsdelivr.net/g/jquery@2.1.4,bootstrap@3.3.5,eventemitter"></script>
+	<script src="https://cdn.jsdelivr.net/g/jquery@2.1.4,bootstrap@3.3.5,lodash,eventemitter"></script>
 	<script src="vendor/jqfiletree/jQueryFileTree.js"></script>
 	<script>
 
@@ -97,6 +97,25 @@
 			});
 		});
 
+		function getFilePathExtension(path) { // Ref: http://benohead.com/getting-a-file-extension-with-javascript/
+			var filename = path.split('\\').pop().split('/').pop();
+			return filename.substr(( Math.max(0, filename.lastIndexOf(".")) || Infinity) + 1);
+		}
+
+		/**
+		 * @param path should end with /
+		 */
+		function jsonToTree(jsonArr, path) {
+			return "<ul class='jqueryFileTree'  style='display: none;'>" +
+			_.map(jsonArr, function(obj) {
+				var type = obj.is_dir ? "directory " : "file ";
+				var ext = obj.is_dir ? "collapsed" : "ext_" + getFilePathExtension(obj.name);
+				var rel = path + (obj.is_dir ? (obj.name + "/") : obj.name);
+				return "<li class='" + type + ext + "'><a href='#' rel='" + rel + "'>" + obj.name + "</a></li>";
+			}).join('\n') +
+				"</ul";
+		}
+
 		/**
 		 * Initiates the login process by displaying the ui 
 		 * @param completionCB the callback to be invoked upon completion of the login process
@@ -128,9 +147,9 @@
 				var url = "api/v1.0/www/exec/" + cmd + params;
 				var req = ajaxGetJSON(url);
 				req.done(function (data) {
-					resolve(data);
+					resolve(jsonToTree(data,"/"));
 				}).fail(function (jqXHR, textStatus, errorThrown) {
-					if (jqXHR.status != 401) // login required
+					if (jqXHR.status == 401) // login required
 					{
 						startLoginProcess(function () { // executed upon completion
 							//setTimeout(unifileAction, 100, cmd, params); // retry the action now
