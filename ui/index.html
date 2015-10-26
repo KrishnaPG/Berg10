@@ -1,168 +1,102 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
-	<meta charset="utf-8" />
+	<meta charset="UTF-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Berg10 - Administration Center</title>
+	<meta name="description" content="Berg10 Administration Center" />
+	<meta name="keywords" content="Berg10" />
+	<meta name="author" content="Cenacle Research" />
+	<link rel="shortcut icon" href="../favicon.ico">
 
-	<meta name="description" content="">
-	<meta name="author" content="">
-	<title>File Browser</title>
-
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/g/bootstrap@3.3.5(css/bootstrap.min.css)">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/fontawesome/4.4.0/css/font-awesome.min.css">	
-	<link rel="stylesheet" href="vendor/jqfiletree/jqueryFileTree.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/g/normalize,bootstrap@3.3.5(css/bootstrap.min.css)">	
 </head>
-<body>
-	<!-- Bootstrap Modal with iFrame to load dynamic auth content -->		
-	<div class="modal fade" id="authModal" tabindex="-1" role="dialog" aria-labelledby="authModalLabel">
-		<div class="modal-dialog">
-			<div class="modal-content">
-				<!--<div class="modal-header">
-					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-					<h4 class="modal-title" id="authModalLabel">Authentication</h4>
-				</div>-->
-				<div class="modal-body">
-					<iframe src="" style="zoom:1.0" width="99.6%" height="360" frameborder="0"></iframe>
-				</div>
-				<!-- div class="modal-footer">
-					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-					<button type="button" class="btn btn-primary">Save changes</button>
-				</div -->
-			</div><!-- /.modal-content -->
-		</div><!-- /.modal-dialog -->
-	</div><!-- /.modal -->			
+<body>	
+	<div id="authContainer"></div>
+	<div class="container"></div><!-- /container -->
 	
-	<div class="filetree-basic"></div>
-	<div class="selected-file"></div>
+	<!-- Begin Overlay -->
+	<div class="overlay overlay-scale">
+		<link rel="stylesheet" type="text/css" href="css/bootloader.css" />
+		<nav>Initializing the system ...</nav>
+		<script src="https://cdn.jsdelivr.net/g/modernizr,classie,jquery@2.1.4,bootstrap@3.3.5,lodash,eventemitter"></script>
+		<script>
+			transEndEventNames = {
+				'WebkitTransition': 'webkitTransitionEnd',
+				'MozTransition': 'transitionend',
+				'OTransition': 'oTransitionEnd',
+				'msTransition': 'MSTransitionEnd',
+				'transition': 'transitionend'
+			},
+			transEndEventName = transEndEventNames[ Modernizr.prefixed( 'transition' ) ],
+			support = { transitions : Modernizr.csstransitions };
 
-	<script src="https://cdn.jsdelivr.net/g/jquery@2.1.4,bootstrap@3.3.5,lodash,eventemitter"></script>
-	<script src="vendor/jqfiletree/jQueryFileTree.js"></script>
-	<script>
+			function toggleOverlay(overlay) {
+				if( classie.has( overlay, 'open' ) ) {
+					classie.remove( overlay, 'open' );
+					classie.add( overlay, 'closing' );
+					var onEndTransitionFn = function( ev ) {
+						if( support.transitions ) {
+							if( ev.propertyName !== 'visibility' ) return;
+							this.removeEventListener( transEndEventName, onEndTransitionFn );
+						}
+						classie.remove( overlay, 'closing' );
+					};
+					if( support.transitions ) {
+						overlay.addEventListener( transEndEventName, onEndTransitionFn );
+					}
+					else {
+						onEndTransitionFn();
+					}
+				}
+				else if( !classie.has( overlay, 'closing' ) ) {
+					classie.add( overlay, 'open' );
+				}
+			}
 
+			// smooth statu report system
+			var statuses = [];
+			var intervalTimer = null;
+			function pushStatusText(statusText) {
+				if (statuses.length <= 0)
+					intervalTimer = setInterval(setStatusText, 1000);
+				statuses.push(statusText);			
+				if (statuses.length > 1)
+					setTimeout(setStatusText, 1000 / statuses.length);
+			}
+			function setStatusText() {
+				if (statuses.length <= 0) {
+					clearInterval(intervalTimer);
+					return;
+				}
+				overlayNav.innerHTML = statuses.shift();
+				if (statuses.length > 1)
+					setTimeout(setStatusText, 1000/statuses.length);
+			}
+		</script>
+	</div> <!-- /Overlay -->
+
+	<script type="text/javascript">
+		var overlay = document.querySelector( 'div.overlay' );
+		var overlayNav = document.querySelector('div.overlay nav');
+		toggleOverlay(overlay);		
+	
 		$(document).ready(function () {
+			pushStatusText("Berg10 - Launching remote probes ...");
+
 			// prepare ajax
 			$.ajaxSetup({
 				cache: true, async: true, ifModified: false, // better to leave ifModified as false (cache: true should be enough)
 			});
 
-			// eventemitter			
-			globals = window.globals || {};
-			globals.ee = new EventEmitter();
-			// event names
-			globals.events = {
-				"LOGIN_COMPLETE": "evLoginComplete"	// raised when auth modal is dismissed successfully
-			};
-			// urls list
-			globals.urls = {
-				"unifile_AUTH_URL": "api/v1.0/www-auth",
-				"unifile_AUTH_SUBMIT_URL": "/api/v1.0/www-auth-submit"
-			}
-
-			// load authmodal iframe content
-			$('#authModal').on('show.bs.modal', function () {
-				$('iframe').attr("src", globals.urls.unifile_AUTH_URL);
-			});
-			$('iframe').on('load', function (e) {
-				// iframe page content changed. Could be login complete or login failure
-				var iframeContent = $('iframe').contents();
-				if (this.contentWindow.location.pathname === globals.urls.unifile_AUTH_SUBMIT_URL) {
-					// see if the login completed or not, by looking for submit button
-					if (iframeContent.find('input[type="submit"]').length <= 0) {												
-						completeLoginProcess(this.contentWindow.location.pathname); // login complete - dismiss the dialog and let anyone who wants know, know about it.
-						return;
-					}
-				}
-				// Looks like user is still on login page. Change the title to suite the app
-				var title = iframeContent.find('.title');
-				if (title.length > 0)
-					title[0].innerHTML = "Berg10 Credentials";
-			});
-
-			$('.filetree-basic').fileTree({
-				expandSpeed: 100,
-				collapseSpeed: 100,
-				expandEasing: 'swing',
-				collapseEasing: 'swing',
-				multiSelect: true,
-				script: function (treeInfo) {
-					return unifileAction("ls", "/");
-					console.log(data);
-					return "<ul class='jqueryFileTree'  style='display: none;'><li class='file ext_json'><a href='#' rel='/webfiles/bower.json'>bower.json</a></li><li class='file ext_md'><a href='#' rel='/webfiles/CHANGELOG.md'>CHANGELOG.md</a></li><li class='directory collapsed'><a href='#' rel='/webfiles/dist/'>dist</a></li><li class='file ext_js'><a href='#' rel='/webfiles/gulpfile.js'>gulpfile.js</a></li><li class='file ext_md'><a href='#' rel='/webfiles/README.md'>README.md</a></li><li class='directory collapsed'><a href='#' rel='/webfiles/src/'>src</a></li><li class='directory collapsed'><a href='#' rel='/webfiles/tests/'>tests</a></li></ul>";
-				}
-			}, function (file) {
-				console.log(file);
-				// do something with file
-				$('.selected-file').text($('a[rel="' + file + '"]').text());
+			$('#authContainer').load("ajax/authHandler.html", function (response, status, xhr) {
+				var statusText = "Berg10 - remote galaxy spotted ...";
+				if (xhr.status >= 400)
+					statusText = "Remote probe failed. Is the server running?";
+				pushStatusText(statusText);
 			});
 		});
-
-		function getFilePathExtension(path) { // Ref: http://benohead.com/getting-a-file-extension-with-javascript/
-			var filename = path.split('\\').pop().split('/').pop();
-			return filename.substr(( Math.max(0, filename.lastIndexOf(".")) || Infinity) + 1);
-		}
-
-		/**
-		 * @param path should end with /
-		 */
-		function jsonToTree(jsonArr, path) {
-			return "<ul class='jqueryFileTree'  style='display: none;'>" +
-			_.map(jsonArr, function(obj) {
-				var type = obj.is_dir ? "directory " : "file ";
-				var ext = obj.is_dir ? "collapsed" : "ext_" + getFilePathExtension(obj.name);
-				var rel = path + (obj.is_dir ? (obj.name + "/") : obj.name);
-				return "<li class='" + type + ext + "'><a href='#' rel='" + rel + "'>" + obj.name + "</a></li>";
-			}).join('\n') +
-				"</ul";
-		}
-
-		/**
-		 * Initiates the login process by displaying the ui 
-		 * @param completionCB the callback to be invoked upon completion of the login process
-		 */
-		function startLoginProcess(completionCB) {
-			$('#authModal').modal({ backdrop: 'static', keyboard: false });
-			globals.ee.once(globals.events.LOGIN_COMPLETE, completionCB);
-		}
-
-		/**
-		 * Concludes the login process by dimissing the ui and raising events
-		 * @param authURL the url of the iframe that completed the auth login procedure
-		 */
-		function completeLoginProcess(authURL) {
-			$('#authModal').modal('hide');
-			globals.ee.trigger(globals.events.LOGIN_COMPLETE, [authURL]);
-		}
-
-		function ajaxGetJSON(url) {
-			return $.ajax({
-				url: url,
-				type: 'GET',
-				dataType: "json",
-			});
-		}
-
-		function unifileAction(cmd, params) {
-			var promise = new Promise(function (resolve, reject) {
-				var url = "api/v1.0/www/exec/" + cmd + params;
-				var req = ajaxGetJSON(url);
-				req.done(function (data) {
-					resolve(jsonToTree(data,"/"));
-				}).fail(function (jqXHR, textStatus, errorThrown) {
-					if (jqXHR.status == 401) // login required
-					{
-						startLoginProcess(function () { // executed upon completion
-							//setTimeout(unifileAction, 100, cmd, params); // retry the action now
-							unifileAction(cmd, params).then(data => resolve(data), err => reject(err));
-						});
-					} else {
-						reject(jqXHR);
-					}
-				});
-			});
-			return promise;
-		}
-
 	</script>
 </body>
 </html>

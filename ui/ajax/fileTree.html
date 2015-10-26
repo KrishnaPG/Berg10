@@ -1,0 +1,44 @@
+
+<link rel="stylesheet" href="vendor/jqfiletree/jqueryFileTree.css">
+<div class="filetree-basic"></div>
+<div class="selected-file"></div>
+<script src="vendor/jqfiletree/jQueryFileTree.js"></script>
+<script>
+	$(document).ready(function () {
+		$('.filetree-basic').fileTree({
+			expandSpeed: 100,
+			collapseSpeed: 100,
+			expandEasing: 'swing',
+			collapseEasing: 'swing',
+			multiSelect: true,
+			script: function (treeInfo) {
+				return unifileAction("ls", "/");
+				console.log(data);
+				return "<ul class='jqueryFileTree'  style='display: none;'><li class='file ext_json'><a href='#' rel='/webfiles/bower.json'>bower.json</a></li><li class='file ext_md'><a href='#' rel='/webfiles/CHANGELOG.md'>CHANGELOG.md</a></li><li class='directory collapsed'><a href='#' rel='/webfiles/dist/'>dist</a></li><li class='file ext_js'><a href='#' rel='/webfiles/gulpfile.js'>gulpfile.js</a></li><li class='file ext_md'><a href='#' rel='/webfiles/README.md'>README.md</a></li><li class='directory collapsed'><a href='#' rel='/webfiles/src/'>src</a></li><li class='directory collapsed'><a href='#' rel='/webfiles/tests/'>tests</a></li></ul>";
+			}
+		}, function (selectedFile) {
+			console.log(selectedFile);
+			// do something with file
+			$('.selected-file').text($('a[rel="' + selectedFile + '"]').text());
+		});
+	});
+
+	function getFilePathExtension(path) { // Ref: http://benohead.com/getting-a-file-extension-with-javascript/
+		var filename = path.split('\\').pop().split('/').pop();
+		return filename.substr((Math.max(0, filename.lastIndexOf(".")) || Infinity) + 1);
+	}
+
+	/**
+	 * @param path should end with /
+	 */
+	function jsonToTree(jsonArr, path) {
+		return "<ul class='jqueryFileTree'  style='display: none;'>" +
+		_.map(jsonArr, function (obj) {
+			var type = obj.is_dir ? "directory " : "file ";
+			var ext = obj.is_dir ? "collapsed" : "ext_" + getFilePathExtension(obj.name);
+			var rel = path + (obj.is_dir ? (obj.name + "/") : obj.name); // directories shoudl end with /
+			return "<li class='" + type + ext + "'><a href='#' rel='" + rel + "'>" + obj.name + "</a></li>";
+		}).join('\n') +
+			"</ul>";
+	}
+</script>

@@ -1,0 +1,75 @@
+
+
+<!-- Bootstrap Modal with iFrame to load dynamic auth content -->
+<div class="modal fade" id="authModal" tabindex="-1" role="dialog" aria-labelledby="authModalLabel">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<!--<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				<h4 class="modal-title" id="authModalLabel">Authentication</h4>
+			</div>-->
+			<div class="modal-body">
+				<iframe src="" style="zoom:1.0" width="99.6%" height="360" frameborder="0"></iframe>
+			</div>
+			<!-- div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-primary">Save changes</button>
+			</div -->
+		</div><!-- /.modal-content -->
+	</div><!-- /.modal-dialog -->
+</div><!-- /.modal -->		
+
+<script>
+	/**
+	 * Initiates the login process by displaying the ui 
+	 * @param completionCB the callback to be invoked upon completion of the login process
+	 */
+	function startLoginProcess(completionCB) {
+		$('#authModal').modal({ backdrop: 'static', keyboard: false });
+		globals.ee.once(globals.events.LOGIN_COMPLETE, completionCB);
+	}
+
+	/**
+	 * Concludes the login process by dimissing the ui and raising events
+	 * @param authURL the url of the iframe that completed the auth login procedure
+	 */
+	function completeLoginProcess(authURL) {
+		$('#authModal').modal('hide');
+		globals.ee.trigger(globals.events.LOGIN_COMPLETE, [authURL]);
+	}
+
+	$(document).ready(function () {
+		// eventemitter			
+		globals = window.globals || {};
+		globals.ee = new EventEmitter();
+		// event names
+		globals.events = {
+			"LOGIN_COMPLETE": "evLoginComplete"	// raised when auth modal is dismissed successfully
+		};
+		// urls list
+		globals.urls = {
+			"unifile_AUTH_URL": "api/v1.0/www-auth",
+			"unifile_AUTH_SUBMIT_URL": "/api/v1.0/www-auth-submit"
+		}
+
+		// load authmodal iframe content
+		$('#authModal').on('show.bs.modal', function () {
+			$('iframe').attr("src", globals.urls.unifile_AUTH_URL);
+		});
+		$('iframe').on('load', function (e) {
+			// iframe page content changed. Could be login complete or login failure
+			var iframeContent = $('iframe').contents();
+			if (this.contentWindow.location.pathname === globals.urls.unifile_AUTH_SUBMIT_URL) {
+				// see if the login completed or not, by looking for submit button
+				if (iframeContent.find('input[type="submit"]').length <= 0) {
+					completeLoginProcess(this.contentWindow.location.pathname); // login complete - dismiss the dialog and let anyone who wants know, know about it.
+					return;
+				}
+			}
+			// Looks like user is still on login page. Change the title to suite the app
+			var title = iframeContent.find('.title');
+			if (title.length > 0)
+				title[0].innerHTML = "Berg10 Credentials";
+		});
+	});
+</script>

@@ -110,7 +110,7 @@
 	}
 }
 
-/* The black border */
+/* The black border *//*
 div.overlay:before, div.overlay:after {
     content: "";
     position: fixed;
@@ -126,7 +126,7 @@ div.overlay:after {
     bottom: 0;
 }
 div.overlay {
-    /*border-left: 40px solid black;
-    border-right: 40px solid black; */
-}
+    border-left: 40px solid black;
+    border-right: 40px solid black; 
+}*/
 
