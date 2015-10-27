@@ -1,23 +1,5 @@
 
 
-<!-- Bootstrap Modal with iFrame to load dynamic auth content -->
-<div class="modal fade" id="authModal" tabindex="-1" role="dialog" aria-labelledby="authModalLabel">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<!--<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-				<h4 class="modal-title" id="authModalLabel">Authentication</h4>
-			</div>-->
-			<div class="modal-body">
-				<iframe src="" style="zoom:1.0" width="99.6%" height="360" frameborder="0"></iframe>
-			</div>
-			<!-- div class="modal-footer">
-				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-				<button type="button" class="btn btn-primary">Save changes</button>
-			</div -->
-		</div><!-- /.modal-content -->
-	</div><!-- /.modal-dialog -->
-</div><!-- /.modal -->		
 
 <script>
 	/**
@@ -39,19 +21,6 @@
 	}
 
 	$(document).ready(function () {
-		// eventemitter			
-		globals = window.globals || {};
-		globals.ee = new EventEmitter();
-		// event names
-		globals.events = {
-			"LOGIN_COMPLETE": "evLoginComplete"	// raised when auth modal is dismissed successfully
-		};
-		// urls list
-		globals.urls = {
-			"unifile_AUTH_URL": "api/v1.0/www-auth",
-			"unifile_AUTH_SUBMIT_URL": "/api/v1.0/www-auth-submit"
-		}
-
 		// load authmodal iframe content
 		$('#authModal').on('show.bs.modal', function () {
 			$('iframe').attr("src", globals.urls.unifile_AUTH_URL);
@@ -73,3 +42,4 @@
 		});
 	});
 </script>
+<script type="text/javascript" src="js/unifileActions.js" async></script>

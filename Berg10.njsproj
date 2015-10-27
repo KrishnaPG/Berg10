@@ -6,6 +6,7 @@
     <Name>Berg10</Name>
     <RootNamespace>Berg10</RootNamespace>
     <Environment>DEBUG=express:*</Environment>
+    <NodeExeArguments>--harmony</NodeExeArguments>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>

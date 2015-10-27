@@ -10,17 +10,36 @@
 	<meta name="author" content="Cenacle Research" />
 	<link rel="shortcut icon" href="../favicon.ico">
 
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/g/normalize,bootstrap@3.3.5(css/bootstrap.min.css)">	
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/normalize/3.0.3/normalize.min.css">	
 </head>
-<body>	
+<body class="hold-transition skin-blue sidebar-mini">	
+	<!-- Bootstrap Modal with iFrame to load dynamic auth content -->
+	<div class="modal fade" id="authModal" tabindex="-1" role="dialog" aria-labelledby="authModalLabel">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<!--<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title" id="authModalLabel">Authentication</h4>
+				</div>-->
+				<div class="modal-body">
+					<iframe src="" style="zoom:1.0" width="99.6%" height="360" frameborder="0"></iframe>
+				</div>
+				<!-- div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-primary">Save changes</button>
+				</div -->
+			</div><!-- /.modal-content -->
+		</div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->		
+
 	<div id="authContainer"></div>
-	<div class="container"></div><!-- /container -->
+	<div id="fileTreeContainer"></div><!-- /container -->
 	
 	<!-- Begin Overlay -->
 	<div class="overlay overlay-scale">
 		<link rel="stylesheet" type="text/css" href="css/bootloader.css" />
 		<nav>Initializing the system ...</nav>
-		<script src="https://cdn.jsdelivr.net/g/modernizr,classie,jquery@2.1.4,bootstrap@3.3.5,lodash,eventemitter"></script>
+		<script src="https://cdn.jsdelivr.net/g/modernizr,classie"></script>
 		<script>
 			transEndEventNames = {
 				'WebkitTransition': 'webkitTransitionEnd',
@@ -55,24 +74,24 @@
 				}
 			}
 
-			// smooth statu report system
+			// smooth status report system driven by backlog
 			var statuses = [];
 			var intervalTimer = null;
-			function pushStatusText(statusText) {
+			function pushStatusUpdate(statusText) {
 				if (statuses.length <= 0)
-					intervalTimer = setInterval(setStatusText, 1000);
+					intervalTimer = setInterval(displayStatus, 1000);
 				statuses.push(statusText);			
 				if (statuses.length > 1)
-					setTimeout(setStatusText, 1000 / statuses.length);
+					setTimeout(displayStatus, 1000 / statuses.length);
 			}
-			function setStatusText() {
+			function displayStatus() {
 				if (statuses.length <= 0) {
 					clearInterval(intervalTimer);
 					return;
 				}
 				overlayNav.innerHTML = statuses.shift();
 				if (statuses.length > 1)
-					setTimeout(setStatusText, 1000/statuses.length);
+					setTimeout(displayStatus, 1000 / statuses.length);
 			}
 		</script>
 	</div> <!-- /Overlay -->
@@ -80,22 +99,34 @@
 	<script type="text/javascript">
 		var overlay = document.querySelector( 'div.overlay' );
 		var overlayNav = document.querySelector('div.overlay nav');
-		toggleOverlay(overlay);		
-	
-		$(document).ready(function () {
-			pushStatusText("Berg10 - Launching remote probes ...");
+		toggleOverlay(overlay);
+		pushStatusUpdate("Berg10 - Launching remote probes ...");
+	</script>
 
+	<script src="https://cdn.jsdelivr.net/g/jquery@2.1.4,lodash,eventemitter"></script>
+	<script>
+		$(document).ready(function () {
 			// prepare ajax
 			$.ajaxSetup({
 				cache: true, async: true, ifModified: false, // better to leave ifModified as false (cache: true should be enough)
 			});
+			$('body').load("ajax/base.html", function (response, status, xhr) {
+				console.log("loaded");
+			})
+			/*
 
 			$('#authContainer').load("ajax/authHandler.html", function (response, status, xhr) {
-				var statusText = "Berg10 - remote galaxy spotted ...";
-				if (xhr.status >= 400)
-					statusText = "Remote probe failed. Is the server running?";
-				pushStatusText(statusText);
+				if (xhr.status >= 400) {
+					pushStatusUpdate("Remote probe failed. Is the server running?");
+				}
+				else {
+					pushStatusUpdate("Berg10 - acquired coordinates, preparing hyperdrive ..."); 
+					$('#fileTreeContainer').load("ajax/fileTree.html", function (response, status, xhr) {
+						//toggleOverlay(overlay);  console.log("we are here");
+					});
+				}
 			});
+*/
 		});
 	</script>
 </body>

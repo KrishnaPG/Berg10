@@ -1,4 +1,18 @@
 
+// eventemitter			
+globals = window.globals || {};
+globals.ee = new EventEmitter();
+// event names
+globals.events = {
+	"UNIFILE_LOADED": "evUnifileLoaded",	// raised when this file is loaded  (trigger at the EOF)
+	"LOGIN_COMPLETE": "evLoginComplete"		// raised when auth modal is dismissed successfully
+};
+// urls list
+globals.urls = {
+	"unifile_AUTH_URL": "api/v1.0/www-auth",
+	"unifile_AUTH_SUBMIT_URL": "/api/v1.0/www-auth-submit"
+}
+
 function ajaxGetJSON(url) {
 	return $.ajax({
 		url: url,
@@ -26,3 +40,5 @@ function unifileAction(cmd, params) {
 	});
 	return promise;
 }
+
+console.log("unifile loaded");
