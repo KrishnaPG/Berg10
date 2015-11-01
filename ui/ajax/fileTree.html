@@ -12,9 +12,12 @@
 			collapseEasing: 'swing',
 			multiSelect: true,
 			script: function (treeInfo) {
-				return unifileAction("ls", "/");
+				return unifileAction("ls", treeInfo.dir);
 				console.log(data);
 				return "<ul class='jqueryFileTree'  style='display: none;'><li class='file ext_json'><a href='#' rel='/webfiles/bower.json'>bower.json</a></li><li class='file ext_md'><a href='#' rel='/webfiles/CHANGELOG.md'>CHANGELOG.md</a></li><li class='directory collapsed'><a href='#' rel='/webfiles/dist/'>dist</a></li><li class='file ext_js'><a href='#' rel='/webfiles/gulpfile.js'>gulpfile.js</a></li><li class='file ext_md'><a href='#' rel='/webfiles/README.md'>README.md</a></li><li class='directory collapsed'><a href='#' rel='/webfiles/src/'>src</a></li><li class='directory collapsed'><a href='#' rel='/webfiles/tests/'>tests</a></li></ul>";
+			},
+			errorFn: function ($el, err) {
+				$el.append("<ul class='jqueryFileTree'><li class='error'>" + err.statusText + "</li></ul>");
 			}
 		}, function (selectedFile) {
 			console.log(selectedFile);
@@ -41,4 +44,5 @@
 		}).join('\n') +
 			"</ul>";
 	}
+	//# sourceURL=ajax/fileTree.html
 </script>

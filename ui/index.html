@@ -1,18 +1,6 @@
 ﻿<!DOCTYPE html>
 <html lang="en" class="no-js">
-<head>
-	<meta charset="UTF-8" />
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Berg10 - Administration Center</title>
-	<meta name="description" content="Berg10 Administration Center" />
-	<meta name="keywords" content="Berg10" />
-	<meta name="author" content="Cenacle Research" />
-	<link rel="shortcut icon" href="../favicon.ico">
-
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/normalize/3.0.3/normalize.min.css">	
-</head>
-<body class="hold-transition skin-blue sidebar-mini">	
+<body>	
 	<!-- Bootstrap Modal with iFrame to load dynamic auth content -->
 	<div class="modal fade" id="authModal" tabindex="-1" role="dialog" aria-labelledby="authModalLabel">
 		<div class="modal-dialog">
@@ -34,85 +22,35 @@
 
 	<div id="authContainer"></div>
 	<div id="fileTreeContainer"></div><!-- /container -->
-	
-	<!-- Begin Overlay -->
-	<div class="overlay overlay-scale">
-		<link rel="stylesheet" type="text/css" href="css/bootloader.css" />
-		<nav>Initializing the system ...</nav>
-		<script src="https://cdn.jsdelivr.net/g/modernizr,classie"></script>
-		<script>
-			transEndEventNames = {
-				'WebkitTransition': 'webkitTransitionEnd',
-				'MozTransition': 'transitionend',
-				'OTransition': 'oTransitionEnd',
-				'msTransition': 'MSTransitionEnd',
-				'transition': 'transitionend'
-			},
-			transEndEventName = transEndEventNames[ Modernizr.prefixed( 'transition' ) ],
-			support = { transitions : Modernizr.csstransitions };
 
-			function toggleOverlay(overlay) {
-				if( classie.has( overlay, 'open' ) ) {
-					classie.remove( overlay, 'open' );
-					classie.add( overlay, 'closing' );
-					var onEndTransitionFn = function( ev ) {
-						if( support.transitions ) {
-							if( ev.propertyName !== 'visibility' ) return;
-							this.removeEventListener( transEndEventName, onEndTransitionFn );
-						}
-						classie.remove( overlay, 'closing' );
-					};
-					if( support.transitions ) {
-						overlay.addEventListener( transEndEventName, onEndTransitionFn );
-					}
-					else {
-						onEndTransitionFn();
-					}
-				}
-				else if( !classie.has( overlay, 'closing' ) ) {
-					classie.add( overlay, 'open' );
-				}
-			}
-
-			// smooth status report system driven by backlog
-			var statuses = [];
-			var intervalTimer = null;
-			function pushStatusUpdate(statusText) {
-				if (statuses.length <= 0)
-					intervalTimer = setInterval(displayStatus, 1000);
-				statuses.push(statusText);			
-				if (statuses.length > 1)
-					setTimeout(displayStatus, 1000 / statuses.length);
-			}
-			function displayStatus() {
-				if (statuses.length <= 0) {
-					clearInterval(intervalTimer);
-					return;
-				}
-				overlayNav.innerHTML = statuses.shift();
-				if (statuses.length > 1)
-					setTimeout(displayStatus, 1000 / statuses.length);
-			}
-		</script>
-	</div> <!-- /Overlay -->
-
-	<script type="text/javascript">
-		var overlay = document.querySelector( 'div.overlay' );
-		var overlayNav = document.querySelector('div.overlay nav');
-		toggleOverlay(overlay);
-		pushStatusUpdate("Berg10 - Launching remote probes ...");
-	</script>
-
-	<script src="https://cdn.jsdelivr.net/g/jquery@2.1.4,lodash,eventemitter"></script>
+	<script src="https://cdn.jsdelivr.net/g/jquery@2.1.4(jquery.js),bootstrap@3.3.5,lodash,eventemitter"></script>
+	<script src="vendor/pegasus/pegasus.js"></script>
+	<script src="js/bootloader.js"></script>
 	<script>
 		$(document).ready(function () {
-			// prepare ajax
-			$.ajaxSetup({
-				cache: true, async: true, ifModified: false, // better to leave ifModified as false (cache: true should be enough)
-			});
-			$('body').load("ajax/base.html", function (response, status, xhr) {
-				console.log("loaded");
-			})
+			var seq = [{
+					url: 'ajax/bootloader-ui.html',
+					done: function () {
+						var overlay = document.querySelector('div.overlay');
+						var overlayNav = document.querySelector('div.overlay nav');
+						bootloader.toggleOverlay(overlay);
+						bootloader.pushStatusUpdate("Berg10 - Launching remote probes ...", overlayNav);
+					}
+				},
+				{
+					url: 'ajax/base.html'
+				},
+				{
+					url: 'ajax/fileTree.html'
+				},
+				{
+					done: function () { bootloader.toggleOverlay(document.querySelector('div.overlay')); }
+				}
+			];
+			bootloader.loadSequence(seq);
+			// load the base file
+			 // bootloader.ajaxMerge('ajax/base.html', true);
+
 			/*
 
 			$('#authContainer').load("ajax/authHandler.html", function (response, status, xhr) {
@@ -120,13 +58,13 @@
 					pushStatusUpdate("Remote probe failed. Is the server running?");
 				}
 				else {
-					pushStatusUpdate("Berg10 - acquired coordinates, preparing hyperdrive ..."); 
+					pushStatusUpdate("Berg10 - acquired coordinates, preparing hyperdrive ...");
 					$('#fileTreeContainer').load("ajax/fileTree.html", function (response, status, xhr) {
-						//toggleOverlay(overlay);  console.log("we are here");
+						toggleOverlay(overlay);  console.log("we are here");
 					});
 				}
 			});
-*/
+		*/
 		});
 	</script>
 </body>

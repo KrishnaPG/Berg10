@@ -8,7 +8,7 @@
 	 */
 	function startLoginProcess(completionCB) {
 		$('#authModal').modal({ backdrop: 'static', keyboard: false });
-		globals.ee.once(globals.events.LOGIN_COMPLETE, completionCB);
+		globals.ee.once(globals.unifileEvents.LOGIN_COMPLETE, completionCB);
 	}
 
 	/**
@@ -17,18 +17,18 @@
 	 */
 	function completeLoginProcess(authURL) {
 		$('#authModal').modal('hide');
-		globals.ee.trigger(globals.events.LOGIN_COMPLETE, [authURL]);
+		globals.ee.trigger(globals.unifileEvents.LOGIN_COMPLETE, [authURL]);
 	}
 
 	$(document).ready(function () {
 		// load authmodal iframe content
 		$('#authModal').on('show.bs.modal', function () {
-			$('iframe').attr("src", globals.urls.unifile_AUTH_URL);
+			$('iframe').attr("src", globals.unifileURLs.AUTH);
 		});
 		$('iframe').on('load', function (e) {
 			// iframe page content changed. Could be login complete or login failure
 			var iframeContent = $('iframe').contents();
-			if (this.contentWindow.location.pathname === globals.urls.unifile_AUTH_SUBMIT_URL) {
+			if (this.contentWindow.location.pathname === globals.unifileURLs.AUTH_SUBMIT) {
 				// see if the login completed or not, by looking for submit button
 				if (iframeContent.find('input[type="submit"]').length <= 0) {
 					completeLoginProcess(this.contentWindow.location.pathname); // login complete - dismiss the dialog and let anyone who wants know, know about it.
@@ -42,4 +42,4 @@
 		});
 	});
 </script>
-<script type="text/javascript" src="js/unifileActions.js" async></script>
+<script type="text/javascript" src="js/unifileActions.js"></script>

@@ -1,0 +1,70 @@
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/normalize/3.0.3/normalize.min.css" />		
+<style>
+	nav { color: red; }
+</style>
+<link rel="sidebar" href="something" />
+<link rel="stylesheet" type="text/css" href="dingbat.min.css" />
+		
+<body>
+	<!-- Begin Overlay -->
+	<div class="overlay overlay-hugeinc">
+		<link rel="stylesheet" type="text/css" href="css/bootloader.css" />
+		<nav>Initializing the system ...</nav>
+		<script src="https://cdn.jsdelivr.net/g/modernizr,classie"></script>
+		<script>
+			transEndEventNames = {
+				'WebkitTransition': 'webkitTransitionEnd',
+				'MozTransition': 'transitionend',
+				'OTransition': 'oTransitionEnd',
+				'msTransition': 'MSTransitionEnd',
+				'transition': 'transitionend'
+			},
+			transEndEventName = transEndEventNames[ Modernizr.prefixed( 'transition' ) ],
+			support = { transitions : Modernizr.csstransitions };
+
+			bootloader.toggleOverlay =	function(overlay) {
+				if( classie.has( overlay, 'open' ) ) {
+					classie.remove( overlay, 'open' );
+					classie.add( overlay, 'closing' );
+					var onEndTransitionFn = function( ev ) {
+						if( support.transitions ) {
+							if( ev.propertyName !== 'visibility' ) return;
+							this.removeEventListener( transEndEventName, onEndTransitionFn );
+						}
+						classie.remove( overlay, 'closing' );
+					};
+					if( support.transitions ) {
+						overlay.addEventListener( transEndEventName, onEndTransitionFn );
+					}
+					else {
+						onEndTransitionFn();
+					}
+				}
+				else if( !classie.has( overlay, 'closing' ) ) {
+					classie.add( overlay, 'open' );
+				}
+			}
+
+			// smooth status report system driven by backlog
+			bootloader.statuses = [];
+			bootloader.intervalTimer = null;
+			bootloader.pushStatusUpdate = function (statusText, domNode) {
+				if (bootloader.statuses.length <= 0)
+					bootloader.intervalTimer = setInterval(bootloader.displayStatus, 1000, domNode);
+				bootloader.statuses.push(statusText);
+				if (bootloader.statuses.length > 1)
+					setTimeout(bootloader.displayStatus, 1000 / bootloader.statuses.length, domNode);
+			}
+			bootloader.displayStatus = function (domNode) {
+				if (bootloader.statuses.length <= 0) {
+					clearInterval(bootloader.intervalTimer);
+					return;
+				}
+				domNode.innerHTML = bootloader.statuses.shift();
+				if (bootloader.statuses.length > 1)
+					setTimeout(bootloader.displayStatus, 1000 / bootloader.statuses.length, domNode);
+			}
+			//# sourceURL=ajax/bootloader-ui.html
+		</script>
+	</div> <!-- /Overlay -->
+</body>

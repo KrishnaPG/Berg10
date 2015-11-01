@@ -1,4 +1,8 @@
 /*
+ * Copyright (c) 2015. Cenacle Research India Private Limited
+ * 
+ * Modified work based on:
+ * 
   * jQueryFileTree Plugin
   *
   * @author - Cory S.N. LaViska - A Beautiful Site (http://abeautifulsite.net/) - 24 March 2008
@@ -27,7 +31,7 @@
         collapseEasing: 'swing',
         multiFolder: true,
         loadMessage: 'Loading...',
-        errorMessage: 'Unable to get file tree information',
+        errorFn: function ($el, err) { $el.append("<ul class='jqueryFileTree'><li class='error'> Unable to get file tree information </li></ul>") },
         multiSelect: false,
         onlyFolders: false,
         onlyFiles: false
@@ -79,9 +83,9 @@
         }
         return _this.bindTree($el);
       };
-      handleFail = function() {
+      handleFail = function(err) {
         $el.find('.start').html('');
-        $el.removeClass('wait').append("<p>" + options.errorMessage + "</p>");
+        options.errorFn($el.removeClass('wait'), err);
         return false;
       };
       if (typeof options.script === 'function') {
