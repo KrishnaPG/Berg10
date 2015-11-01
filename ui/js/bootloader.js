@@ -5,7 +5,7 @@
 
 // eventemitter			
 globals = window.globals || {};
-globals.ee = new EventEmitter();
+//globals.ee = new EventEmitter();
 
 globals.loadEvents = {
 	"CSS_LOADED": "evCSSLoad",				// when one css on a page loaded
@@ -64,7 +64,9 @@ bootloader.getURLs = function (urls, completioncb) {
  *		For now, we are loading content before loading the stylesheets (which may cause flicker). Better way would be
  *		to load the css first, then the content and then scripts.
  */
-bootloader.ajaxMerge = function (url, replaceHead, bodyContainer) {
+bootloader.ajaxMerge = function (ctx, inputs) {
+	var url = inputs[0], replaceHead = inputs[1], bodyContainer = inputs[2];
+
 	bootloader.getURL(url, function (e) {
 		var pseudoDoc = new DOMParser().parseFromString(e.target.response, "text/html");
 
@@ -88,7 +90,7 @@ bootloader.ajaxMerge = function (url, replaceHead, bodyContainer) {
 			{
 			inputs: [scripts, url],
 			fn: bootloader.loadScripts,
-			done: function () { globals.ee.trigger(globals.loadEvents.PAGE_MERGED, [url]); }
+			done: function () { ctx.done(); }
 		}
 		];		
 		bootloader.executeSequence(seq);
@@ -97,18 +99,8 @@ bootloader.ajaxMerge = function (url, replaceHead, bodyContainer) {
 
 	},function (e) {
 		console.error(e.target);
+		ctx.done(e);
 	});
-}
-
-bootloader.executeSequence = function (seq, completionCB) {
-	if (seq.length <= 0) return SAFE_CALL(completionCB);
-	var context = {};
-	var cur = seq.shift();
-	context.done = function (results) {
-		if (SAFE_CALL(cur.done, results)) return SAFE_CALL(completionCB);
-		bootloader.executeSequence(seq);
-	}
-	cur.fn(context, cur.inputs);
 }
 
 /*
@@ -185,19 +177,49 @@ bootloader.loadScripts = function (ctx, inputs) {
 	if (!newEl.src || newEl.src === '') newEl.onload(); // manually trigger onload for inline scripts
 }
 
-bootloader.loadSequence = function (seq) {
-	if (seq.length <= 0) {
-		return;
-	}
-	var current = seq.shift();
-	if (current.url) {
-		globals.ee.once(globals.loadEvents.PAGE_MERGED, function (context) {
-			if (current.done) current.done();
-			bootloader.loadSequence(seq);
-		});
-		bootloader.ajaxMerge(current.url);
-	}
-	else if (current.done)
-		current.done();
+/* This is a specialization of executeSequence that only does ajaxMerge
+ * for each entry in the input array.
+ * 
+ * @param seq[] is an array of objects of format: 
+ *		{url:'http://...', 
+ *		 replaceHead: true/false, 
+ *		 bodyContainer: '#container', 
+ *		 done:function(results) { }
+ *		 }
+ */ 
+bootloader.mergeSequence = function (seq, completionCB) {
+	var newseq = _.map(seq, function (cur) {
+		cur.inputs = [];
+		cur.inputs.push(cur.url);
+		cur.inputs.push(cur.replaceHead);
+		cur.inputs.push(cur.bodyContainer);
+		cur.fn = cur.url ? bootloader.ajaxMerge : function () { console.error("bootloader.mergeSequence: URL not specified"); };
+		return cur;
+	});
+	bootloader.executeSequence(newseq, completionCB);
 }
+
+/* Executes given sequence of asynchronous functions one by one.
+ * 
+ * @param seq[] is any array of objects of format:
+ *	{
+ *		inputs:[],
+ *		fn: function(ctx, inputs) { ctx.done(); }
+ *		done: function(results) { }
+ *	}
+ *	Each fn function should call ctx.done when its operation completes, so 
+ *	that the execution can proceed to next function in the sequence.
+ *	If done() method at any stage returns true, the sequence will be stopped.
+ */	
+bootloader.executeSequence = function (seq, completionCB) {
+	if (seq.length <= 0) return SAFE_CALL(completionCB);
+	var context = {};
+	var cur = seq.shift();
+	context.done = function (results) {
+		if (SAFE_CALL(cur.done, results)) return SAFE_CALL(completionCB);
+		bootloader.executeSequence(seq);
+	}
+	cur.fn(context, cur.inputs);
+}
+
 //# sourceURL=js/bootloader.js

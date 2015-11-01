@@ -19,53 +19,27 @@
 			</div><!-- /.modal-content -->
 		</div><!-- /.modal-dialog -->
 	</div><!-- /.modal -->		
-
+	<div id="bodyContainer"><h1>Please wait ... </h1></div>
 	<div id="authContainer"></div>
 	<div id="fileTreeContainer"></div><!-- /container -->
 
-	<script src="https://cdn.jsdelivr.net/g/jquery@2.1.4(jquery.js),bootstrap@3.3.5,lodash,eventemitter"></script>
-	<script src="vendor/pegasus/pegasus.js"></script>
+	<script src="https://cdn.jsdelivr.net/lodash/3.10.1/lodash.min.js"></script>
 	<script src="js/bootloader.js"></script>
-	<script>
-		$(document).ready(function () {
-			var seq = [{
-					url: 'ajax/bootloader-ui.html',
-					done: function () {
-						var overlay = document.querySelector('div.overlay');
-						var overlayNav = document.querySelector('div.overlay nav');
-						bootloader.toggleOverlay(overlay);
-						bootloader.pushStatusUpdate("Berg10 - Launching remote probes ...", overlayNav);
-					}
+	<script>		
+		var seq = [
+				//{
+				//	url: 'ajax/bootloader-ui.html',
+				//},
+				{
+					url: 'ajax/base.html',
+					bodyContainer: 'bodyContainer'
 				},
 				{
-					url: 'ajax/base.html'
-				},
-				{
-					url: 'ajax/fileTree.html'
-				},
-				{
-					done: function () { bootloader.toggleOverlay(document.querySelector('div.overlay')); }
+					url: 'ajax/fileTree.html',
+					// done: function () { bootloader.toggleOverlay(); }
 				}
 			];
-			bootloader.loadSequence(seq);
-			// load the base file
-			 // bootloader.ajaxMerge('ajax/base.html', true);
-
-			/*
-
-			$('#authContainer').load("ajax/authHandler.html", function (response, status, xhr) {
-				if (xhr.status >= 400) {
-					pushStatusUpdate("Remote probe failed. Is the server running?");
-				}
-				else {
-					pushStatusUpdate("Berg10 - acquired coordinates, preparing hyperdrive ...");
-					$('#fileTreeContainer').load("ajax/fileTree.html", function (response, status, xhr) {
-						toggleOverlay(overlay);  console.log("we are here");
-					});
-				}
-			});
-		*/
-		});
+			bootloader.mergeSequence(seq);
 	</script>
 </body>
 </html>

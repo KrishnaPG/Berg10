@@ -1,17 +1,20 @@
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/normalize/3.0.3/normalize.min.css" />		
-<style>
-	nav { color: red; }
-</style>
-<link rel="sidebar" href="something" />
-<link rel="stylesheet" type="text/css" href="dingbat.min.css" />
-		
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/normalize/3.0.3/normalize.min.css" />			
 <body>
 	<!-- Begin Overlay -->
-	<div class="overlay overlay-hugeinc">
+	<div class="overlay overlay-scale">
 		<link rel="stylesheet" type="text/css" href="css/bootloader.css" />
 		<nav>Initializing the system ...</nav>
+
+		<div class="spinner">
+			<div class="double-bounce1"></div>
+			<div class="double-bounce2"></div>
+		</div>
+
 		<script src="https://cdn.jsdelivr.net/g/modernizr,classie"></script>
 		<script>
+			bootloader.overlay = document.querySelector('div.overlay');
+			bootloader.overlayNav = document.querySelector('div.overlay nav');
+
 			transEndEventNames = {
 				'WebkitTransition': 'webkitTransitionEnd',
 				'MozTransition': 'transitionend',
@@ -19,41 +22,41 @@
 				'msTransition': 'MSTransitionEnd',
 				'transition': 'transitionend'
 			},
-			transEndEventName = transEndEventNames[ Modernizr.prefixed( 'transition' ) ],
-			support = { transitions : Modernizr.csstransitions };
+			transEndEventName = transEndEventNames[Modernizr.prefixed('transition')],
+			support = { transitions: Modernizr.csstransitions };
 
-			bootloader.toggleOverlay =	function(overlay) {
-				if( classie.has( overlay, 'open' ) ) {
-					classie.remove( overlay, 'open' );
-					classie.add( overlay, 'closing' );
-					var onEndTransitionFn = function( ev ) {
-						if( support.transitions ) {
-							if( ev.propertyName !== 'visibility' ) return;
-							this.removeEventListener( transEndEventName, onEndTransitionFn );
+			bootloader.toggleOverlay = function () {
+				if (classie.has(bootloader.overlay, 'open')) {
+					classie.remove(bootloader.overlay, 'open');
+					classie.add(bootloader.overlay, 'closing');
+					var onEndTransitionFn = function (ev) {
+						if (support.transitions) {
+							if (ev.propertyName !== 'visibility') return;
+							this.removeEventListener(transEndEventName, onEndTransitionFn);
 						}
-						classie.remove( overlay, 'closing' );
+						classie.remove(bootloader.overlay, 'closing');
 					};
-					if( support.transitions ) {
-						overlay.addEventListener( transEndEventName, onEndTransitionFn );
+					if (support.transitions) {
+						bootloader.overlay.addEventListener(transEndEventName, onEndTransitionFn);
 					}
 					else {
 						onEndTransitionFn();
 					}
 				}
-				else if( !classie.has( overlay, 'closing' ) ) {
-					classie.add( overlay, 'open' );
+				else if (!classie.has(bootloader.overlay, 'closing')) {
+					classie.add(bootloader.overlay, 'open');
 				}
 			}
 
 			// smooth status report system driven by backlog
 			bootloader.statuses = [];
 			bootloader.intervalTimer = null;
-			bootloader.pushStatusUpdate = function (statusText, domNode) {
+			bootloader.pushStatusUpdate = function (statusText) {
 				if (bootloader.statuses.length <= 0)
-					bootloader.intervalTimer = setInterval(bootloader.displayStatus, 1000, domNode);
+					bootloader.intervalTimer = setInterval(bootloader.displayStatus, 1000, bootloader.overlayNav);
 				bootloader.statuses.push(statusText);
 				if (bootloader.statuses.length > 1)
-					setTimeout(bootloader.displayStatus, 1000 / bootloader.statuses.length, domNode);
+					setTimeout(bootloader.displayStatus, 1000 / bootloader.statuses.length, bootloader.overlayNav);
 			}
 			bootloader.displayStatus = function (domNode) {
 				if (bootloader.statuses.length <= 0) {
@@ -64,6 +67,11 @@
 				if (bootloader.statuses.length > 1)
 					setTimeout(bootloader.displayStatus, 1000 / bootloader.statuses.length, domNode);
 			}
+
+			// Trigger the initial overlay
+			bootloader.toggleOverlay();
+			bootloader.pushStatusUpdate("Berg10 - Launching remote probes ...");
+
 			//# sourceURL=ajax/bootloader-ui.html
 		</script>
 	</div> <!-- /Overlay -->
