@@ -1,0 +1,84 @@
+
+<section class="content-header">
+	<h1>
+		Websites
+		<small></small>
+	</h1>
+	<ol class="breadcrumb">
+		<li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+		<li class="active">Websites</li>
+	</ol>
+</section>
+
+
+<section class="content">
+	<link rel="stylesheet" href="vendor/jqfiletree/jqueryFileTree.css">
+	<div class="row">
+		<div class="col-md-4">
+			<div id="fileTreeContainer" class="filetree-basic"></div> 
+		</div>
+		<div class="col-md-8">
+			<!-- Custom tabs (Charts with tabs)-->
+			<div id="website-crud" class="nav-tabs-custom">
+				<!-- Tabs within a box -->
+				<ul class="nav nav-tabs pull-right">
+					<li class="active"><a href="#revenue-chart" data-toggle="tab">Create</a></li>
+					<li><a href="#sales-chart" data-toggle="tab">Delete</a></li>
+					<li><a href="#sales-chart" data-toggle="tab">Rename</a></li>
+					<li class="pull-left header"><i class="fa fa-inbox"></i><span class="selected-site"> $ &gt;</span></li>
+				</ul>
+				<div class="tab-content no-padding">
+					<!-- Morris chart - Sales -->
+					<div class="chart tab-pane active" id="revenue-chart" style="position: relative; height: 300px;"></div>
+					<div class="chart tab-pane" id="sales-chart" style="position: relative; height: 300px;"></div>
+				</div>
+			</div><!-- /.nav-tabs-custom -->		</div>
+	</div>
+	<div class="selected-file"></div>
+</section><!-- /.content -->
+
+<script src="vendor/jqfiletree/jQueryFileTree.js"></script>
+<script>
+	$(document).ready(function () {
+		$('#fileTreeContainer').fileTree({
+			expandSpeed: 100,
+			collapseSpeed: 100,
+			expandEasing: 'swing',
+			collapseEasing: 'swing',
+			multiSelect: true,
+			script: function (treeInfo) {
+				return unifileAction("ls", treeInfo.dir);
+			},
+			errorFn: function ($el, err) {
+				$el.append("<ul class='jqueryFileTree'><li class='error'>" + err.statusText + "</li></ul>");
+			}
+		}, function (selectedFile) {
+			$('.selected-file').text($('a[rel="' + selectedFile + '"]').text());
+		})
+		.on('filetreeexpanded', function (e, data) {
+			$('#website-crud li.header span').text(data.value);
+		});
+	});
+
+
+	/* Helper functions */
+	function getFilePathExtension(path) { // Ref: http://benohead.com/getting-a-file-extension-with-javascript/
+		var filename = path.split('\\').pop().split('/').pop();
+		return filename.substr((Math.max(0, filename.lastIndexOf(".")) || Infinity) + 1);
+	}
+
+	/**
+	 * @param path should end with /
+	 */
+	function jsonToTree(jsonArr, path) {
+		return "<ul class='jqueryFileTree'  style='display: none;'>" +
+		_.map(jsonArr, function (obj) {
+			var type = obj.is_dir ? "directory " : "file ";
+			var ext = obj.is_dir ? "collapsed" : "ext_" + getFilePathExtension(obj.name);
+			var rel = path + (obj.is_dir ? (obj.name + "/") : obj.name); // directories shoudl end with /
+			return "<li class='" + type + ext + "'><a href='#' rel='" + rel + "'>" + obj.name + "</a></li>";
+		}).join('\n') +
+			"</ul>";
+	}
+	//# sourceURL=ajax/websites.html
+</script>

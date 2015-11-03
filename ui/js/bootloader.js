@@ -5,7 +5,7 @@
 
 // eventemitter			
 globals = window.globals || {};
-//globals.ee = new EventEmitter();
+globals.ee = new EventEmitter();
 
 globals.loadEvents = {
 	"CSS_LOADED": "evCSSLoad",				// when one css on a page loaded
@@ -27,8 +27,8 @@ bootloader = window.bootloader || {};
  */
 bootloader.getURL = function (url, successcb, errorcb) {
 	var oReq = new XMLHttpRequest();
-	oReq.onload = successcb;
-	oReq.onerror = errorcb;
+	oReq.onload = successcb;	// should verify the status code in onload
+	oReq.onerror = errorcb;		// gets fired only on network errors
 	oReq.open("get", url, true);
 	oReq.send(null); console.log("getURL: ", url);
 	return oReq;

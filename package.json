@@ -20,6 +20,6 @@
 		"multer" : "1.1.0",
 		"opener": "^1.4.1",
 		"portfinder": "^0.4.0",
-		"unifile": "^0.0.51"
+		"unifile": "^0.0.52"
 	}
 }

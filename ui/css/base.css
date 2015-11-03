@@ -1,0 +1,46 @@
+/* Logo */
+@import url(https://fonts.googleapis.com/css?family=Poiret+One);
+.skin-blue .main-header .logo {
+	font-family: 'Poiret One', cursive;
+	font-size: 28px;
+	color:#fff ;
+}
+.sidebar-mini.sidebar-collapse .main-header .logo>.logo-mini {
+	color:white;
+	font-size: 28px;
+}
+@media (min-width: 768px) {
+	.main-header .logo {
+		background: url('img/mountain2.jpg') no-repeat;
+	}
+	.skin-blue .main-header .logo {
+		font-family: 'Poiret One', cursive;
+		font-size: 28px;
+		color:#673AB7 ;
+	}
+}
+
+/* Loading indictor */
+.preloader {
+	float: left;
+	background-color: transparent;
+	background-image: none;
+	padding: 15px 15px;
+	color: white;
+	cursor: default;
+}
+
+/* tabs */
+.nav-tabs-custom {
+	background: rgba(255,255,255,0);
+	box-shadow: 2px 1px 1px rgba(0,0,0,0.1);
+}
+.nav-tabs-custom>.tab-content {
+	background: rgba(255,255,255,0);
+}
+.nav-tabs-custom>.nav-tabs>li.active>a, .nav-tabs-custom>.nav-tabs>li.active:hover>a {
+	background: rgba(255,255,255,0);
+	border-top-color: transparent;
+	border-left-color: transparent;
+	border-right-color: transparent;
+}
