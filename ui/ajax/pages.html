@@ -45,13 +45,13 @@
 								<div class="form-group">
 									<label class="col-sm-2 control-label">Tags</label>
 									<div class="col-sm-10">
-										<input type="text" value="Amsterdam,Washington,Sydney,Beijing,Cairo" data-role="tagsinput"/>
+										<input class="tagsInput" type="text" value="Amsterdam,Washington,Sydney,Beijing,Cairo" data-role="tagsinput"/>
 									</div>
 								</div>
 								<div class="form-group">
 									<label class="col-sm-2 control-label">Published Date</label>
 									<div class="col-sm-10">
-										<a class="xEditable" href="#" data-type="combodate" data-template="D MMM YYYY  HH:mm" data-format="YYYY-MM-DD HH:mm" data-viewformat="MMM D, YYYY, HH:mm" data-title="Setup publish date and time"></a>
+										<a class="xEditableDate" href="#" data-type="combodate" data-template="D MMM YYYY  HH:mm" data-format="YYYY-MM-DD HH:mm" data-viewformat="MMM D, YYYY, HH:mm" data-title="Setup publish date and time"></a>
 									</div>
 								</div>
 							</div>
@@ -92,7 +92,27 @@
 		 { value: 5, text: 'orange' }
 		]
 	});
-
+	$('div.create-page a.xEditableDate').editable({
+		value: moment().format(),
+		combodate: {
+			firstItem: 'name',
+			minuteStep: 1,
+			minYear: 2000,
+			smartDays: true
+		}
+	});
+	$('div.create-page .editable').on('hidden', function (e, reason) { //automatically open the next edits
+		if (reason === 'save' || reason === 'nochange') {
+			var $next = $(this).closest('div.form-group').next().find('.editable');
+			if (true) {
+				setTimeout(function () {
+					$next.editable('show');
+				}, 300);
+			} else {
+				$next.focus();
+			}
+		}
+	});
 	//# sourceURL=ajax/pages.html
 </script>
 
