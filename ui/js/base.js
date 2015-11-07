@@ -10,11 +10,17 @@ $.ajaxSetup({
 	dataType: "html",
 });
 function loadAjaxContent(url, failureCB) {
-	$('.preloader').show(); 
-	$.ajax({ url: url })
-	.done(function (response) {	$('#ajax-content').html(response); })
-	.fail(function (e) { failureCB ? failureCB(e) : notifyError(e.statusText, "Unable to get " + url); })
-	.always(function () { $('.preloader').hide(); });
+	$('.preloader').show(); 	
+	var seq = [ {
+		url: url, 
+		replaceHead: false, 
+		bodyContainer: 'ajax-content', 
+		fail: function (xhr) {
+			failureCB ? failureCB(xhr) : notifyError(xhr.statusText, "Unable to get " + url);
+		},
+		always: function () { $('.preloader').hide(); }
+	}];
+	bootloader.mergeSequence(seq);
 }
 function notifyError(title, text) {
 	new PNotify({ title: title, text: text, type: 'error', icon: false, before_close: function (e) { } });

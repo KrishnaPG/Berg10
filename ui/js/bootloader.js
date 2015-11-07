@@ -15,20 +15,20 @@ globals.loadEvents = {
 	"PAGE_MERGED": "evPageMerged"			// when all is done
 }
 
-SAFE_CALL = function(x, arg1, arg2) { if(x) return x(arg1, arg2); }
+SAFE_CALL = function (x, arg1, arg2) { if (x) return x(arg1, arg2); }
 
 // the bootloader
 bootloader = window.bootloader || {};
 
 /* Gets the content of given url, asynchronously
  * @param url the url get download
- * @param successcb(e) gets called on completion with e.target === xhr
- * @param errorcb(e) gets called in case of errors with e.target === xhr
+ * @param successcb(xhr) gets called on completion
+ * @param errorcb(xhr) gets called in case of errors (both network and 400+ errors)
  */
 bootloader.getURL = function (url, successcb, errorcb) {
 	var oReq = new XMLHttpRequest();
-	oReq.onload = successcb;	// should verify the status code in onload
-	oReq.onerror = errorcb;		// gets fired only on network errors
+	oReq.onload = function (e) { e.target.status >= 400 ? errocb(e.target) : successcb(e.target); }
+	oReq.onerror = function (e) { errorcb(e.target) } ;	// gets fired only on network errors
 	oReq.open("get", url, true);
 	oReq.send(null); console.log("getURL: ", url);
 	return oReq;
@@ -67,8 +67,8 @@ bootloader.getURLs = function (urls, completioncb) {
 bootloader.ajaxMerge = function (ctx, inputs) {
 	var url = inputs[0], replaceHead = inputs[1], bodyContainer = inputs[2];
 
-	bootloader.getURL(url, function (e) {
-		var pseudoDoc = new DOMParser().parseFromString(e.target.response, "text/html");
+	bootloader.getURL(url, function (xhr) {
+		var pseudoDoc = new DOMParser().parseFromString(xhr.response, "text/html");
 
 		// detach the css links and scripts
 		var cssLinks = [];
@@ -97,9 +97,8 @@ bootloader.ajaxMerge = function (ctx, inputs) {
 
 		pseudoDoc = null; // delete the document
 
-	},function (e) {
-		console.error(e.target);
-		ctx.done(e);
+	},function (xhr) {
+		ctx.fail(xhr);
 	});
 }
 
@@ -184,8 +183,10 @@ bootloader.loadScripts = function (ctx, inputs) {
  *		{url:'http://...', 
  *		 replaceHead: true/false, 
  *		 bodyContainer: '#container', 
- *		 done:function(results) { }
- *		 }
+ *		 done: function(results) { },
+ *		 fail: function(e) { }, 
+ *		 always: function(ctx, seq) { },
+ *		}
  */ 
 bootloader.mergeSequence = function (seq, completionCB) {
 	var newseq = _.map(seq, function (cur) {
@@ -193,7 +194,7 @@ bootloader.mergeSequence = function (seq, completionCB) {
 		cur.inputs.push(cur.url);
 		cur.inputs.push(cur.replaceHead);
 		cur.inputs.push(cur.bodyContainer);
-		cur.fn = cur.url ? bootloader.ajaxMerge : function () { console.error("bootloader.mergeSequence: URL not specified"); };
+		cur.fn = cur.url ? bootloader.ajaxMerge : function (ctx) { ctx.fail(new Error("bootloader.mergeSequence: URL not specified")); };
 		return cur;
 	});
 	bootloader.executeSequence(newseq, completionCB);
@@ -204,21 +205,35 @@ bootloader.mergeSequence = function (seq, completionCB) {
  * @param seq[] is any array of objects of format:
  *	{
  *		inputs:[],
- *		fn: function(ctx, inputs) { ctx.done(); }
- *		done: function(results) { }
+ *		beforeFn: function(ctx, seq) { },
+ *		fn: function(ctx, inputs) { ctx.done(); },
+ *		done: function(results) { },
+ *		fail: function(e) { },
+ *		always: function(e) { }
  *	}
- *	Each fn function should call ctx.done when its operation completes, so 
+ *	Each fn function should call ctx.done / ctx.fail when its operation completes, so 
  *	that the execution can proceed to next function in the sequence.
- *	If done() method at any stage returns true, the sequence will be stopped.
+ *	If done() / fail() callback at any stage returns true, the sequence will be stopped.
+ *	The beforeFn() gets called just before the function is scheduled for execution, 
+ *	and always() gets called after done() / fail() callbacks are complete. 
  */	
 bootloader.executeSequence = function (seq, completionCB) {
 	if (seq.length <= 0) return SAFE_CALL(completionCB);
 	var context = {};
 	var cur = seq.shift();
 	context.done = function (results) {
-		if (SAFE_CALL(cur.done, results)) return SAFE_CALL(completionCB);
+		var shouldStop = SAFE_CALL(cur.done, results);
+		SAFE_CALL(cur.always, context, cur, results);
+		if(shouldStop) return SAFE_CALL(completionCB);
+		bootloader.executeSequence(seq);
+	};
+	context.fail = function (e) {
+		var shouldStop = SAFE_CALL(cur.fail, e);
+		SAFE_CALL(cur.always, context, cur, e);
+		if(shouldStop) return SAFE_CALL(completionCB);
 		bootloader.executeSequence(seq);
 	}
+	SAFE_CALL(cur.beforeFn, context, cur);
 	cur.fn(context, cur.inputs);
 }
 

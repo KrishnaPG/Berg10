@@ -44,3 +44,15 @@
 	border-left-color: transparent;
 	border-right-color: transparent;
 }
+
+/* xEditable input font size*/
+.input-sm {
+	font-size: 100%;
+	line-height: 2;
+}
+
+/* tags input font sizes */
+.label {
+    line-height: 2;
+	font-size: 100%;
+}
