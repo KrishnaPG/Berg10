@@ -144,7 +144,6 @@
 		},
 		toolbar: ["bold", "italic", "heading", "|", "code", "quote", "unordered-list", "ordered-list", "|", "link", "image", "|", "preview", "side-by-side", "fullscreen", "guide"]
 	});
-	//# sourceURL=ajax/pages.html
 </script>
 
 <script src="js/filetree.js"></script>
@@ -161,4 +160,16 @@
 			$('#website-crud li.header span').text(data.value);
 		});
 
+</script>
+
+<script>
+	$.ajax({ url: 'http://localhost:8001/main.css' })
+	.done(function (response) {
+		var pseudoDoc = new DOMParser().parseFromString("<style>\n" + response + "\n</style>", "text/html");
+		document.head.appendChild(pseudoDoc.head.querySelector('style')).disabled = true;
+		var pseudoSS = document.styleSheets[document.styleSheets.length-1];
+	}).fail(function (err) {
+		console.log(err);
+	})
+	//# sourceURL=ajax/pages.html
 </script>
