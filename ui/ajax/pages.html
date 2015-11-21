@@ -2,7 +2,7 @@
 <section class="content-header">
 	<h1>
 		Pages
-		<small></small>
+		<small> of <a class="xEditableWebsites" href="#" data-type="select" data-onblur="submit" title="Select the website"></a> </small>
 	</h1>
 	<ol class="breadcrumb">
 		<li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
@@ -27,9 +27,9 @@
 					<li class="pull-left header"><i class="fa fa-inbox"></i><span class="selected-site"> $ &gt;</span></li>
 				</ul>
 				<div class="tab-content no-padding">
-					<div class="tab-pane active create-page" style="position: relative; height: 300px;">
-						<form class="form-horizontal">
-							<div class="box-body">
+					<div class="tab-pane active" id="create-page">						
+						<div class="box-body">
+							<form class="form-horizontal">
 								<div class="form-group">
 									<label class="col-sm-2 control-label">Title</label>
 									<div class="col-sm-10">
@@ -45,7 +45,7 @@
 								<div class="form-group">
 									<label class="col-sm-2 control-label">Tags</label>
 									<div class="col-sm-10">
-										<input class="tagsInput" type="text" value="" data-role="tagsinput"/>
+										<input class="tagsInput" type="text" value="" data-role="tagsinput" />
 									</div>
 								</div>
 								<div class="form-group">
@@ -60,8 +60,23 @@
 										<a class="xEditableEditor" href="#" data-type="select" data-onblur="submit" data-title="Select the preferred editor"></a>
 									</div>
 								</div>
+							</form>
+						</div>
+						<div class="box-footer">							
+							<div class="btn-group pull-right">
+								<button type="button" class="btn btn-primary" onclick="onPagePreview()">Preview</button>
+								<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+									<span class="caret"></span>
+									<span class="sr-only">Toggle Dropdown</span>
+								</button>
+								<ul class="dropdown-menu" role="menu">
+									<li><a href="#" onclick="onSaveDraft()"><i class="fa fa-save"></i>Save as Draft</a></li>
+									<li><a href="#" onclick="onPublish()"><i class="fa fa-check-square-o"></i>Save &amp; Publish</a></li>
+									<li class="divider"></li>
+									<li><a href="#"><i class="fa fa-undo"></i>Revert Changes</a></li>
+								</ul>
 							</div>
-						</form>
+						</div>
 					</div>
 					<div class="tab-pane" id="delete-page" style="position: relative; height: 300px;"></div>
 				</div>
@@ -70,106 +85,15 @@
 	</div>
 	<div class="selected-file"></div>
 	<div>
-		<textarea id="page-content-editor"></textarea>
+		<textarea id="pageEditor-smde"></textarea>
+	</div>
+	<div class="fsPreview">
+		<iframe id="ifPreview" allowfullscreen height="100%" width="100%" frameborder="0"></iframe>
 	</div>
 </section><!-- /.content -->
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/bootstrap.editable/latest/css/bootstrap-editable.min.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/g/bootstrap.tagsinput(bootstrap-tagsinput.css),simplemde(simplemde.min.css)" />
 <script src="https://cdn.jsdelivr.net/g/momentjs,bootstrap.tagsinput,bootstrap.editable,highlight.js,simplemde"></script>
-<script>
-	$.fn.editable.defaults.mode = 'inline';
-	// customize xEditable buttons to avoid glyphicon
-	$.fn.editableform.buttons =
-		'<button type="submit" class="btn btn-primary btn-sm editable-submit">' +
-			'<i class="fa fa-check"></i>' +
-		'</button>' +
-		'<button type="button" class="btn btn-default btn-sm editable-cancel">' +
-			'<i class="fa fa-times"></i>' +
-		'</button>';
-	// initialize the editables
-	$('div.create-page a.xEditable').editable();
-	$('div.create-page a.xEditableCat').editable({
-		pk: 1,
-		limit: 3,
-		source: [
-		 { value: 1, text: 'banana' },
-		 { value: 2, text: 'peach' },
-		 { value: 3, text: 'apple' },
-		 { value: 4, text: 'watermelon' },
-		 { value: 5, text: 'orange' }
-		]
-	});
-	$('div.create-page a.xEditableDate').editable({
-		value: moment().format(),
-		combodate: {
-			firstItem: 'name',
-			minuteStep: 1,
-			minYear: 2000,
-			smartDays: true
-		}
-	});
-	$('div.create-page a.xEditableEditor').editable({
-		value: 1,
-		source: [
-			{ value: 1, text: 'Markdown - SMEditor', type: 'markdown' },
-			{ value: 2, text: 'HTML - Summernote', type: 'html'},
-			{ value: 3, text: 'HTML - CKEditor', type: 'html' },
-			{ value: 4, text: 'HTML - SCEditor', type: 'html' },
-			{ value: 5, text: 'HTML - AlloyEditor', type: 'html' }
-	]
-	});
-	$('div.create-page .editable').on('hidden', function (e, reason) { //automatically open the next edits
-		if (reason === 'save' || reason === 'nochange') {
-			var $next = $(this).closest('div.form-group').next().find('.editable');
-			if (false) { // for now, we disable this automatic opening
-				setTimeout(function () {
-					$next.editable('show');
-				}, 300);
-			} else {
-				$next.focus();
-			}
-		}
-	});
-	var simplemde = new SimpleMDE({
-		element: document.getElementById("page-content-editor"),
-		autosave: {
-			enabled: true,
-			unique_id: "page-content-editor",
-			delay: 10000,
-		},
-		hideIcons: [],
-		renderingConfig: {
-			codeSyntaxHighlighting: true
-		},
-		toolbar: ["bold", "italic", "heading", "|", "code", "quote", "unordered-list", "ordered-list", "|", "link", "image", "|", "preview", "side-by-side", "fullscreen", "guide"]
-	});
-</script>
-
 <script src="js/filetree.js"></script>
-<script>
-	// handle the file tree selection events
-	$('#fileTreeContainer')
-		.on('filetreeclicked', function (e, data) {
-			$('.selected-file').text($('a[rel="' + data.rel + '"]').text());
-		})
-		.on('filetreecollapsed', function (e, data) {
-			$('#website-crud li.header span').text(data.value);
-		})
-		.on('filetreeexpanded', function (e, data) {
-			$('#website-crud li.header span').text(data.value);
-		});
-
-</script>
-
-<script>
-	$.ajax({ url: 'http://localhost:8001/main.css' })
-	.done(function (response) {
-		var pseudoDoc = new DOMParser().parseFromString("<style>\n" + response + "\n</style>", "text/html");
-		document.head.appendChild(pseudoDoc.head.querySelector('style')).disabled = true;
-		var pseudoSS = document.styleSheets[document.styleSheets.length-1];
-	}).fail(function (err) {
-		console.log(err);
-	})
-	//# sourceURL=ajax/pages.html
-</script>
+<script src="js/pages.js"></script>

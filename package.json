@@ -1,25 +1,25 @@
 {
-	"name": "Berg10",
-	"version": "0.0.1",
-	"description": "Berg10",
-	"main": "app.js",
-	"author": {
-		"name": "Cenacle Research India Private Limited",
-		"email": ""
-	},
-	"dependencies": {
-		"body-parser": "^1.14.1",
-		"cookie-parser": "^1.4.0",
-		"compression":  ">=1.6.0",
-		"config": "~1.16.0",
-		"connect-fs2":  ">=0.1.7",
-		"express": "~4.4",
-		"express-session": "^1.11.3",
-		"fs-extra":  ">=0.26.0",
-		"lodash": "~2.4",
-		"multer" : "1.1.0",
-		"opener": "^1.4.1",
-		"portfinder": "^0.4.0",
-		"unifile": "^0.0.52"
-	}
+  "name": "Berg10",
+  "version": "0.0.1",
+  "description": "Berg10",
+  "main": "app.js",
+  "author": {
+    "name": "Cenacle Research India Private Limited",
+    "email": ""
+  },
+  "dependencies": {
+    "body-parser": "^1.14.1",
+    "compression": ">=1.6.0",
+    "config": "~1.16.0",
+    "cookie-parser": "^1.4.0",
+    "express": "^4.13.3",
+    "express-session": "^1.11.3",
+    "fs-extra": ">=0.26.0",
+    "lodash": "~2.4",
+    "multer": "1.1.0",
+    "opener": "^1.4.1",
+    "portfinder": "^0.4.0",
+    "session-file-store": ">=0.0.22",
+    "unifile": "^0.0.54"
+  }
 }

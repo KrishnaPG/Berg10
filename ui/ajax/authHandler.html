@@ -42,11 +42,11 @@
 	$(document).ready(function () {
 		// load authmodal iframe content
 		$('#authModal').on('show.bs.modal', function () {
-			$('iframe').attr("src", globals.unifileURLs.AUTH);
+			$('#authModal iframe').attr("src", globals.unifileURLs.AUTH);
 		});
-		$('iframe').on('load', function (e) {
+		$('#authModal iframe').on('load', function (e) {
 			// iframe page content changed. Could be login complete or login failure
-			var iframeContent = $('iframe').contents();
+			var iframeContent = $(this.contentDocument);
 			if (this.contentWindow.location.pathname === globals.unifileURLs.AUTH_SUBMIT) {
 				// see if the login completed or not, by looking for submit button
 				if (iframeContent.find('input[type="submit"]').length <= 0) {
@@ -60,4 +60,5 @@
 				title[0].innerHTML = "Berg10 Credentials";
 		});
 	});
+	//# sourceURL=ajax/authHandler.html
 </script>

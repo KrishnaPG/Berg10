@@ -30,7 +30,7 @@
 	cursor: default;
 }
 
-/* tabs */
+/* tabs transparent background */
 .nav-tabs-custom {
 	background: rgba(255,255,255,0);
 	box-shadow: 2px 1px 1px rgba(0,0,0,0.1);
@@ -44,6 +44,9 @@
 	border-left-color: transparent;
 	border-right-color: transparent;
 }
+.box-footer {
+	background-color: transparent;
+}
 
 /* xEditable input font size*/
 .input-sm {
@@ -55,4 +58,55 @@
 .label {
     line-height: 2;
 	font-size: 100%;
+}
+
+/* fullscreen SMEditor */
+.editor-toolbar.fullscreen, .CodeMirror-fullscreen {
+	z-index: 9000 !important;
+}
+
+/* create tabpage options */
+div.create-page .box-body {
+	max-height: 300px;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+textarea#pageEditor-smde {
+	width: 100%;
+	height: 250px;
+}
+
+/* fullscreen overlay for page-preview */
+.fsPreview { display: none; }
+.fs-overlay {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background: rgba(12,12,12,0.80);
+  z-index: 1040; /* adminLTE header uses 1030 and our authmodal uses 1050 */
+}
+.fs-overlay-data {
+  opacity: 0;
+  visibility: hidden;
+  -webkit-transition: opacity 0.5s;
+  transition: opacity 0.5s;
+  transition: opacity 0.5s, visibility 0s 0.5s;
+}
+.fs-overlay-open {
+  opacity: 1;
+  visibility: visible;
+  -webkit-transition: opacity 0.5s;
+  transition: opacity 0.5s;
+}
+.fs-overlay-close {
+  width: 150px;
+  height: 50px;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  border: 1px solid #000;
+  font-size: 14px;
 }

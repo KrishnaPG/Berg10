@@ -8,7 +8,7 @@ var compress = require('compression');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var session = require('express-session');
-var FSStore = require('connect-fs2')(session);
+var FSStore = require('session-file-store')(session);
 var multer = require('multer');
 
 var fs = require('fs-extra');
@@ -44,12 +44,13 @@ var options = unifile.defaultConfig;
 options.www.USERS = { "admin": "admin" };	// define users (login/password) wich will be authorized to access the www folder (read and write)
 options.www.ROOT = config_sites;			// unifile root folder (backend api)
 options.staticFolders.push({ name: "/",	path: __dirname + "/ui/" }); // the frontend ui root folder (for browser)	
-
-//// parse data for file upload
-// app.use(options.apiRoot, multer({ dest: config_data + 'uploads/', limits: { fileSize: 1024 * 2014 } })); // 1mb max file upload size
+options.openPages.ENABLED = true;
 
 // compress all requests
 app.use(compress());
+
+// parse data for file upload
+app.use(options.apiRoot, multer({ dest: config_data + '.uploads/', limits: { fileSize: 1024 * 2014 } }).any()); // 1mb max file upload size
 
 // parse data for post and get requests
 app.use(options.apiRoot, bodyParser.urlencoded({ extended: true, limit: '1mb' }));
@@ -59,7 +60,7 @@ app.use(options.apiRoot, bodyParser.json({ limit: '1mb' }));
 app.use(options.apiRoot, cookieParser());
 app.use(options.apiRoot, session({
 	name: 'Berg10.unifile.sid',
-	store: new FSStore({dir: config_data + '.sessions/', beautify: false}),
+	store: new FSStore({ path: config_data + '.sessions/', ttl: 7 * 24 * 60 * 60 }),
 	secret: options.sessionSecret,
 	resave: false,
 	saveUninitialized: false,

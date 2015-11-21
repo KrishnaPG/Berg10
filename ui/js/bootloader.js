@@ -51,21 +51,23 @@ bootloader.getURLs = function (urls, completioncb) {
 	if (urls.length <= 0 && completioncb) completioncb(results); // just for some sanity
 }
 
-/**
-	when the target does not have body or head, and only pieces, use $('#container').load() from jQuery
-	when the target is full blown html page, use ajaxMerge()
- **/
 /*  Merges the given url content with current active document in the window
- *  @url the url to be retrieved
- *  @param replaceHead If true, content will replace the head tags. Else content will be appended before the end.
- *  @param bodyContainer if specified, content will be replaced in that continer, else content  will be appended to body tag at the end.
+ *  @param inputs[0] the url to be retrieved *  
  *  Notes: the way we do here is, we remove the <link><style> and <script> tags from the remote dom and 
  *		add them manually in a controlled manner, so that stylesheets get loaded *before* scripts get executed.
- *		For now, we are loading content before loading the stylesheets (which may cause flicker). Better way would be
- *		to load the css first, then the content and then scripts.
+ *		Here we first load the stylesheets, then the content. This avoids flicker. Finally we add the scripts.
+ *		The css and script links *always* go to the bodyTarget (and not head). This makes it easy to remove the 
+ *		page completely. (Though the loaded scripts may continue to run, hence ajax page creator should be careful).
+ *		The remaining head content (such as title, meta tags etc.) has the option to replace or append existing head.
  */
 bootloader.ajaxMerge = function (ctx, inputs) {
-	var url = inputs[0], replaceHead = inputs[1], bodyContainer = inputs[2];
+	var url = inputs[0];
+	var mergeOptions = _.defaults(inputs[1] || {}, {
+		headTarget: document.head,
+		headPlacement: 'append',	// possible values: ['append', 'replace']
+		bodyTarget: document.body,
+		bodyPlacement: 'append'
+	});
 
 	bootloader.getURL(url, function (xhr) {
 		var pseudoDoc = new DOMParser().parseFromString(xhr.response, "text/html");
@@ -78,24 +80,32 @@ bootloader.ajaxMerge = function (ctx, inputs) {
 		var pseudoScripts = pseudoDoc.scripts; // this is live nodeset (so removal should happen carefully)
 		while (pseudoScripts.length > 0) { scripts.push(pseudoScripts[0].parentNode.removeChild(pseudoScripts[0])); }
 		
+		// prepare the targets if cleanup is required
+		if (mergeOptions.headPlacement === 'replace')
+			mergeOptions.headTarget.innerHTML = "";
+		if (mergeOptions.bodyPlacement === 'replace') {
+			mergeOptions.bodyTarget.innerHTML = "";
+			mergeOptions.bodyTarget.className = "";
+		}		
+		// Launch the sequence
 		var seq = [
 			{
-			inputs: [cssLinks, url],
+			inputs: [cssLinks, mergeOptions],
 			fn: bootloader.loadStylesheets,
 		},
 			{
-			inputs: [pseudoDoc, replaceHead, bodyContainer],
+			inputs: [pseudoDoc, mergeOptions],
 			fn: bootloader.loadContent,
 		},
 			{
-			inputs: [scripts, url],
+			inputs: [scripts, mergeOptions],
 			fn: bootloader.loadScripts,
 			done: function () { ctx.done(); }
 		}
 		];		
 		bootloader.executeSequence(seq);
 
-		pseudoDoc = null; // delete the document
+		pseudoDoc = null; // delete the temp document
 
 	},function (xhr) {
 		ctx.fail(xhr);
@@ -111,7 +121,7 @@ bootloader.ajaxMerge = function (ctx, inputs) {
  * @param scripts the <script> nodes
  */
 bootloader.loadStylesheets = function (ctx, inputs) {
-	var cssLinks = inputs[0], url = inputs[1];
+	var cssLinks = inputs[0], mergeOptions = inputs[1];
 	var cssCount = cssLinks.length;
 	if (cssCount <= 0) { return ctx.done(); }
 	// trigger the parallel css loads 
@@ -119,37 +129,26 @@ bootloader.loadStylesheets = function (ctx, inputs) {
 		cssLink.onerror = cssLink.onload = function () {
 			if (--cssCount <= 0) return ctx.done();
 		}
-		document.head.appendChild(cssLink);
+		mergeOptions.bodyTarget.appendChild(cssLink);
 	});
 }
 
 bootloader.loadContent = function (ctx, inputs) {	
-	var pseudoDoc = inputs[0], replaceHead = inputs[1], bodyContainer = inputs[2];
-
+	var pseudoDoc = inputs[0], mergeOptions = inputs[1];
 	// merge the head content
-	if (replaceHead)
-		document.head.innerHTML = pseudoDoc.head.innerHTML;
-	else
-		document.head.insertAdjacentHTML('beforeEnd', pseudoDoc.head.innerHTML);
-	
+	mergeOptions.headTarget.insertAdjacentHTML('beforeEnd', pseudoDoc.head.innerHTML);	
 	// merge the body content
-	var bodyTarget = bodyContainer ?  document.getElementById(bodyContainer) : document.body;
-	if (bodyContainer)
-		bodyTarget.innerHTML = pseudoDoc.body.innerHTML; // replace the content
-	else
-		bodyTarget.insertAdjacentHTML('beforeEnd', pseudoDoc.body.innerHTML);
-	
+	mergeOptions.bodyTarget.insertAdjacentHTML('beforeEnd', pseudoDoc.body.innerHTML);	
 	// merge body classes
 	if (pseudoDoc.body.attributes['class'])
-		bodyTarget.className = bodyTarget.className + " " + pseudoDoc.body.attributes['class'].value;
-	
+		mergeOptions.bodyTarget.className = mergeOptions.bodyTarget.className + " " + pseudoDoc.body.attributes['class'].value;	
 	return ctx.done();
 }
 
 
 /* Appends the given script tags into the document body
- * @param scripts the array of script tags
- * @param cb the callback to indicate the completion
+ * @param inputs[0] the array of script tags
+ * @param inputs[1] the merge options
  * 
  * Notes: we could have retrieved all the script contents in parallel and 
  * merged it all to be in squence, but debugging it would be difficult. 
@@ -165,14 +164,15 @@ bootloader.loadScripts = function (ctx, inputs) {
 	if (scripts.length <= 0) {
 		return ctx.done();
 	}
+	var mergeOptions = inputs[1];
 	var script = scripts.shift();
 	var newEl = document.createElement('script');
 	_.each(script.attributes, function (attrib) { // copy the attributes
 		newEl.setAttribute(attrib.name, attrib.value);
 	});
 	newEl.innerHTML = script.innerHTML;
-	newEl.onerror = newEl.onload = function () { bootloader.loadScripts(ctx, [scripts]); }; // continue with remaining scripts in sequence
-	document.body.appendChild(newEl);
+	newEl.onerror = newEl.onload = function () { bootloader.loadScripts(ctx, [scripts, mergeOptions]); }; // continue with remaining scripts in sequence
+	mergeOptions.bodyTarget.appendChild(newEl);
 	if (!newEl.src || newEl.src === '') newEl.onload(); // manually trigger onload for inline scripts
 }
 
@@ -190,11 +190,13 @@ bootloader.loadScripts = function (ctx, inputs) {
  */ 
 bootloader.mergeSequence = function (seq, completionCB) {
 	var newseq = _.map(seq, function (cur) {
-		cur.inputs = [];
-		cur.inputs.push(cur.url);
-		cur.inputs.push(cur.replaceHead);
-		cur.inputs.push(cur.bodyContainer);
-		cur.fn = cur.url ? bootloader.ajaxMerge : function (ctx) { ctx.fail(new Error("bootloader.mergeSequence: URL not specified")); };
+		if (cur.url) {
+			cur.inputs = cur.inputs || [];
+			cur.inputs.push(cur.url);
+			cur.inputs.push({ headTarget: cur.headTarget, headPlacement: cur.headPlacement, bodyTarget: cur.bodyTarget, bodyPlacement: cur.bodyPlacement });
+		}		
+		if (!cur.fn)
+			cur.fn = cur.url ? bootloader.ajaxMerge : function (ctx) { ctx.fail(new Error("bootloader.mergeSequence: URL not specified")); };
 		return cur;
 	});
 	bootloader.executeSequence(newseq, completionCB);
