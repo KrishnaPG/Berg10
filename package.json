@@ -15,7 +15,7 @@
     "express": "^4.13.3",
     "express-session": "^1.11.3",
     "fs-extra": ">=0.26.0",
-    "lodash": "~2.4",
+    "lodash": "~4.17",
     "multer": "1.1.0",
     "opener": "^1.4.1",
     "portfinder": "^0.4.0",
