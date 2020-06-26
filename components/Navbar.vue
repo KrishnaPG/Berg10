@@ -12,6 +12,7 @@
 			<div class="navbar-menu">
 				<div class="navbar-end">
 					<div class="navbar-item" v-if="isAuthInProgress">verifying</div>
+					<nuxt-link class="navbar-item" to="/login#to=/profile?where='somewhere'">Log In</nuxt-link>
 					<div class="navbar-item has-dropdown is-hoverable" v-if="isAuthenticated"> Authenticated
 						<a class="navbar-link">
 							{{ loggedInUser.username }}
@@ -46,3 +47,9 @@ export default {
 	}	
 }
 </script>
+
+<style scoped>
+.navbar {
+	max-height: 100px;
+}
+</style>

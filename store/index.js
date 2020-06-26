@@ -1,5 +1,6 @@
 /**
- * Needed to activate the store, which is required for the nuxt-auth module
+ * Copyright © 2020 Cenacle Research India Private Limited.
+ * All Rights Reserved.
  */
 import Axios from 'axios';
 
@@ -33,7 +34,7 @@ export const mutations = {
 };
 
 export const actions = {
-	login({ commit }, _user) {
+	validateCookie({ commit }) {
 		commit('SET_PROGRESS', true);
 		// try retrieving user details from the server. The cookies will be automatically
 		// picked up by the `withCredentials=true` property. If cookie is not valid, then
@@ -42,9 +43,18 @@ export const actions = {
 			commit('SET_USER', res.data.user);
 		}).finally(() => commit('SET_PROGRESS', false));
 	},
-
-	logout({ commit }) {		
+	logout({ commit }) {
 		commit('SET_USER', null);
-		return Axios.get('http://localhost:8080/api/logout', { withCredentials: true }).then(res => console.log("response: , ", res));
+		return Axios.get('http://localhost:8080/api/logout', { withCredentials: true });
+	},
+	login({ commit }, formData) {
+		commit('SET_PROGRESS', true);
+		return Axios.post('http://localhost:8080/api/login', formData)
+			.then(response => console.log("response: ", response))
+			.catch(ex => {
+				console.log("login exception: ", ex);
+				commit('SET_USER', null);
+				commit('SET_PROGRESS', false);
+			});
 	}
 };

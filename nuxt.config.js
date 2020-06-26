@@ -23,7 +23,7 @@ export default {
 		],
 		link: [
 			{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
-		]
+		]		
 	},
 	/*
 	** Global CSS
@@ -35,6 +35,7 @@ export default {
 	** https://nuxtjs.org/guide/plugins
 	*/
 	plugins: [
+		'@/plugins/antd'
 	],
 	/*
 	** Auto import components
@@ -52,67 +53,33 @@ export default {
 	** Nuxt.js modules
 	*/
 	modules: [
-		//'@nuxtjs/auth-next',
 		// Doc: https://axios.nuxtjs.org/usage
 		'@nuxtjs/axios',
 		'@nuxtjs/pwa',
 		// Doc: https://github.com/nuxt/content
 		'@nuxt/content'
-	],
-	auth: {
-		localStorage: {
-			prefix: 'Nuxt_',
-		},		
-		redirect: {
-			login: '/login', // redirect user when not connected
-			callback: '/auth/signed-in'
-		},
-		strategies: {
-			cookie: {
-				cookie: { name: 'adminBro-session' }
-			},			
-			// local: {
-			// 	token: {
-			// 		required: false,
-			// 		type: false
-			// 	},
-			// 	user: {
-			// 		property: 'user',
-			// 		autoFetch: false
-			// 	},				
-			// 	endpoints: {
-			// 		login: { url: '/api/auth/login', method: 'post' },
-			// 	}				
-			// },
-			// auth0: {
-			// 	domain: process.env.AUTH0_DOMAIN,
-			// 	client_id: process.env.AUTH0_CLIENT_ID
-			// },
-			// github: {
-			// 	"clientID": "512b910f75a7693425a0",
-			// 	"clientSecret": "2b3acdb7efc1fdda598adc6cea98dfdff5bd8b70",
-			// },
-			// google: {
-			// 	"client_id": "975446056155-u44va7d4gup2mqreujfl7r69u5rb2h98.apps.googleusercontent.com",
-			// 	"clientSecret": "Ll3zJG789GA1r0zwzUtNDC_Z",
-			// },
-		}
-	},	
+	],	
 	/*
 	** Axios module configuration
 	** See https://axios.nuxtjs.org/options
 	*/
 	axios: {},
 	/*
-	** Content module configuration
-	** See https://content.nuxtjs.org/configuration
-	*/
-	content: {},
-	/*
 	** Build configuration
 	** See https://nuxtjs.org/api/configuration-build/
 	*/
 	build: {
+	},	
+	/*
+	** Content module configuration
+	** See https://content.nuxtjs.org/configuration
+	*/
+	content: {},
+	// accessible as context.env
+	env: {
+		redirects: {
+			afterLogin: { path: "/profile" }
+		}
 	},
 	router: {
 		middleware: ['auth']
