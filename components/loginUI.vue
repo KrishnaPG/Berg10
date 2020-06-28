@@ -1,22 +1,17 @@
 <template>
 	<a-row type="flex" justify="center" align="middle" class="fullHeight">
-		<a-col :span="5">
-				<a href="/" class="logo">
-				<!-- mini logo for sidebar mini 50x50 pixels -->
-				<span class="logo-mini"><b>B</b>10</span>
-				<!-- logo for regular state and mobile devices -->
-				<span class="logo-lg"><b>Berg</b>10</span>
-			</a>
+		<a-col :md="{ span: 12 }" :lg="{ span: 5 }">
+				<div class="logo"><span class="logo-lg"><b>Berg</b>10</span></div>
 		<ASpin :spinning="isBusy" :tip="busyMsg" :delay="250" size="large">
 			<div class="error" v-if="errorMsg"> <a-alert type="error" :message="errorMsg" banner closable/> </div>
 			<AForm id="loginForm" :form="form" @submit="handleSubmit">
 				<AFormItem>
 					<AInput 
 						v-decorator="[
-							'userName',
-							{ rules: [{ required: true, message: 'Please input your username!' }] },
+							'email',
+							{ rules: [{ type:'email', required: true, message: 'Please enter your eMail address!' }] },
 						]"
-						placeholder="Username"
+						placeholder="EMail"
 					>
 						<AIcon slot="prefix" type="user" style="color: rgba(0,0,0,.25)" />
 					</AInput>
@@ -25,7 +20,7 @@
 					<AInputPassword
 						v-decorator="[
 							'password',
-							{ rules: [{ required: true, message: 'Please input your Password!' }] },
+							{ rules: [{ required: true, message: 'Please enter the Password!' }] },
 						]"
 						type="password"
 						placeholder="Password"
@@ -33,18 +28,35 @@
 						<AIcon slot="prefix" type="lock" style="color: rgba(0,0,0,.25)" />
 					</AInputPassword>
 				</AFormItem>
+				<AFormItem v-if="currentMode=='Signup'">
+					<AInputPassword
+						v-decorator="[
+							'password2',
+							{ rules: [{ required: true, message: 'Repeat the Password!' }] },
+						]"
+						type="password"
+						placeholder="Password"
+					>
+						<AIcon slot="prefix" type="lock" style="color: rgba(0,0,0,.25)" />
+					</AInputPassword>
+				</AFormItem>				
 				<AFormItem>
 					<AButton type="primary" html-type="submit" class="login-form-button">
-						Log in
+						{{currentMode}}
 					</AButton>			
 				</AFormItem>
 			</AForm>
 			<br/>
-			<div class="icons-list">
-				Login with:
+			<div class="icons-list" v-if="currentMode=='Login'">
+				<span>Login with:</span>
 				<a :href="`http://localhost:8080/auth/google?pubKey=${pubKey}&redirect=${returnTo}`" title="Google"><a-icon type="google" /></a>
 				<a :href="`http://localhost:8080/auth/linkedin?pubKey=${pubKey}&redirect=${returnTo}`" title="LinkedIn"><a-icon type="linkedin"/></a>
 				<a :href="`http://localhost:8080/auth/github?pubKey=${pubKey}&redirect='${returnTo}'`" title="Github"><a-icon type="github" /></a>
+			</div>
+			<br/>
+			<div class="additional-links">
+				<a href="$">Forgot Password?</a>
+				<a href="#" @click="onModeChange">{{otherMode}}</a>
 			</div>
 		</ASpin>
 		</a-col>
@@ -58,7 +70,7 @@ export default {
 	data: function() {
 		return {
 			errorMsg: null,
-			info: "",
+			currentMode: "Login",
 			storeLoaded: true	// set this to false when using localStorage persistence
 		}
 	},
@@ -87,10 +99,14 @@ export default {
 			e.preventDefault();
 			this.form.validateFields((err, values) => {
 				if(err) return; // some form input validation error, nothing to do
-				this.errorMsg = "";
+				if(this.currentMode === "Signup" && values.password !== values.password1) {
+					this.errorMsg = "Password was not repeated correctly";
+					return;
+				}
+				this.errorMsg = null;
 				this.authInProgress = true;
 				// on success hides the login UI (by setting the user in the Store)
-				this.$store.dispatch('login', {strategy: 'local',	email: values.userName,	password: values.password}).catch(err => {
+				this.$store.dispatch('login', {strategy: 'local',	email: values.email,	password: values.password}).catch(err => {
 					this.errorMsg = err.message + " !!";
 				});
 			});
@@ -103,7 +119,11 @@ export default {
 				return [value, regex];
 			}
 			return [null, regex];
-		}	
+		},
+		onModeChange: function() {
+			this.currentMode = this.otherMode;
+			this.errorMsg = null;
+		}
 	},
 	computed: {
 		returnTo: function() {			
@@ -114,6 +134,9 @@ export default {
 		},
 		busyMsg: function() {
 			return this.storeLoaded ? "Verifying..." : "Initializing store...";
+		},
+		otherMode: function() {
+			return this.currentMode === "Login" ? "Signup": "Login";
 		}
 	}	
 }
@@ -133,11 +156,21 @@ export default {
 }
 </style>
 <style scoped>
+.icons-list {
+	display: flex;
+	justify-content: center;
+}
 .icons-list >>> .anticon {
-	margin-right: 16px;
 	font-size: 2rem;
+}
+.icons-list > * {
+	margin-right: 16px;	
 	line-height: 2rem;
-	vertical-align: middle;
+	vertical-align: middle;	
+}
+.additional-links {
+	display: flex;
+	justify-content: space-between;
 }
 </style>
 <style>
@@ -150,11 +183,24 @@ export default {
 </style>
 <style scoped>
 	.logo {
-		background: url('/base.jpg') no-repeat;
+		background: url('/mini.jpg') no-repeat;
+		background-size: cover;
+		height: 64px;
+		border-radius: 8px;	
+		margin-bottom: 2rem;
+		display: flex;
+		justify-content: center;		
 	}
-	.logo {
+	.logo-lg {
 		font-family: 'Poiret One', cursive;
-		font-size: 28px;
+		font-size: 2rem;
+		line-height: 64px; /* should be same as the .logo height */
 		color:#673AB7 ;
+	}
+	.logoBackground {
+		border-radius: 8px;
+		padding: 16px;
+		background: url(/base.png);
+		background-size: cover;
 	}
 </style>
