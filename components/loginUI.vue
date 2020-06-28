@@ -183,8 +183,8 @@ export default {
 </style>
 <style scoped>
 	.logo {
-		background: url('/mini.jpg') no-repeat;
-		background-size: cover;
+		background: url('~assets/base-384px.jpg') no-repeat;
+		background-position-y: bottom;
 		height: 64px;
 		border-radius: 8px;	
 		margin-bottom: 2rem;
@@ -195,12 +195,7 @@ export default {
 		font-family: 'Poiret One', cursive;
 		font-size: 2rem;
 		line-height: 64px; /* should be same as the .logo height */
-		color:#673AB7 ;
-	}
-	.logoBackground {
-		border-radius: 8px;
-		padding: 16px;
-		background: url(/base.png);
-		background-size: cover;
-	}
+		color: white;
+    text-shadow: 2px 2px 8px black;
+	}	
 </style>
