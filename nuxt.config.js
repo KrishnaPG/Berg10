@@ -22,20 +22,23 @@ export default {
 			{ hid: 'description', name: 'description', content: process.env.npm_package_description || '' }
 		],
 		link: [
-			{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+			{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+			{ rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Poiret+One' }
 		]		
 	},
 	/*
 	** Global CSS
 	*/
 	css: [
+		'@/assets/main.css',
 	],
 	/*
 	** Plugins to load before mounting the App
 	** https://nuxtjs.org/guide/plugins
 	*/
 	plugins: [
-		'@/plugins/antd'
+		'@/plugins/antd',
+		// { src: '@/plugins/vuex-persist', ssr: false } <- we are using cookies, and not using this
 	],
 	/*
 	** Auto import components

@@ -3,10 +3,17 @@
  * All Rights Reserved.
  */
 import Axios from 'axios';
+import sodium from 'sodium-universal';
+import base58 from 'bs58';
+
+const pubKeyBuf = Buffer.alloc(sodium.crypto_box_PUBLICKEYBYTES);
+const privKeyBuf = Buffer.alloc(sodium.crypto_box_SECRETKEYBYTES);
+sodium.crypto_box_keypair(pubKeyBuf, privKeyBuf);
 
 export const state = () => ({
 	user: null,
-	authInProgress: false
+	authInProgress: false,
+	keys: { pubKeyBuf, privKeyBuf }
 });
 
 export const getters = {
@@ -20,6 +27,10 @@ export const getters = {
 
 	isAuthInProgress(state) {
 		return state.authInProgress;
+	},
+
+	publicKey(state) {
+		return base58.encode(state.keys.pubKeyBuf);
 	}
 };
 

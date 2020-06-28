@@ -4,9 +4,10 @@
 
 export default function (context) {
 	const { store } = context;
-	// if store is not initialized, on every route try doing a login to server
-	// with existing cookies, if any. If we succeed, user will be loaded into 
-	// the store, else nothing happens.
+	// if store is not initialized, on every route marked as secure try doing 
+	// a login to server with existing cookies, if any. If we succeed, user 
+	// will be loaded into the store, else nothing happens. Secure-layout will
+	// automatically kick-in and hide the loginUI based on the store's user.
 	if (!store.state.user) {
 		store.dispatch("validateCookie", null).then(() => {
 			console.log("login done");

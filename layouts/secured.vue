@@ -1,10 +1,10 @@
 <template>
-	<div>
-		<div v-if="!isAuthenticated" >
-			<LoginUI :currentPath="currentPath" :isAuthInProgress="isAuthInProgress"/>
+	
+		<div v-if="!isAuthenticated" class="fullHeight">
+			<LoginUI :isAuthInProgress="isAuthInProgress" :pubKey="publicKey"/>
 		</div>		
 		<Nuxt v-else />
-	</div>
+
 </template>
 
 <script>
@@ -22,10 +22,12 @@ export default {
 		])
 	},
 	computed: {
-		currentPath: function() { console.log("layout path: ", this.$route.path);
-			return this.$route.path;
-		},
-		...mapGetters(['isAuthenticated', 'loggedInUser', 'isAuthInProgress'])
+		...mapGetters(['isAuthenticated', 'isAuthInProgress', 'publicKey'])
 	}
 }
 </script>
+<style scoped>
+#LoginUI {
+	height: 100%;
+}
+</style>
