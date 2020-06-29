@@ -31,7 +31,7 @@ export default {
 	*/
 	css: [
 		'@/assets/main.css',
-	],
+	],	
 	/*
 	** Plugins to load before mounting the App
 	** https://nuxtjs.org/guide/plugins
@@ -72,6 +72,13 @@ export default {
 	** See https://nuxtjs.org/api/configuration-build/
 	*/
 	build: {
+		extend(config, { isClient, loaders: { vue, less } }) {
+			// Extend only webpack config for client-bundle
+			if (isClient) {
+				vue.transformAssetUrls.video = ['src', 'poster'];
+				less.lessOptions = Object.assign({}, less.lessOptions, { javascriptEnabled: true });
+			}
+		}		
 	},	
 	/*
 	** Content module configuration
