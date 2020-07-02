@@ -50,7 +50,8 @@ export default {
 	*/
 	buildModules: [
 		// Doc: https://github.com/nuxt-community/eslint-module
-		'@nuxtjs/eslint-module'
+		'@nuxtjs/eslint-module',
+		['@nuxtjs/router', { keepDefaultRouter: true }]
 	],
 	/*
 	** Nuxt.js modules
@@ -79,6 +80,11 @@ export default {
 				less.lessOptions = Object.assign({}, less.lessOptions, { javascriptEnabled: true });
 			}
 		}		
+	},	
+	generate: {
+		routes: [
+			'/'
+		]
 	},	
 	/*
 	** Content module configuration

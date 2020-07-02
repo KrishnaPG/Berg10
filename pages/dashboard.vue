@@ -7,6 +7,7 @@
 		:isMobile="isMobile"
 		:handleMediaQuery="handleMediaQuery"
 		:handleCollapse="handleCollapse"
+		:i18nRender  = "i18nRender"
 		v-bind="uiSettings"
 	>
 		<template v-slot:rightContentRender>
@@ -17,13 +18,14 @@
 		<template v-slot:footerRender>
 			<div>footerRender</div>
 		</template>
-		<setting-drawer :settings="uiSettings" @change="handleSettingChange" />
+		<setting-drawer :settings="uiSettings" @change="handleSettingChange" :i18nRender="i18nRender" />
 		<router-view />
 	</pro-layout>	
 </template>
+
 <script>
-import ProLayout, { SettingDrawer, updateTheme } from '@ant-design-vue/pro-layout';
-//import LogoSvg from '@/assets/base-384px.jpg';
+import ProLayout, { SettingDrawer, updateTheme } from '@ant-design-vue/pro-layout/es';
+import { i18nRender } from '@/locales';
 
 const defaultSettings = {
 	navTheme: 'dark', // theme for nav menu
@@ -40,7 +42,7 @@ const defaultSettings = {
 	weight : false ,
 	iconfontUrl: '',
 	production: process.env.NODE_ENV === 'production' && process.env.VUE_APP_PREVIEW !== 'true'	
-}
+};
 
 export default {
 	name: "dashboard",
@@ -68,13 +70,17 @@ export default {
 		}
 	},
 	created () {
+		console.log("routes: ", this.$router.options.routes); console.log("nuxt router: ", this.$nuxt.$router);
 		//this.menus = asyncRouterMap.find(item => item.path === '/').children
+		this.menus = this.$router.options.routes;
 	},	
 	mounted() {
+		console.log("routes: ", this.$router.options.routes);
 		// initial update color
 		updateTheme(this.uiSettings.primaryColor);
 	},
 	methods: {
+		i18nRender,
 		handleMediaQuery (query) {
 			this.query = query;
 			if (this.isMobile && !query['screen-xs']) {

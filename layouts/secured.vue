@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
+import { mapGetters, mapActions } from 'vuex';
 const LoginUI =  () => import(/* webpackChunkName: "loginUI" */ '~/components/loginUI');
 
 export default {
