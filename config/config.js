@@ -5,11 +5,12 @@ import { IrisBlue } from './theme';
 export default defineConfig({
   sula: {
     locale: {
-      default: 'zh-CN',
+      default: 'en-US',
     },
   },
   nodeModulesTransform: {
     type: 'none',
+    exclude: [],
   },
   hash: true,
   history: {
@@ -17,7 +18,7 @@ export default defineConfig({
   },
   // https://umijs.org/plugins/plugin-layout#locale
   locale: {
-    default: 'zh-CN',
+    default: 'en-US',
     antd: true,
     baseNavigator: true,
   },
@@ -28,5 +29,13 @@ export default defineConfig({
   layout: {
     locale: true,
   },
-  theme: IrisBlue
+  theme: IrisBlue,
+  // Reduce patch size
+  targets: {
+    chrome: 83,
+    firefox: false,
+    safari: false,
+    edge: false,
+    ios: false,
+  },  
 });

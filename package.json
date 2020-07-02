@@ -2,22 +2,22 @@
   "private": true,
   "description": "sula real",
   "scripts": {
-    "start": "umi dev",
+    "dev": "umi dev",
     "build": "umi build",
     "predeploy": "npm run build",
     "deploy": "now deploy ./dist --name real --prod --confirm"
   },
   "dependencies": {
-    "@ant-design/pro-layout": "5.0.15",
-    "@antv/g6": "^3.5.6",
+    "@ant-design/pro-layout": "6.0.1",
+    "@antv/g6": "^3.5.9",
     "@sula/charts": "^1.0.0-alpha.6",
-    "antd": "^4.3.1",
-    "sula": "^1.0.0-alpha.44"
+    "antd": "^4.4.0",
+    "sula": "^1.0.0-alpha.51"
   },
   "devDependencies": {
-    "@umijs/preset-react": "^1.5.8",
+    "@umijs/preset-react": "^1.5.14",
     "mockjs": "^1.1.0",
-    "umi": "^3.2.3",
-    "umi-plugin-sula": "^1.0.0-alpha.5"
+    "umi": "^3.2.7",
+    "umi-plugin-sula": "^1.0.0-alpha.6"
   }
 }
