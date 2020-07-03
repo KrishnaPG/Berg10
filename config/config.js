@@ -12,6 +12,7 @@ export default defineConfig({
     type: 'none',
     exclude: [],
   },
+  dynamicImport: {},
   hash: true,
   history: {
     type: 'hash',
@@ -30,12 +31,4 @@ export default defineConfig({
     locale: true,
   },
   theme: IrisBlue,
-  // Reduce patch size
-  targets: {
-    chrome: 83,
-    firefox: false,
-    safari: false,
-    edge: false,
-    ios: false,
-  },  
 });
