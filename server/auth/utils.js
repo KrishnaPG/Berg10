@@ -1,5 +1,12 @@
 const sodiumNative = require('sodium-native');
-const base58 = require('bs58')
+const base58 = require('bs58');
+
+/**
+ * RegExp-escapes all characters in the given string.
+ */
+function regExpEscape(s) {
+	return s.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
+}	
 
 module.exports = {
 	/** creates a sealed box that only the recipient can open.
@@ -11,5 +18,14 @@ module.exports = {
 		const cipherBuf = Buffer.alloc(msgBuf.length + sodiumNative.crypto_box_SEALBYTES);
 		sodiumNative.crypto_box_seal(cipherBuf, msgBuf, base58.decode(recipientPublicKey));
 		return base58.encode(cipherBuf);
+	},
+
+	/**
+	 * Creates a RegExp from the given string, converting asterisks to .* expressions,
+	 * and escaping all other characters.
+	 * Useful for specifying filtered origins, such as http://*.domain.com 
+	 */
+	wildcardToRegExp(s) {
+		return new RegExp('^' + s.split(/\*+/).map(regExpEscape).join('.*') + '$');
 	}
 }

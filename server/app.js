@@ -25,6 +25,7 @@ const contactController = require('./controllers/contact');
 const express = require('express');
 const passportConfig = require('./auth/passport');
 const Utils = require('./auth/utils');
+const AllowedOrigins = config.cors.allowedOrigins.map(el => Utils.wildcardToRegExp(el)); // pre-bake to regExps
 
 const app = express();
 
@@ -76,24 +77,24 @@ app.use((req, res, next) => {
  * Primary app routes.
  */
 app.get('/', homeController.index);
-app.get('/login', userController.getLogin);
-app.post('/login', userController.postLogin);
-app.get('/logout', userController.logout);
-app.get('/forgot', userController.getForgot);
-app.post('/forgot', userController.postForgot);
-app.get('/reset/:token', userController.getReset);
-app.post('/reset/:token', userController.postReset);
-app.get('/signup', userController.getSignup);
-app.post('/signup', userController.postSignup);
-app.get('/contact', contactController.getContact);
-app.post('/contact', contactController.postContact);
-app.get('/account/verify', passportConfig.isAuthenticated, userController.getVerifyEmail);
-app.get('/account/verify/:token', passportConfig.isAuthenticated, userController.getVerifyEmailToken);
-app.get('/account', passportConfig.isAuthenticated, userController.getAccount);
-app.post('/account/profile', passportConfig.isAuthenticated, userController.postUpdateProfile);
-app.post('/account/password', passportConfig.isAuthenticated, userController.postUpdatePassword);
-app.post('/account/delete', passportConfig.isAuthenticated, userController.postDeleteAccount);
-app.get('/account/unlink/:provider', passportConfig.isAuthenticated, userController.getOauthUnlink);
+// app.get('/login', userController.getLogin);
+// app.post('/login', userController.postLogin);
+// app.get('/logout', userController.logout);
+// app.get('/forgot', userController.getForgot);
+// app.post('/forgot', userController.postForgot);
+// app.get('/reset/:token', userController.getReset);
+// app.post('/reset/:token', userController.postReset);
+// app.get('/signup', userController.getSignup);
+// app.post('/signup', userController.postSignup);
+// app.get('/contact', contactController.getContact);
+// app.post('/contact', contactController.postContact);
+// app.get('/account/verify', passportConfig.isAuthenticated, userController.getVerifyEmail);
+// app.get('/account/verify/:token', passportConfig.isAuthenticated, userController.getVerifyEmailToken);
+// app.get('/account', passportConfig.isAuthenticated, userController.getAccount);
+// app.post('/account/profile', passportConfig.isAuthenticated, userController.postUpdateProfile);
+// app.post('/account/password', passportConfig.isAuthenticated, userController.postUpdatePassword);
+// app.post('/account/delete', passportConfig.isAuthenticated, userController.postDeleteAccount);
+// app.get('/account/unlink/:provider', passportConfig.isAuthenticated, userController.getOauthUnlink);
 
 
 function oAuthCallbackHandler(provider) {
@@ -124,20 +125,6 @@ app.get('/auth/linkedin/callback', oAuthCallbackHandler('linkedin'));
 app.get('/auth/github', oAuthPreHandler, passport.authenticate('github'));
 app.get('/auth/github/callback', oAuthCallbackHandler('github'));
 
-/**
- * Creates a RegExp from the given string, converting asterisks to .* expressions,
- * and escaping all other characters.
- */
-function wildcardToRegExp(s) {
-	return new RegExp('^' + s.split(/\*+/).map(regExpEscape).join('.*') + '$');
-}
-/**
- * RegExp-escapes all characters in the given string.
- */
-function regExpEscape(s) {
-	return s.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
-}
-const AllowedOrigins = config.cors.allowedOrigins.map(el => wildcardToRegExp(el)); // pre-bake to regExps
 
 app.get('/api/user', (req, res, next) => {
 	const allowed = AllowedOrigins.some(regEx => req.headers.origin.match(regEx));

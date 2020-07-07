@@ -2,6 +2,15 @@
 	"cors": {
 		"allowedOrigins": ["http*://localhost*", "http*://*.surge.sh"]
 	},
+	"db": {
+		"url": "http://13.235.161.29:8529",
+		"dbName": "default",
+		"auth": {
+			"username": "dev",
+			"password": "devPass"
+		},
+		"idField": "_id"
+	},	
 	"logger": {
 		"pino": {
 			"level": "trace",
