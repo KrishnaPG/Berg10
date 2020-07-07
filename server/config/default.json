@@ -1,0 +1,31 @@
+{
+	"cors": {
+		"allowedOrigins": []
+	},  
+	"db": {
+		"url": "http://localhost:8529",
+		"dbName": "default",
+		"auth": {
+			"username": "test",
+			"password": "password"
+		},
+		"idField": "_id"
+	},
+	"logger": {
+		"pino": {
+			"level": "info"
+		}
+	},
+	"passport": {
+		"local": {
+			"usernameField": "email",
+			"passwordField": "password"
+		}
+	},
+	"session": {
+		"name": "adminBro-session"  
+	},
+	"ws": {
+		"maxPayload": 4194304
+	}
+}

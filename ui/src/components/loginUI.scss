@@ -1,0 +1,55 @@
+#loginUI {
+
+	#loginForm .login-form-button {
+		width: 100%;
+	}
+
+	.icons-list {
+		display: flex;
+		justify-content: center;
+
+		.oAuthIcon {
+			font-size: 2rem;
+
+			&.anticon-linkedin {
+				color: #007bb5;
+			}
+			&.anticon-google {
+				color: #ea4335;
+			}
+			&.anticon-github {
+				color: #607D8B;
+			}
+		}
+
+		& > * {
+			margin-right: 16px;	
+			line-height: 2rem;
+			vertical-align: middle;	
+		}
+	}
+
+	.additional-links {
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.logo {
+		//background: url('../assets/logo.svg') no-repeat;
+		background-position-y: bottom;
+		height: 64px;
+		border-radius: 8px;	
+		//margin-bottom: 2rem;
+		display: flex;
+		//justify-content: center;		
+	}
+	.logo-lg {
+		font-family: 'Special Elite', cursive;
+		font-size: 2rem;
+		line-height: 64px; /* should be same as the .logo height */
+		color: white;
+    text-shadow: 2px 2px 8px black;
+	}		
+}
+
+
