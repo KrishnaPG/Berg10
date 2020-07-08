@@ -1,19 +1,11 @@
+/**
+ * Copyright © 2020 Cenacle Research India Private Limited.
+ * All Rights Reserved.
+ */
 const config = require('config');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-
-const notYetInitFn = () => Promise.reject("User collection not yet initialized");
-let gUserColl = {
-	firstExample: notYetInitFn,
-	save: notYetInitFn
-};
-
 const db = require('./db');
-const schColl = db.collection("meta-schepes");
-schColl.firstExample({ name: "users", _rayId: "0x" }).then(userSchepe => {
-	const collName = `${userSchepe.migId}-${userSchepe.name}`;
-	gUserColl = db.collection(collName);
-});
 
 class User {
 	constructor() { 
@@ -21,13 +13,13 @@ class User {
 		this.profile = {};
 	}
 	static findOne(query, cb = (err, existingUser) => {}) {
-		return gUserColl.firstExample(query).then(user => cb(null, makeInstance(user))).catch(ex => {
+		return db.userColl.firstExample(query).then(user => cb(null, makeInstance(user))).catch(ex => {
 			if (ex.code == 404) return cb(null, null);
 			cb(ex);
 		});
 	}
 	static findById(id, cb = (err, user) => { }) { //TODO: implement caching - this is a high frequency call
-		return gUserColl.firstExample({ [config.db.idField]: id }).then(user => cb(null, makeInstance(user))).catch(ex => {
+		return db.userColl.firstExample({ [config.db.idField]: id }).then(user => cb(null, makeInstance(user))).catch(ex => {
 			if (ex.code == 404) return cb(null, null);
 			cb(ex);
 		});
@@ -52,7 +44,7 @@ class User {
 
 function saveUser(user, cb) {
 	return User.hashPassword(user)
-		.then(user => user._key ? gUserColl.update({ [config.db.idField]: user[config.db.idField] }, user) : gUserColl.save(user))
+		.then(user => user._key ? db.userColl.update({ [config.db.idField]: user[config.db.idField] }, user) : db.userColl.save(user))
 		.then(_result => cb(null))
 		.catch(ex => cb(ex));
 }

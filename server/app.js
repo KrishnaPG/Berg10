@@ -51,6 +51,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(flash());
 
+app.logger = logger;
+
 // Host the public folder
 app.use('/', express.static(path.resolve(__dirname, './public'), { maxAge: 31557600000 }));	// 1 year maxAge
 

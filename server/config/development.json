@@ -15,7 +15,8 @@
 		"pino": {
 			"level": "trace",
 			"prettyPrint": {
-				"colorize": true
+				"colorize": true,
+				"translateTime": "SYS:standard"
 			}
 		}
 	},

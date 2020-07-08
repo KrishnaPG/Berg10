@@ -11,7 +11,10 @@
 			"username": "test",
 			"password": "password"
 		},
-		"idField": "_id"
+		"idField": "_id",
+		"keyField": "_key",
+		"rayField": "_rayId",
+		"userTable": "users"
 	},
 	"logger": {
 		"pino": {
