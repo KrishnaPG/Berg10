@@ -28,7 +28,7 @@
 		}
 	},
 	"session": {
-		"name": "adminBro-session"  
+		"name": "Berg10-Session"
 	},
 	"ws": {
 		"maxPayload": 4194304

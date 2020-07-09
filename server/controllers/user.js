@@ -37,20 +37,18 @@ exports.postLogin = (req, res, next) => {
 
   if (validationErrors.length) {
     req.flash('errors', validationErrors);
-    return res.redirect(req.session.returnTo || '/login');
+    return res.redirect(req.session.returnTo + `#Err=${validationErrors}` || '/login');
   }
   req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
 
   passport.authenticate('local', (err, user, info) => {
     if (err) { return next(err); }
     if (!user) {
-      req.flash('errors', info);
-      return res.redirect(req.session.returnTo || '/login');
+      return res.status(401).send(info);
     }
     req.logIn(user, (err) => {
       if (err) { return next(err); }
-      req.flash('success', { msg: 'Success! You are logged in.' });
-      res.redirect(req.session.returnTo || '/');
+      res.send({ user });
     });
   })(req, res, next);
 };

@@ -1,20 +1,38 @@
+/**
+ * Copyright © 2020 Cenacle Research India Private Limited.
+ * All Rights Reserved.
+ */
 import React from 'react';
 import { message as Message, Button, Form, Input, Row, Col, Spin } from 'antd';
-import { GoogleOutlined, LinkedinOutlined, GithubOutlined, UserOutlined, LockOutlined } from '@ant-design/icons';
+import { getMatchingRoute } from '../utils';
 import './loginUI.scss';
+
+const GoogleOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/GoogleOutlined'));
+const LinkedinOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/LinkedinOutlined'));
+const GithubOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/GithubOutlined'));
+const MailOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/MailOutlined'));
+const LockOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/LockOutlined'));
 
 class LoginUI extends React.Component {
 
 	constructor(props) {
-		super(props);
+		super(props);		
+		// configure the error message display options
+		Message.config({ maxCount: 2, duration: 2 });
+
+		// check if we received an oAuth Error result
+		const [oAuthErr] = getMatchingRoute(window.location, "Err");
+		if (oAuthErr !== null) {
+			window.history.replaceState("", document.title, window.location.pathname + window.location.search); // removes the hash
+			Message.warning(decodeURIComponent(oAuthErr));
+		}
+
 		this.state = {
 			currentMode: "Login",
 			otherMode: "Signup",
 			storeLoaded: true, // for future in case LocalStorage is used
 			returnTo: encodeURI(window.location.origin + window.location.pathname + window.location.search) // remove the hash in the current url. 
 		};
-		// configure the error message display options
-		Message.config({ maxCount: 2, duration: 2 });
 	}
 
 	render() {
@@ -24,12 +42,13 @@ class LoginUI extends React.Component {
 		let oAuthLinks = null;
 		if (this.state.currentMode === "Login") {
 			oAuthLinks =
-				<div className="icons-list">
+				<><div className="icons-list">
 					<span>Login with:</span>
 					<a href={`http://localhost:8080/auth/linkedin?redirect=${this.state.returnTo}`} title="LinkedIn"><LinkedinOutlined className="oAuthIcon" /></a>
 					<a href={`http://localhost:8080/auth/google?redirect=${this.state.returnTo}`} title="Google"><GoogleOutlined className="oAuthIcon" /></a>
-					<a href={`http://localhost:8080/auth/github?redirect='${this.state.returnTo}'`} title="Github"><GithubOutlined className="oAuthIcon" /></a>
+					<a href={`http://localhost:8080/auth/github?redirect=${this.state.returnTo}`} title="Github"><GithubOutlined className="oAuthIcon" /></a>	
 				</div>
+				<br /></>;
 		}
 
 		let RepeatPassword = null;
@@ -59,9 +78,9 @@ class LoginUI extends React.Component {
 						>
 							<Form.Item
 								name="username"
-								rules={[{ required: true, message: 'Please input your Username!' }]}
+								rules={[{ required: true, message: 'Please enter your eMail!' }]}
 							>
-								<Input prefix={<UserOutlined className="site-form-item-icon" />} placeholder="Username" />
+								<Input prefix={<MailOutlined className="site-form-item-icon" />} placeholder="EMail" />
 							</Form.Item>
 							<Form.Item
 								name="password"
@@ -81,8 +100,7 @@ class LoginUI extends React.Component {
 							</Form.Item>
 						</Form>
 						<br />
-						{oAuthLinks}
-						<br />
+						{oAuthLinks}						
 						<div className="additional-links">
 							<a href="/" onClick={e => { e.preventDefault(); } }>Forgot Password?</a>
 							<a href="/" onClick={this.onModeChange}>{this.state.otherMode}</a>
@@ -100,7 +118,7 @@ class LoginUI extends React.Component {
 			return;
 		}
 		// on success hides the login UI (by setting the user in the state)
-		this.props.onFormSubmit({ strategy: 'local', email: values.email, password: values.password }).catch(ex => {
+		this.props.onFormSubmit({ strategy: 'local', email: values.username, password: values.password }).catch(ex => {
 			Message.warning(ex.message || ex);
 		});
 	}

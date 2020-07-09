@@ -18,14 +18,11 @@ const flash = require('express-flash');
 const bodyParser = require('body-parser');
 
 const homeController = require('./controllers/home');
-const userController = require('./controllers/user');
 const apiController = require('./controllers/api');
 const contactController = require('./controllers/contact');
 
 const express = require('express');
 const passportConfig = require('./auth/passport');
-const Utils = require('./auth/utils');
-const AllowedOrigins = config.cors.allowedOrigins.map(el => Utils.wildcardToRegExp(el)); // pre-bake to regExps
 
 const app = express();
 
@@ -40,12 +37,19 @@ app.use(compress());
 if (process.env.NODE_ENV === "development") app.use(pinoEx); // logger
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// these do NOT need sessions
+app.get('/api/user', apiController.getUser);
+app.get('/api/logout', apiController.logout);
+app.post('/api/login', apiController.login);
+
+// For oAuth based routes we use Sessions
 app.use(session(Object.assign({}, {
 	resave: false,	// do not save unless modified
 	saveUninitialized: false,	// do not create until something stored
 	secret: process.env.SESSION_SECRET || (Math.random() * Date.now()).toString("36"),
 	cookie: { maxAge: 1209600000, sameSite: 'none', secure: false }, // two weeks in milliseconds
-	// store: new MongoStore({})
+	// store: new MongoStore({}) //TODO: add ArangoDB session store with auto-expiration
 }, config.session)));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -80,7 +84,7 @@ app.use((req, res, next) => {
  */
 app.get('/', homeController.index);
 // app.get('/login', userController.getLogin);
-// app.post('/login', userController.postLogin);
+//app.post('/login', userController.postLogin);
 // app.get('/logout', userController.logout);
 // app.get('/forgot', userController.getForgot);
 // app.post('/forgot', userController.postForgot);
@@ -105,7 +109,7 @@ function oAuthCallbackHandler(provider) {
 		// if (!req.session.remotePubKey) return next(new Error("Caller did not send any key"));
 		passport.authenticate(provider, (err, user, info) => {
 			if (err) { return next(err); }
-			if (user) { return res.redirect(req.session.returnTo + `#oAuthErr="Auth Failure"` || '/login'); }
+			if (!user) { return res.redirect(req.session.returnTo + `#Err="oAuth Login Failed"` || '/login'); }
 			req.logIn(user, function (err) {
 				if (err) { return next(err); }
 				// const token = Utils.createSealedBox({ s: req.session.id, e: req.session.cookie.expires }, req.session.remotePubKey);
@@ -126,34 +130,6 @@ app.get('/auth/linkedin', oAuthPreHandler, passport.authenticate('linkedin', { s
 app.get('/auth/linkedin/callback', oAuthCallbackHandler('linkedin'));
 app.get('/auth/github', oAuthPreHandler, passport.authenticate('github'));
 app.get('/auth/github/callback', oAuthCallbackHandler('github'));
-
-
-app.get('/api/user', (req, res, next) => {
-	const allowed = AllowedOrigins.some(regEx => req.headers.origin.match(regEx));
-	if (!allowed) return res.sendStatus(403);	
-	res.header('Access-Control-Allow-Origin', req.headers.origin);
-	res.header('Access-Control-Allow-Credentials', true);
-	res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');	
-	req.isAuthenticated() ? res.send({ sessionID: req.sessionID, user: req.user }) : res.sendStatus(403);
-});
-app.get('/api/logout', (req, res, next) => {
-	const allowed = AllowedOrigins.some(regEx => req.headers.origin.match(regEx));
-	if (!allowed) return res.sendStatus(403);
-	res.header('Access-Control-Allow-Origin', req.headers.origin);
-	res.header('Access-Control-Allow-Credentials', true);
-	res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-	req.logout();
-	res.clearCookie(config.session.name);
-	req.session.destroy(err => {
-		req.user = null;
-		err ? res.send(err) : res.send({result: "success"});
-	});
-});
-app.post('/api/login', (req, res, next) => {
-	req.session.returnTo = req.headers.referer;
-	next();
-}, userController.postLogin);
-
 
 /**
  * Error Handler.
