@@ -6,6 +6,7 @@ const _ = require('lodash');
 const validator = require('validator');
 const mailChecker = require('mailchecker');
 const User = require('../models/User');
+const {RPCError} = require('../auth/utils');
 
 const randomBytesAsync = promisify(crypto.randomBytes);
 
@@ -28,27 +29,23 @@ exports.getLogin = (req, res) => {
  */
 exports.postLogin = (req, res, next) => {
   const validationErrors = [];
-  if (!validator.isEmail(req.body.email)) validationErrors.push({ msg: 'Please enter a valid email address.' });
-  if (validator.isEmpty(req.body.password)) validationErrors.push({ msg: 'Password cannot be blank.' });
+  if (!validator.isEmail(req.body.email)) validationErrors.push('Please enter a valid email address.');
+  if (validator.isEmpty(req.body.password)) validationErrors.push('Password cannot be blank.');
   
-  res.header('Access-Control-Allow-Origin', req.headers.origin);
-  res.header('Access-Control-Allow-Credentials', true);
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-
   if (validationErrors.length) {
-    req.flash('errors', validationErrors);
-    return res.redirect(req.session.returnTo + `#Err=${validationErrors}` || '/login');
+    return res.status(401).send(RPCError.invalidRequest(validationErrors[0]));
   }
   req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
 
   passport.authenticate('local', (err, user, info) => {
     if (err) { return next(err); }
     if (!user) {
-      return res.status(401).send(info);
+      return res.status(401).send(RPCError.invalidRequest(info.msg));
     }
     req.logIn(user, (err) => {
       if (err) { return next(err); }
-      res.send({ user });
+      //res.send({ user });
+      next();
     });
   })(req, res, next);
 };
@@ -85,13 +82,12 @@ exports.getSignup = (req, res) => {
  */
 exports.postSignup = (req, res, next) => {
   const validationErrors = [];
-  if (!validator.isEmail(req.body.email)) validationErrors.push({ msg: 'Please enter a valid email address.' });
-  if (!validator.isLength(req.body.password, { min: 8 })) validationErrors.push({ msg: 'Password must be at least 8 characters long' });
-  if (req.body.password !== req.body.confirmPassword) validationErrors.push({ msg: 'Passwords do not match' });
+  if (!validator.isEmail(req.body.email)) validationErrors.push('Please enter a valid email address.');
+  if (!validator.isLength(req.body.password, { min: 8 })) validationErrors.push('Password must be at least 8 characters long');
+  if (req.body.password !== req.body.confirmPassword) validationErrors.push('Passwords do not match');
 
   if (validationErrors.length) {
-    req.flash('errors', validationErrors);
-    return res.redirect('/signup');
+    return res.status(401).send(RPCError.invalidRequest(validationErrors[0]));
   }
   req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
 
@@ -102,18 +98,18 @@ exports.postSignup = (req, res, next) => {
 
   User.findOne({ email: req.body.email }, (err, existingUser) => {
     if (err) { return next(err); }
-    if (existingUser) {
-      req.flash('errors', { msg: 'Account with that email address already exists.' });
-      return res.redirect('/signup');
-    }
+    // if (existingUser) {
+    //   return res.status(409).send(RPCError.invalidRequest('Account with that email address already exists.'));
+    // }
     user.save((err) => {
       if (err) { return next(err); }
-      req.logIn(user, (err) => {
-        if (err) {
-          return next(err);
-        }
-        res.redirect('/');
-      });
+      req.user = user; next();
+      // req.logIn(user, (err) => {
+      //   if (err) {
+      //     return next(err);
+      //   }
+      //   next();
+      // });
     });
   });
 };

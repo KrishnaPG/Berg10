@@ -27,5 +27,9 @@ module.exports = {
 	 */
 	wildcardToRegExp(s) {
 		return new RegExp('^' + s.split(/\*+/).map(regExpEscape).join('.*') + '$');
+	},
+
+	RPCError: {
+		invalidRequest: (message, code = -32600, id = null) => ({ "jsonrpc": "2.0", "error": { code, message }, id })
 	}
 }

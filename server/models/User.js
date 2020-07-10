@@ -8,9 +8,8 @@ const crypto = require('crypto');
 const db = require('./db');
 
 class User {
-	constructor() { 
-		this.tokens = [];
-		this.profile = {};
+	constructor(u) { 
+		Object.assign(this, { tokens: [], profile:{} }, u);
 	}
 	static findOne(query, cb = (err, existingUser) => {}) {
 		return db.userColl.firstExample(query).then(user => cb(null, makeInstance(user))).catch(ex => {

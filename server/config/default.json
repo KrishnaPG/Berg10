@@ -16,6 +16,12 @@
 		"rayField": "_rayId",
 		"userTable": "users"
 	},
+	"jwt": {
+		"secret": null,
+		"expiresIn": "1d",
+		"issuer": "Berg10.Server",
+		"maxAge": "30d"
+	},
 	"logger": {
 		"pino": {
 			"level": "info"

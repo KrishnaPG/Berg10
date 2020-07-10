@@ -2,11 +2,15 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
+const jwt = require('jsonwebtoken');
 const config = require('config');
 const Utils = require('../auth/utils');
-const userController = require('./user');
+const { performance } = require('perf_hooks');
 
 const AllowedOrigins = config.cors.allowedOrigins.map(el => Utils.wildcardToRegExp(el)); // pre-bake to regExps
+const jwtSecret = config.jwt.secret || (Math.random() * performance.timeOrigin + performance.now()).toString(Math.ceil(Math.random() * 33) + 2); // creates a variable length random string
+const jwtSignOptions = Object.assign({}, config.jwt);
+console.log("jwt secret: ", jwtSecret);
 
 exports.getUser = (req, res, next) => {
   const allowed = AllowedOrigins.some(regEx => req.headers.origin.match(regEx));
@@ -31,11 +35,10 @@ exports.logout = (req, res, next) => {
   });
 };
 
-exports.login = userController.postLogin
-//   (req, res, next) => {
-//   req.session.returnTo = req.headers.referer;
-//   next();
-// }, userController.postLogin);
+exports.login = (req, res, next) => {
+  const token = jwt.sign({ data: "foo" }, jwtSecret, jwtSignOptions);
+  res.send({ token });
+};
 
 /**
  * GET /api

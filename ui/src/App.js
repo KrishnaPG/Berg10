@@ -3,6 +3,7 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
+import Axios from 'axios'; 
 import { getMatchingRoute } from './components/utils';
 
 const LoginUI = React.lazy(() => import(/* webpackChunkName: "loginUI", webpackPreload: true */ './components/Login/loginUI'));
@@ -39,7 +40,7 @@ class Main extends React.Component {
 	componentWillUnmount() { this._isMounted = false; }
 
 	render() {
-		return this.state.user ?
+		return this.props.user ?
 			(<Suspense fallback={<div>Loading...</div>}><Dashboard /></Suspense>) :
 			(<Suspense fallback={<div>Loading...</div>}>
 				<LoginUI
@@ -51,19 +52,16 @@ class Main extends React.Component {
 
 	onLoginFormSubmit = (formData) => {
 		this.setState({ isAuthInProgress: true });
-		return fetch('http://localhost:8080/api/login', { method: 'POST', body: JSON.stringify(formData), headers: { 'Content-Type': 'application/json' } })
+		return Axios.post(`http://localhost:8080/api/${formData.mode.toLowerCase()}`, formData)
+			.then(response => {
+				console.log("response: ", response);
+				this.setState({ user: "dingbat", isAuthInProgress: false });
+			})
 			.catch(ex => {
 				this.setState({ user: null, isAuthInProgress: false });
-				throw new Error("Network Error: Unable to validate credentials"); // let the loginUI handle it
-			}).then(response => {
-				return [response]
-				if (!response.ok) {
-					this.setState({ user: null, isAuthInProgress: false });
-					throw new Error("Authentication Failed");
-				}
-				return response.json();
-			}).then(user => {
-				this.setState({ user, isAuthInProgress: false });
+				if (ex.response && ex.response.data.error)
+					ex.message = ex.response.data.error.message;	// show any payload the server might have returned
+				throw ex; // let the loginUI handle it
 			});
 	}
 
@@ -71,11 +69,9 @@ class Main extends React.Component {
 		// try retrieving user details from the server. The cookies will be automatically
 		// picked up by the `withCredentials=true` property. If cookie is not valid, then
 		// server will reject us.
-		return fetch('http://localhost:8080/api/user')
-			.then(response => response.ok ? response.json() : null)
-			.then(user => { console.log("validated cookie user: ", user);
-				this.safeSetState({ user, isAuthInProgress: false });
-			}).catch(() => this.safeSetState({ user: null, isAuthInProgress: false }));
+		return Axios.get('http://localhost:8080/api/user', { withCredentials: true }).then(res => {
+			this.safeSetState({ user: res.data.user, isAuthInProgress: false });
+		}).catch(() => this.safeSetState({ user: null, isAuthInProgress: false }));
 	}
 
 	safeSetState(changedState) {
@@ -84,7 +80,7 @@ class Main extends React.Component {
 
 	logout() {
 		this.setState({ user: null });
-		return fetch('http://localhost:8080/api/logout', { withCredentials: true });
+		return Axios.get('http://localhost:8080/api/logout', { withCredentials: true });
 	}
 }
 

@@ -37,7 +37,7 @@ class LoginUI extends React.Component {
 
 	render() {
 		const isBusy = this.props.isAuthInProgress || !this.state.storeLoaded;
-		const busyMsg = this.state.storeLoaded ? "Verifying Credentials..." : "Initializing store...";
+		const busyMsg = this.state.storeLoaded ? "Verifying..." : "Initializing store...";
 
 		let oAuthLinks = null;
 		if (this.state.currentMode === "Login") {
@@ -54,13 +54,13 @@ class LoginUI extends React.Component {
 		let RepeatPassword = null;
 		if (this.state.currentMode === 'Signup') {
 			RepeatPassword = <Form.Item
-				name="password2"
+				name="confirmPassword"
 				rules={[{ required: true, message: 'Please repeat the Password!' }]}
 			>
-				<Input
+				<Input.Password
 					prefix={<LockOutlined className="site-form-item-icon" />}
-					type="password"
 					placeholder="Password"
+					title="Repeat the Password"
 				/>
 			</Form.Item>
 		}
@@ -77,19 +77,19 @@ class LoginUI extends React.Component {
 							onFinish={this.handleSubmit}
 						>
 							<Form.Item
-								name="username"
+								name="email"
 								rules={[{ required: true, message: 'Please enter your eMail!' }]}
 							>
-								<Input prefix={<MailOutlined className="site-form-item-icon" />} placeholder="EMail" />
+								<Input prefix={<MailOutlined className="site-form-item-icon" />} placeholder="EMail" title="Enter your EMail"/>
 							</Form.Item>
 							<Form.Item
 								name="password"
 								rules={[{ required: true, message: 'Please input your Password!' }]}
 							>
-								<Input
+								<Input.Password
 									prefix={<LockOutlined className="site-form-item-icon" />}
-									type="password"
 									placeholder="Password"
+									title="Enter the Password"
 								/>
 							</Form.Item>
 							{RepeatPassword}
@@ -113,12 +113,12 @@ class LoginUI extends React.Component {
 
 	handleSubmit = (values) => {
 		// form must have done the basic validation. Lets do any additional validations
-		if (this.state.currentMode === "Signup" && values.password !== values.password1) {
+		if (this.state.currentMode === "Signup" && values.password !== values.confirmPassword) {
 			Message.warning("Password was not repeated correctly");
 			return;
 		}
 		// on success hides the login UI (by setting the user in the state)
-		this.props.onFormSubmit({ strategy: 'local', email: values.username, password: values.password }).catch(ex => {
+		this.props.onFormSubmit({ mode: this.state.currentMode, ...values }).catch(ex => {
 			Message.warning(ex.message || ex);
 		});
 	}
