@@ -55,7 +55,7 @@ class Main extends React.Component {
 		return Axios.post(`http://localhost:8080/api/${formData.mode.toLowerCase()}`, formData)
 			.then(response => {
 				console.log("response: ", response);
-				this.setState({ user: "dingbat", isAuthInProgress: false });
+				this.setState({ user: response.data.user, isAuthInProgress: false });
 			})
 			.catch(ex => {
 				this.setState({ user: null, isAuthInProgress: false });

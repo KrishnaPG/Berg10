@@ -10,17 +10,14 @@ const {RPCError} = require('../auth/utils');
 
 const randomBytesAsync = promisify(crypto.randomBytes);
 
-/**
- * GET /login
- * Login page.
- */
-exports.getLogin = (req, res) => {
-  if (req.user) {
-    return res.redirect('/');
-  }
-  res.render('account/login', {
-    title: 'Login'
-  });
+const key = config.jwt.secret || (Math.random() * performance.timeOrigin + performance.now()).toString(Math.ceil(Math.random() * 33) + 2); // creates a variable length random string
+const jwtSigner = createSigner(Object.assign({ key, algorithm: 'HS256' }, config.jwt));
+console.log("jwt secret: ", key);
+
+function sendJWT (req, res) {
+  const user = req.user;
+  const jwt = jwtSigner({ email: user.email }); //TODO: customize the token expiration based on user's preference
+  res.send({ jwt, user });
 };
 
 /**
@@ -42,38 +39,9 @@ exports.postLogin = (req, res, next) => {
     if (!user) {
       return res.status(401).send(RPCError.invalidRequest(info.msg));
     }
-    req.logIn(user, (err) => {
-      if (err) { return next(err); }
-      //res.send({ user });
-      next();
-    });
+    req.user = user;
+    sendJWT(req, res);
   })(req, res, next);
-};
-
-/**
- * GET /logout
- * Log out.
- */
-exports.logout = (req, res) => {
-  req.logout();
-  req.session.destroy((err) => {
-    if (err) console.log('Error : Failed to destroy the session during logout.', err);
-    req.user = null;
-    res.redirect('/');
-  });
-};
-
-/**
- * GET /signup
- * Signup page.
- */
-exports.getSignup = (req, res) => {
-  if (req.user) {
-    return res.redirect('/');
-  }
-  res.render('account/signup', {
-    title: 'Create Account'
-  });
 };
 
 /**
@@ -98,18 +66,14 @@ exports.postSignup = (req, res, next) => {
 
   User.findOne({ email: req.body.email }, (err, existingUser) => {
     if (err) { return next(err); }
-    // if (existingUser) {
-    //   return res.status(409).send(RPCError.invalidRequest('Account with that email address already exists.'));
-    // }
+    if (existingUser) {
+      return res.status(409).send(RPCError.invalidRequest('Account with that email address already exists.'));
+    }
     user.save((err) => {
       if (err) { return next(err); }
-      req.user = user; next();
-      // req.logIn(user, (err) => {
-      //   if (err) {
-      //     return next(err);
-      //   }
-      //   next();
-      // });
+      req.user = user;
+      delete req.user.password; // do not leak it
+      sendJWT(req, res);
     });
   });
 };

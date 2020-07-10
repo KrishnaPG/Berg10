@@ -16,7 +16,6 @@ const passport = require('passport');
 const errorHandler = require('errorHandler');
 const flash = require('express-flash');
 const bodyParser = require('body-parser');
-const jwt = require('express-jwt');
 
 const homeController = require('./controllers/home');
 const apiController = require('./controllers/api');
@@ -43,8 +42,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // these do NOT need sessions
 app.get('/api/user', apiController.getUser);
 app.get('/api/logout', apiController.logout);
-app.post('/api/login', userController.postLogin, apiController.login);
-app.post('/api/signup', userController.postSignup, apiController.login);
+app.post('/api/login', userController.postLogin);
+app.post('/api/signup', userController.postSignup);
 
 // For oAuth based routes we use Sessions
 app.use(session(Object.assign({}, {
@@ -86,8 +85,6 @@ app.use((req, res, next) => {
  * Primary app routes.
  */
 app.get('/', homeController.index);
-// app.get('/login', userController.getLogin);
-//app.post('/login', userController.postLogin);
 // app.get('/logout', userController.logout);
 // app.get('/forgot', userController.getForgot);
 // app.post('/forgot', userController.postForgot);

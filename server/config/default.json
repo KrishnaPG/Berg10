@@ -18,9 +18,10 @@
 	},
 	"jwt": {
 		"secret": null,
-		"expiresIn": "1d",
-		"issuer": "Berg10.Server",
-		"maxAge": "30d"
+		"expiresIn": 86400000,
+		"iss": "Berg10.Server",
+		"noTimestamp": true,
+		"cache": true
 	},
 	"logger": {
 		"pino": {
