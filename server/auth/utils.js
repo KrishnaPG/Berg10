@@ -30,6 +30,6 @@ module.exports = {
 	},
 
 	RPCError: {
-		invalidRequest: (message, code = -32600, id = null) => ({ "jsonrpc": "2.0", "error": { code, message }, id })
+		invalidRequest: (message, code = -32600, id = null) => ({ "jsonrpc": "2.0", "error": { code, message }, id }),
 	}
 }

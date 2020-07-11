@@ -21,7 +21,9 @@
 		"expiresIn": 86400000,
 		"iss": "Berg10.Server",
 		"noTimestamp": true,
-		"cache": true
+
+		"cache": true,
+		"allowedIss": "Berg10.Server"
 	},
 	"logger": {
 		"pino": {

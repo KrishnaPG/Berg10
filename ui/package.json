@@ -10,7 +10,9 @@
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1",
-    "sula": "1.0.0-alpha.51"
+    "sula": "1.0.0-alpha.51",
+    "y-indexeddb": "9.0.3",
+    "yjs": "^13.2.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^4.2.4",

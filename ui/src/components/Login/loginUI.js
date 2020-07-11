@@ -36,9 +36,7 @@ class LoginUI extends React.Component {
 	}
 
 	render() {
-		const isBusy = this.props.isAuthInProgress || !this.state.storeLoaded;
-		const busyMsg = this.state.storeLoaded ? "Verifying..." : "Initializing store...";
-
+		
 		let oAuthLinks = null;
 		if (this.state.currentMode === "Login") {
 			oAuthLinks =
@@ -69,7 +67,7 @@ class LoginUI extends React.Component {
 			<Row id="loginUI" type="flex" justify="center" align="middle" className="fullHeight">
 				<Col md={{ span: 12 }} lg={{ span: 5 }}>
 					<div className="logo"><span className="logo-lg"><b>Berg</b>10</span></div>
-					<Spin spinning={isBusy} tip={busyMsg} delay="0" size="large">
+					<Spin spinning={this.props.isAuthInProgress} tip={this.props.busyMsg} delay="0" size="large">
 						<Form
 							id="loginForm"
 							className="login-form"

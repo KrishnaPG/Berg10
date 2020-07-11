@@ -40,7 +40,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // these do NOT need sessions
-app.get('/api/user', apiController.getUser);
+app.get('/api/user', userController.getUserDetails);
 app.get('/api/logout', apiController.logout);
 app.post('/api/login', userController.postLogin);
 app.post('/api/signup', userController.postSignup);

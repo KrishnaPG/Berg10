@@ -1,24 +1,41 @@
-const { promisify } = require('util');
+/**
+ * Copyright © 2020 Cenacle Research India Private Limited.
+ * All Rights Reserved.
+ */
+const config = require('config');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
-const passport = require('passport');
 const _ = require('lodash');
 const validator = require('validator');
 const mailChecker = require('mailchecker');
+const nodemailer = require('nodemailer');
+const passport = require('passport');
 const User = require('../models/User');
-const {RPCError} = require('../auth/utils');
+const { promisify } = require('util');
+const { performance } = require('perf_hooks');
+const { RPCError } = require('../auth/utils');
 
-const randomBytesAsync = promisify(crypto.randomBytes);
-
+const { createSigner, createVerifier } = require('fast-jwt');
 const key = config.jwt.secret || (Math.random() * performance.timeOrigin + performance.now()).toString(Math.ceil(Math.random() * 33) + 2); // creates a variable length random string
 const jwtSigner = createSigner(Object.assign({ key, algorithm: 'HS256' }, config.jwt));
+const jwtVerifier = createVerifier(Object.assign({ key, algorithm: 'HS256' }, config.jwt));
 console.log("jwt secret: ", key);
+
+const randomBytesAsync = promisify(crypto.randomBytes);
 
 function sendJWT (req, res) {
   const user = req.user;
   const jwt = jwtSigner({ email: user.email }); //TODO: customize the token expiration based on user's preference
   res.send({ jwt, user });
 };
+
+function verifyJWT(req, res, cb) {
+  try {
+    const payload = jwtVerifier((req.headers.authorization || '').replace('Bearer ', ''));
+    cb(payload);
+  } catch (err) {
+    res.status(401).send(RPCError.invalidRequest(err.message));
+  }
+}
 
 /**
  * POST /login
@@ -79,12 +96,17 @@ exports.postSignup = (req, res, next) => {
 };
 
 /**
- * GET /account
+ * Get /user
  * Profile page.
  */
-exports.getAccount = (req, res) => {
-  res.render('account/profile', {
-    title: 'Account Management'
+exports.getUserDetails = (req, res, next) => {
+  verifyJWT(req, res, jwtPayload => {
+    User.findOne({ email: jwtPayload.email }, (err, existingUser) => {
+      if (err) { return next(err); }
+      existingUser ?
+        res.send(existingUser) :
+        res.status(404).send(RPCError.invalidRequest(`No user exists with eMail: ${jwtPayload.email}`));
+    });
   });
 };
 

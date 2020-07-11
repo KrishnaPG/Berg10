@@ -2,10 +2,8 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
-const { createSigner } = require('fast-jwt')
 const config = require('config');
 const Utils = require('../auth/utils');
-const { performance } = require('perf_hooks');
 
 const AllowedOrigins = config.cors.allowedOrigins.map(el => Utils.wildcardToRegExp(el)); // pre-bake to regExps
 
