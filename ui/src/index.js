@@ -6,7 +6,7 @@ import { idbP, lastSession } from './components/store';
 const App = React.lazy(() => import(/* webpackChunkName: "App", webpackPreload: true */ './App'));
 
 ReactDOM.render(
-  <Suspense fallback={<div class="LoadingMsg">Initializing the application...</div>}>
+  <Suspense fallback={<div className="LoadingMsg">Initializing the application...</div>}>
     <App idbP={idbP} lastSession={lastSession} />
   </Suspense>,
   document.getElementById('root')
