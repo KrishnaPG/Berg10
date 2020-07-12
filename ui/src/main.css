@@ -54,6 +54,6 @@ code {
 }
 
 /** Base */
-#root, .fullHeight {
+.fullHeight {
 	height: 100%;
 }

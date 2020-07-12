@@ -22,8 +22,8 @@ console.log("jwt secret: ", key);
 
 const randomBytesAsync = promisify(crypto.randomBytes);
 
-function sendJWT (req, res) {
-  const user = req.user;
+function sendJWT (user, req, res) {
+  delete user.password; // do not leak it to the client
   const jwt = jwtSigner({ email: user.email }); //TODO: customize the token expiration based on user's preference
   res.send({ jwt, user });
 };
@@ -56,8 +56,7 @@ exports.postLogin = (req, res, next) => {
     if (!user) {
       return res.status(401).send(RPCError.invalidRequest(info.msg));
     }
-    req.user = user;
-    sendJWT(req, res);
+    sendJWT(user, req, res);
   })(req, res, next);
 };
 
@@ -88,23 +87,21 @@ exports.postSignup = (req, res, next) => {
     }
     user.save((err) => {
       if (err) { return next(err); }
-      req.user = user;
-      delete req.user.password; // do not leak it
-      sendJWT(req, res);
+      sendJWT(user, req, res);
     });
   });
 };
 
 /**
  * Get /user
- * Profile page.
+ * Returns the full user details and also renews the JWT
  */
 exports.getUserDetails = (req, res, next) => {
   verifyJWT(req, res, jwtPayload => {
     User.findOne({ email: jwtPayload.email }, (err, existingUser) => {
       if (err) { return next(err); }
       existingUser ?
-        res.send(existingUser) :
+        sendJWT(existingUser, req, res) :
         res.status(404).send(RPCError.invalidRequest(`No user exists with eMail: ${jwtPayload.email}`));
     });
   });

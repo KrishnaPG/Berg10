@@ -12,3 +12,14 @@ export function getMatchingRoute(location, key) {
 	}
 	return [null, regex];
 }		
+
+// returns the payload if token is parsed correctly, and is not expired
+export function decodeJWT(token) {
+	const base64Url = token.split('.')[1];
+	const base64Str = base64Url.replace('-', '+').replace('_', '/');
+	try {
+		return JSON.parse(window.atob(base64Str));
+	} catch (ex) {
+		return null;
+	}
+}

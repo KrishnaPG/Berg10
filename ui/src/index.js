@@ -2,12 +2,11 @@ import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom';
 import * as serviceWorker from './serviceWorker';
 import { idbP, lastSession } from './components/store';
-import './main.css';
 
 const App = React.lazy(() => import(/* webpackChunkName: "App", webpackPreload: true */ './App'));
 
 ReactDOM.render(
-  <Suspense fallback={<div>Initializing the application...</div>}>
+  <Suspense fallback={<div class="LoadingMsg">Initializing the application...</div>}>
     <App idbP={idbP} lastSession={lastSession} />
   </Suspense>,
   document.getElementById('root')

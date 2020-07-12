@@ -3,10 +3,10 @@
  * All Rights Reserved.
  */
 
-import * as Y from 'yjs';
+import { Doc } from 'yjs';
 import { IndexeddbPersistence } from 'y-indexeddb';
 
-export const yDoc = new Y.Doc();
+export const yDoc = new Doc();
 
 export const idbP = new IndexeddbPersistence('Berg10', yDoc);
 idbP.whenSynced.then(() => {
