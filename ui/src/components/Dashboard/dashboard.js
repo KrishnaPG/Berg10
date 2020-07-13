@@ -4,20 +4,6 @@ import FlexLayout from 'flexlayout-react';
 import flexFactory from './flexFactory';
 import defaultLayout from './Layouts/default';
 
-// Prepare Sula
-import { registerFieldPlugins, registerRenderPlugins, registerActionPlugins, registerFilterPlugins, Icon } from 'sula';
-import { UserOutlined } from '@ant-design/icons';
-// Register the plugins for Sula
-registerFieldPlugins();
-registerRenderPlugins();
-registerActionPlugins();
-registerFilterPlugins();
-// Register icons for Sula
-Icon.iconRegister({
-	user: UserOutlined
-});
-
-
 class Dashboard extends React.Component {
 
 	constructor(props) {

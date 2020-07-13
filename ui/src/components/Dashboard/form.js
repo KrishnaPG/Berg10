@@ -2,6 +2,20 @@ import React from 'react';
 import { StepForm } from 'sula';
 import { Button } from 'antd';
 
+// Prepare Sula
+import { registerFieldPlugins, registerRenderPlugins, registerActionPlugins, registerFilterPlugins, Icon } from 'sula';
+import { UserOutlined } from '@ant-design/icons';
+// Register the plugins for Sula
+registerFieldPlugins();
+registerRenderPlugins();
+registerActionPlugins();
+registerFilterPlugins();
+// Register icons for Sula
+Icon.iconRegister({
+	user: UserOutlined
+});
+
+
 const steps = [
 	{
 		title: 'Step1',

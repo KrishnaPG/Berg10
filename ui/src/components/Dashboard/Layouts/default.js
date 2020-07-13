@@ -5,6 +5,7 @@
 
 export default {
 	"global": {
+		"splitterSize": 6,
 		"tabEnableFloat": true
 	},
 	"layout": {
@@ -19,23 +20,6 @@ export default {
 						"type": "tab",
 						"name": "FX",
 						"component": "grid"
-					},
-					{
-						"type": "tab",
-						"name": "Custom Tab",
-						"component": "grid",
-						"id": "custom-tab"
-					}
-				]
-			},
-			{
-				"type": "tabset",
-				"weight": 25,
-				"children": [
-					{
-						"type": "tab",
-						"name": "FI",
-						"component": "grid"
 					}
 				]
 			}
@@ -45,6 +29,7 @@ export default {
 		{
 			"type": "border",
 			"location": "left",
+			"size": 300,
 			"children": [
 				{
 					"type": "tab",
@@ -57,12 +42,14 @@ export default {
 		{
 			"type": "border",
 			"location": "right",
+			"selected": 0,
+			"size": 300,
 			"children": [
 				{
 					"type": "tab",
 					"enableClose": false,
 					"name": "Options",
-					"component": "grid"
+					"component": "treeExplorer"
 				}
 			]
 		},
