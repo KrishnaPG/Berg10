@@ -11,14 +11,26 @@ export function getMatchingRoute(location, key) {
 		return [value, regex];
 	}
 	return [null, regex];
-}		
+}
+
+function isTokenAlive(decoded) {
+	const now = Date.now() / 1000;
+	if (decoded.exp && decoded.exp < now) {
+		return null; // token expired
+	}
+	if (decoded.nbf && decoded.nbf > now) {
+		return null; //token not yet valid
+	}
+	return decoded;
+}
 
 // returns the payload if token is parsed correctly, and is not expired
 export function decodeJWT(token) {
 	const base64Url = token.split('.')[1];
 	const base64Str = base64Url.replace('-', '+').replace('_', '/');
 	try {
-		return JSON.parse(window.atob(base64Str));
+		const decoded = JSON.parse(window.atob(base64Str));
+		return isTokenAlive(decoded);
 	} catch (ex) {
 		return null;
 	}

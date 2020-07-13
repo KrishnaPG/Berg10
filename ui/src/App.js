@@ -9,7 +9,7 @@ import { getMatchingRoute, decodeJWT } from './components/utils';
 import './main.css';
 
 const LoginUI = React.lazy(() => import(/* webpackChunkName: "loginUI", webpackPreload: true */ './components/Login/loginUI'));
-const Dashboard = React.lazy(() => import(/* webpackChunkName: "dashboard", webpackPrefetch: true */ './components/dashboard'));
+const Dashboard = React.lazy(() => import(/* webpackChunkName: "dashboard", webpackPrefetch: true */ './components/Dashboard/dashboard'));
 
 class Main extends React.Component {
 
@@ -45,6 +45,7 @@ class Main extends React.Component {
 				if (!session) return this.safeSetState({ isAuthInProgress: false });
 				const { jwt, user } = session;
 				// check if the token is readable and not yet expired
+				if (!jwt || !user) return this.logout();
 				const payload = decodeJWT(jwt); console.log("parsed jwt payload: ", payload);
 				if (!payload || payload.email !== user.email)
 					return this.logout();
@@ -76,7 +77,9 @@ class Main extends React.Component {
 
 	render() {
 		return this.state.user ?
-			(<Suspense fallback={<div className="LoadingMsg">Creating the Layouts...</div>}><Dashboard /></Suspense>) :
+			(<Suspense fallback={<div className="LoadingMsg">Loading the Dashboard...</div>}>
+				<Dashboard user={this.state.user}/>
+			</Suspense>) :
 			(<Suspense fallback={<div className="LoadingMsg">Preparing for Login...</div>}>
 				<LoginUI
 					isAuthInProgress={this.state.isAuthInProgress}

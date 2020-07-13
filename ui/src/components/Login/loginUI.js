@@ -30,13 +30,12 @@ class LoginUI extends React.Component {
 		this.state = {
 			currentMode: "Login",
 			otherMode: "Signup",
-			storeLoaded: true, // for future in case LocalStorage is used
 			returnTo: encodeURI(window.location.origin + window.location.pathname + window.location.search) // remove the hash in the current url. 
 		};
 	}
 
 	render() {
-		
+
 		let oAuthLinks = null;
 		if (this.state.currentMode === "Login") {
 			oAuthLinks =
@@ -98,7 +97,7 @@ class LoginUI extends React.Component {
 							</Form.Item>
 						</Form>
 						<br />
-						{oAuthLinks}						
+						{oAuthLinks}
 						<div className="additional-links">
 							<a href="/" onClick={e => { e.preventDefault(); } }>Forgot Password?</a>
 							<a href="/" onClick={this.onModeChange}>{this.state.otherMode}</a>
