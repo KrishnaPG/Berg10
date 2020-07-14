@@ -5,11 +5,15 @@
 import React, { Suspense } from 'react';
 
 //import CForm from './form';
-const CForm = React.lazy(() => import(/* webpackChunkName: "comp", webpackPreload: true */ './form'));
+const CForm = React.lazy(() => import(/* webpackChunkName: "fl-form", webpackPrefetch: true */ './form'));
+const Home = React.lazy(() => import(/* webpackChunkName: "fl-home", webpackPrefetch: true */ '../Home'));
+const Xplore = React.lazy(() => import(/* webpackChunkName: "fl-xplore", webpackPrefetch: true */ '../Xplore'));
+
 
 const componentMap = {
 	"grid": () => <Suspense fallback={<div className="LoadingMsg">Loading the CForm...</div>}><CForm></CForm></Suspense>,
-	"treeExplorer": () => <h1>Hello</h1>,
+	"Home": () => <Suspense fallback={<div className="LoadingMsg">Loading the Home...</div>}><Home></Home></Suspense>,
+	"Xplore": () => <Suspense fallback={<div className="LoadingMsg">Loading the Xplore...</div>}><Xplore></Xplore></Suspense>
 };
 
 // the flexLayout UI factory
@@ -18,24 +22,3 @@ export default function (node) {
 	const renderFn = componentMap[component];
 	return renderFn ? renderFn(node) : <h2>Missing: {component}</h2>;
 }
-		//return <button>{node.getName()}</button>;
-		// return (
-		//   <div>
-		//     <CreateForm
-		//       initialValues={{
-		//         gender: ['male'],
-		//       }}
-		//       fields={[
-		//         {
-		//           name: 'name',
-		//           label: '姓名',
-		//           field: 'input',
-		//         },
-		//       ]}
-		//       submit={{
-		//         url: 'https://www.mocky.io/v2/5185415ba171ea3a00704eed',
-		//         method: 'POST',
-		//       }}
-		//     />
-		//   </div>
-		// );      

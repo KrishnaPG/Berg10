@@ -28,33 +28,6 @@ export default {
 	"borders": [
 		{
 			"type": "border",
-			"location": "left",
-			"size": 300,
-			"children": [
-				{
-					"type": "tab",
-					"enableClose": false,
-					"name": "Navigation",
-					"component": "grid"
-				}
-			]
-		},
-		{
-			"type": "border",
-			"location": "right",
-			"selected": 0,
-			"size": 300,
-			"children": [
-				{
-					"type": "tab",
-					"enableClose": false,
-					"name": "Options",
-					"component": "treeExplorer"
-				}
-			]
-		},
-		{
-			"type": "border",
 			"location": "bottom",
 			"children": [
 				{
@@ -68,6 +41,40 @@ export default {
 					"enableClose": false,
 					"name": "Execution Blotter",
 					"component": "grid"
+				}
+			]
+		},		
+		{
+			"type": "border",
+			"location": "left",
+			"selected": 0,
+			"size": 280,
+			"children": [
+				{
+					"type": "tab",
+					"enableClose": false,
+					"name": "Home",
+					"component": "Home"
+				},				
+				{
+					"type": "tab",
+					"enableClose": false,
+					"name": "Xplore",
+					"component": "Xplore"
+				}
+			]
+		},
+		{
+			"type": "border",
+			"location": "right",
+			"selected": -1,
+			"size": 300,
+			"children": [
+				{
+					"type": "tab",
+					"enableClose": false,
+					"name": "Options",
+					"component": "Options"
 				}
 			]
 		}
