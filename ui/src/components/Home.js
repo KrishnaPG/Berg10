@@ -4,6 +4,9 @@
  */
 import React from 'react';
 import { Avatar, Card } from 'antd';
+import { triggerLogout } from './globals';
+
+import "./sidebar-card.scss";
 import "./home.scss";
 
 const EditOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/EditOutlined'));
@@ -21,21 +24,18 @@ class Home extends React.Component {
 	}
 
 	render() {
-		return (<>
-			<Card	id="home-card"
-				cover={<div class="logo">
-					<img className="logo-image"
-						alt="Berg10"
-						src="/logo64.jpg"
-						title="Berg10"
-					/>
-					<span class="logo-text" title="Berg10">Berg10</span>
+		return (
+			<Card id="home-card" className="sidebar-card"
+				cover={
+					<div className="logo">
+						<img className="logo-image" alt="Berg10" src="/logo64.jpg" title="Berg10"	/>
+						<span className="logo-text" title="Berg10">Berg10</span>
 					</div>
 				}
 				actions={[
 					<SettingOutlined key="setting" />,
 					<EditOutlined key="edit" />,
-					<LogoutOutlined key="logout" title="Logout" onClick={e => alert("dingbat")}/>
+					<LogoutOutlined key="logout" title="Logout" onClick={triggerLogout}/>
 				]}
 			>
 				<Meta
@@ -43,7 +43,7 @@ class Home extends React.Component {
 					title="Card title"
 					description="This is the description"
 				/>
-				<div class="bodyDetails">
+				<div className="bodyDetails">
 					<h2>Hello world</h2>
 					<p>some long content</p>
 					<p>some long content</p>
@@ -59,7 +59,6 @@ class Home extends React.Component {
 				</div>
 
 			</Card>
-			</>
 		);
 	}
 };

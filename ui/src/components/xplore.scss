@@ -1,0 +1,14 @@
+@import './variables.scss';
+
+#xplore-card.sidebar-card {
+	& > .ant-card-cover {
+		& > div.logo {
+			& > .logo-text {
+				color: change-color($logo-basecolor, $alpha: 0.65)
+			}
+		}
+	}
+	& > .ant-card-body {
+		padding: 0px;
+	}
+}

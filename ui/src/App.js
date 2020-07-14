@@ -5,6 +5,7 @@
 import React, { Suspense } from 'react';
 import Axios from 'axios'; 
 import debounce from 'lodash/debounce';
+import { gEventBus } from './components/globals';
 import { getMatchingRoute, decodeJWT } from './components/utils';
 import './main.css';
 
@@ -64,9 +65,11 @@ class Main extends React.Component {
 
 	componentDidMount() {
 		this._isMounted = true;
+		gEventBus.addEventListener("logout", this.logout);
 	}
 	componentWillUnmount() {
 		this._isMounted = false;
+		gEventBus.removeEventListener("logout", this.logout);
 		this.props.idbP.destroy(); // close it safely
 	}
 	static getDerivedStateFromProps(props, state) {
@@ -119,7 +122,7 @@ class Main extends React.Component {
 		return this._isMounted ? this.setState(changedState) : Object.assign(this.state, changedState);
 	}
 
-	logout() {
+	logout = () => {
 		if (this.state.jwt)
 			Axios.get('http://localhost:8080/api/logout', { headers: { Authorization: "Bearer " + this.state.jwt } });
 		this.setState({ user: null, jwt: null, isAuthInProgress: false });

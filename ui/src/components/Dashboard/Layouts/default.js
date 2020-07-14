@@ -47,7 +47,7 @@ export default {
 		{
 			"type": "border",
 			"location": "left",
-			"selected": 0,
+			"selected": 1,
 			"size": 280,
 			"children": [
 				{
