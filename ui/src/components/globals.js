@@ -8,3 +8,7 @@ export const gEventBus = new EventTarget();
 export const triggerLogout = () => {
 	gEventBus.dispatchEvent(new Event("logout"));
 }
+
+export const triggerPanelAdd = () => {
+	gEventBus.dispatchEvent(new Event("panel.add"));
+}

@@ -24,10 +24,10 @@ class Main extends React.Component {
 			isAuthInProgress: true,
 			busyMsg: "Loading previous sessions, if any...",
 
-			_debouncedSave: debounce(state => {
+			_debouncedSave: debounce(() => {
 				console.log("saving state");
 				// save the session details to local storage
-				props.idbP.set({ user: state.user, jwt: state.jwt }, "lastSession");
+				props.idbP.set({ user: this.state.user, jwt: this.state.jwt }, "lastSession");
 			}, 1500)
 		};
 
@@ -47,7 +47,7 @@ class Main extends React.Component {
 				const { jwt, user } = session;
 				// check if the token is readable and not yet expired
 				if (!jwt || !user) return this.logout();
-				const payload = decodeJWT(jwt); console.log("parsed jwt payload: ", payload);
+				const payload = decodeJWT(jwt);
 				if (!payload || payload.email !== user.email)
 					return this.logout();
 				// trigger the dashboard UI loading by setting the user
@@ -74,7 +74,7 @@ class Main extends React.Component {
 	}
 	static getDerivedStateFromProps(props, state) {
 		// either props or the state has changed - trigger a session save
-		if (state.user) state._debouncedSave(state);
+		if (state.user) state._debouncedSave();
 		return null;
 	}
 
@@ -125,8 +125,7 @@ class Main extends React.Component {
 	logout = () => {
 		if (this.state.jwt)
 			Axios.get('http://localhost:8080/api/logout', { headers: { Authorization: "Bearer " + this.state.jwt } });
-		this.setState({ user: null, jwt: null, isAuthInProgress: false });
-		this.props.idbP.del("lastSession");
+		this.setState({ user: null, jwt: null, isAuthInProgress: false }, () => this.props.idbP.del("lastSession"));
 	}
 }
 

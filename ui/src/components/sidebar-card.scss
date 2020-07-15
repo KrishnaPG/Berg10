@@ -1,4 +1,11 @@
+@keyframes fadein {
+  from { opacity: 0}
+  to   { opacity: 1}
+}
+
 .sidebar-card {
+	//animation: fadein 4s;
+
 	&.ant-card {
 		height: 100%;
 		display: flex;
@@ -25,10 +32,10 @@
 		flex: auto;
 		flex-direction: column;
 		overflow: overlay;
+		padding: 16px 0px 4px 8px;
 
 		& > .bodyDetails {
 			overflow: auto;
 		}
-		padding: 16px 0px 4px 8px;
-	}	
+	}
 }

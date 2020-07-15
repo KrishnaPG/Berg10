@@ -3,6 +3,7 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
+import "../sidebar-card.scss";
 
 //import CForm from './form';
 const CForm = React.lazy(() => import(/* webpackChunkName: "fl-form", webpackPrefetch: true */ './form'));
@@ -13,7 +14,8 @@ const Xplore = React.lazy(() => import(/* webpackChunkName: "fl-xplore", webpack
 const componentMap = {
 	"grid": () => <Suspense fallback={<div className="LoadingMsg">Loading the CForm...</div>}><CForm></CForm></Suspense>,
 	"Home": () => <Suspense fallback={<div className="LoadingMsg">Loading the Home...</div>}><Home></Home></Suspense>,
-	"Xplore": () => <Suspense fallback={<div className="LoadingMsg">Loading the Xplore...</div>}><Xplore></Xplore></Suspense>
+	"Xplore": () => <Suspense fallback={<div className="LoadingMsg">Loading the Xplore...</div>}><Xplore></Xplore></Suspense>,
+	"test": () => <h2>Hello World!!</h2>
 };
 
 // the flexLayout UI factory

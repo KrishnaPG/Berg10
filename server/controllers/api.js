@@ -24,10 +24,10 @@ exports.logout = (req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   req.logout();
   res.clearCookie(config.session.name);
-  req.session.destroy(err => {
+  req.session ? req.session.destroy(err => {
     req.user = null;
     err ? res.send(err) : res.send({ result: "success" });
-  });
+  }) : res.send({ result: "success" });
 };
 
 

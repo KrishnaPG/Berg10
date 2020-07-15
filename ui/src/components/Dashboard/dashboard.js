@@ -3,6 +3,7 @@ import FlexLayout from 'flexlayout-react';
 
 import flexFactory from './flexFactory';
 import defaultLayout from './Layouts/default';
+import { gEventBus } from '../globals';
 
 class Dashboard extends React.Component {
 
@@ -18,13 +19,25 @@ class Dashboard extends React.Component {
 			// happens if props.layoutJSON is corrupt (non-empty or invalid layout format etc.)
 			this.state.layoutModel = FlexLayout.Model.fromJson(defaultLayout);
 		}
-		setInterval(() => {
-			props.user.time = Date.now();
-		}, 2000);
 	}
+
+	componentDidMount() {
+		gEventBus.addEventListener("panel.add", this.onPanelAdd);
+	}
+	componentWillUnmount() {
+		gEventBus.removeEventListener("panel.add", this.onPanelAdd);
+	}	
 	
 	render() {
-		return <FlexLayout.Layout	model={this.state.layoutModel} factory={flexFactory} />;
+		return <FlexLayout.Layout ref="layout" model={this.state.layoutModel} factory={flexFactory} />;
+	}
+
+	onPanelAdd = ev => {
+		this.refs.layout.addTabWithDragAndDropIndirect("Add panel<br>(Drag to location)", {
+			component: "test",
+			name: "added",
+			config: { text: "i was added" }
+		}, null);		
 	}
 
 };

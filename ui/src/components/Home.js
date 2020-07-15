@@ -6,7 +6,6 @@ import React from 'react';
 import { Avatar, Card } from 'antd';
 import { triggerLogout } from './globals';
 
-import "./sidebar-card.scss";
 import "./home.scss";
 
 const EditOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/EditOutlined'));

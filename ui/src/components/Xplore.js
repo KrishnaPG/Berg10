@@ -5,9 +5,8 @@
 import React from 'react';
 import { Avatar, Card, Menu, Button } from 'antd';
 
-import "./sidebar-card.scss";
 import "./xplore.scss";
-import { triggerLogout } from './globals';
+import { triggerLogout, triggerPanelAdd } from './globals';
 
 const EditOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/EditOutlined'));
 const LogoutOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/LogoutOutlined'));
@@ -47,21 +46,21 @@ class Xplore extends React.Component {
 					defaultSelectedKeys={['1']}
 					defaultOpenKeys={['sub1']}
 					mode="inline"
-					// theme="dark"
+					theme="dark"
 					inlineCollapsed={this.state.collapsed}
 				>
 					<Menu.Item key="1" icon={<PieChartOutlined />}>
 						Option 1
           </Menu.Item>
-					<Menu.Item key="2" icon={<DesktopOutlined />}>
+					<Menu.Item key="2" icon={<DesktopOutlined />} onClick={triggerPanelAdd}>
 						Option 2
           </Menu.Item>
-					<Menu.Item key="3" icon={<ContainerOutlined />}>
+					<Menu.Item key="3" icon={<ContainerOutlined />} onClick={triggerPanelAdd}>
 						Option 3
           </Menu.Item>
 					<SubMenu key="sub1" icon={<MailOutlined />} title="Navigation One">
-						<Menu.Item key="5">Option 5</Menu.Item>
-						<Menu.Item key="6">Option 6</Menu.Item>
+						<Menu.Item key="5" onClick={triggerPanelAdd}>Option 5</Menu.Item>
+						<Menu.Item key="6" onClick={triggerPanelAdd}>Option 6</Menu.Item>
 						<Menu.Item key="7">Option 7</Menu.Item>
 						<Menu.Item key="8">Option 8</Menu.Item>
 					</SubMenu>
