@@ -50,10 +50,16 @@ class Main extends React.Component {
 				const payload = decodeJWT(jwt);
 				if (!payload || payload.email !== user.email)
 					return this.logout();
-				// trigger the dashboard UI loading by setting the user
+				// trigger the dashboard UI loading, by setting the user
 				this.safeSetState({ user, jwt, isAuthInProgress: false });
-				// Also, lets try to renew the JWT and update the user details from the server in parallel
+				// Also, lets try to renew the JWT and update the user details from the server in parallel.
+				// We do not do server auth here synchronously because we support offline case,
+				// where server may not be reachable, and user should still be able see any locally
+				// stored data that is available.
 				this.refreshUserDetails(jwt);
+				// it may happen that the token is valid, but server may reject the JWT. This happens
+				// when server is restarted and its secret is changed. In such case, user will see
+				// dashboard being loaded and then flashing back to login screen.
 			});
 		}
 

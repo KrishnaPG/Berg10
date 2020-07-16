@@ -12,3 +12,7 @@ export const triggerLogout = () => {
 export const triggerPanelAdd = () => {
 	gEventBus.dispatchEvent(new Event("panel.add"));
 }
+
+export const triggerPanelTypeRepo = () => {
+	gEventBus.dispatchEvent(new Event("panel.show.typeRepo"));
+}

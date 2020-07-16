@@ -5,8 +5,8 @@
 import React from 'react';
 import { Avatar, Card, Menu, Button } from 'antd';
 
+import { triggerLogout, triggerPanelAdd, triggerPanelTypeRepo } from './globals';
 import "./xplore.scss";
-import { triggerLogout, triggerPanelAdd } from './globals';
 
 const EditOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/EditOutlined'));
 const LogoutOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/LogoutOutlined'));
@@ -49,8 +49,8 @@ class Xplore extends React.Component {
 					theme="dark"
 					inlineCollapsed={this.state.collapsed}
 				>
-					<Menu.Item key="1" icon={<PieChartOutlined />}>
-						Option 1
+					<Menu.Item key="1" icon={<PieChartOutlined />} onClick={triggerPanelTypeRepo}>
+						Type Repo
           </Menu.Item>
 					<Menu.Item key="2" icon={<DesktopOutlined />} onClick={triggerPanelAdd}>
 						Option 2
