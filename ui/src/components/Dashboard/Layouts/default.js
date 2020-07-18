@@ -19,7 +19,7 @@ export default {
 					{
 						"type": "tab",
 						"name": "FX",
-						"component": "grid"
+						"component": "TypeRepo"
 					}
 				]
 			}
