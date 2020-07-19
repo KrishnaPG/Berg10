@@ -1,8 +1,11 @@
+/**
+ * Copyright © 2020 Cenacle Research India Private Limited.
+ * All Rights Reserved.
+ */
 import React, { Suspense } from 'react';
 import { Button, PageHeader, Tabs } from 'antd';
-import importedComponent from 'react-imported-component';
+import { PlusCircleOutlined } from './icons';
 
-import 'jsoneditor-react/es/editor.min.css';
 import './typeRepo.scss';
 
 import { QueryTable } from 'sula';
@@ -10,6 +13,7 @@ import { QueryTable } from 'sula';
 // Prepare Sula
 import { registerFieldPlugins, registerRenderPlugins, registerActionPlugins, registerFilterPlugins, Icon } from 'sula';
 import { AppstoreOutlined, EditOutlined, UserOutlined } from '@ant-design/icons';
+import { triggerPanelAdd } from '../globals';
 // Register the plugins for Sula
 registerFieldPlugins();
 registerRenderPlugins();
@@ -28,7 +32,6 @@ Icon.iconRegister({
 
 
 const { TabPane } = Tabs;
-const PlusCircleOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/PlusCircleOutlined'));
 
 const remoteDataSource = {
 	url: 'https://randomuser.me/api',
@@ -131,22 +134,7 @@ const actions = [
 	},
 ];
 
-const JsonEditor = importedComponent(() => Promise.all([
-	import(/* webpackChunkName: "jsonEd", webpackPrefetch: true */ 'jsoneditor-react'),
-	import(/* webpackChunkName: "jsonEd", webpackPrefetch: true */ 'brace'),
-	import(/* webpackChunkName: "jsonEd", webpackPrefetch: true */ 'brace/mode/json'),
-	import(/* webpackChunkName: "jsonEd", webpackPrefetch: true */ 'brace/theme/github')
-]).then(([{ JsonEditor: Editor }, ace]) => {
-	return function EditorHoc(props) {
-		return (
-			<Editor
-				ace={ace}
-				theme="ace/theme/github"
-				{...props}
-			/>
-		);
-	}
-}), { async: true });
+
 
 class TypeRepo extends React.Component {
 
@@ -168,11 +156,11 @@ class TypeRepo extends React.Component {
 			title="Type Repository"
 			subTitle=""
 			extra={[
-				<Button key="3" icon={<PlusCircleOutlined />}>Add New Entry</Button>,
+				<Button key="3" icon={<PlusCircleOutlined />} onClick={this.onAddNew} >Add New Entry</Button>,
 				<Button key="2">Operation</Button>,
 				<Button key="1" type="primary">
 					Primary
-        </Button>,
+				</Button>,
 			]}
 			// footer={
 			// 	<Tabs defaultActiveKey="1">
@@ -189,7 +177,7 @@ class TypeRepo extends React.Component {
 				rowKey="id"
 				// actionsRender={actions}
 				rowSelection={{}}
-				tableProps={{ scroll: { y: 400 }, pagination: { position: ["topRight", "none"] }}}
+				tableProps={{ scroll: { y: 400 } }}
 			/>
 		</PageHeader>
 
@@ -209,6 +197,11 @@ class TypeRepo extends React.Component {
 	handleChange = ev => {
 		console.log("content changed: ", ev);
 	}
+
+	// clicked add new button
+	onAddNew = () => {
+		triggerPanelAdd({ component: "TypeRepo.AddNew", name: "New: Type", icon: <PlusCircleOutlined className="mr-4" />, config: { text: "i was added" } });
+	}	
 };
 
 export default TypeRepo;

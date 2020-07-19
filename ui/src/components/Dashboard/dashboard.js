@@ -1,7 +1,7 @@
 import React from 'react';
 import FlexLayout from 'flexlayout-react';
 
-import flexFactory from './flexFactory';
+import { default as flexFactory, iconFactory } from './flexFactory';
 import defaultLayout from './Layouts/default';
 import { gEventBus } from '../globals';
 
@@ -23,31 +23,38 @@ class Dashboard extends React.Component {
 
 	componentDidMount() {
 		gEventBus.addEventListener("panel.add", this.onPanelAdd);
-		gEventBus.addEventListener("panel.show.typeRepo", this.onPanelTypeRepo);	
 	}
 	componentWillUnmount() {
 		gEventBus.removeEventListener("panel.add", this.onPanelAdd);
-		gEventBus.removeEventListener("panel.show.typeRepo", this.onPanelTypeRepo);
 	}	
 	
 	render() {
-		return <FlexLayout.Layout ref="layout" model={this.state.layoutModel} factory={flexFactory}/>;
+		return <FlexLayout.Layout
+			ref="layout"
+			factory={flexFactory}
+			iconFactory={iconFactory}
+			model={this.state.layoutModel}
+			onModelChange={this.onModelChange}
+		/>;
+	}
+
+	onModelChange = ev => {
+		// console.log("model changed: ", ev);
 	}
 
 	onPanelAdd = ev => {
-		this.refs.layout.addTabToActiveTabSet({
-			component: "test",
-			name: "added",
-			config: { text: "i was added" }
-		}, null);		
+		const existingTab = ev.detail.bringToFocus ? this.state.layoutModel.getNodeById(ev.detail.id) : null;
+		existingTab ?
+			this.state.layoutModel.doAction(FlexLayout.Actions.selectTab(ev.detail.id)) :
+			this.refs.layout.addTabToActiveTabSet(ev.detail);
 	}
 
-	onPanelTypeRepo = ev => {
-		const existingTab = this.state.layoutModel.getNodeById("TypeRepo");
-		existingTab ?
-			this.state.layoutModel.doAction(FlexLayout.Actions.selectTab("TypeRepo")) :
-			this.refs.layout.addTabToActiveTabSet({ component: "TypeRepo", name: "TypeRepo", id: "TypeRepo", config: { text: "i was added" } }, null);
-	}
+	// onPanelTypeRepo = ev => {
+	// 	const existingTab = this.state.layoutModel.getNodeById("TypeRepo");
+	// 	existingTab ?
+	// 		this.state.layoutModel.doAction(FlexLayout.Actions.selectTab("TypeRepo")) :
+	// 		this.refs.layout.addTabToActiveTabSet({ component: "TypeRepo", name: "TypeRepo", id: "TypeRepo", config: { text: "i was added" } }, null);
+	// }
 
 };
 

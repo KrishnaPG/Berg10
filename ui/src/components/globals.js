@@ -9,10 +9,16 @@ export const triggerLogout = () => {
 	gEventBus.dispatchEvent(new Event("logout"));
 }
 
-export const triggerPanelAdd = () => {
-	gEventBus.dispatchEvent(new Event("panel.add"));
+export const triggerPanelAdd = panelSpec => {
+	gEventBus.dispatchEvent(new CustomEvent("panel.add", { bubbles: false, detail: panelSpec }));
 }
 
 export const triggerPanelTypeRepo = () => {
-	gEventBus.dispatchEvent(new Event("panel.show.typeRepo"));
+	triggerPanelAdd({
+		bringToFocus: true,
+		id: "TypeRepo",
+		component: "TypeRepo",
+		name: "TypeRepo",
+		config: { text: "i was added" }
+	});
 }

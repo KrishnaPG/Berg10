@@ -42,3 +42,7 @@ code {
 .fullHeight {
 	height: 100%;
 }
+
+.mr-4 {
+  margin-right: 4px;
+}
