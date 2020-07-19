@@ -5,31 +5,10 @@
 import React, { Suspense } from 'react';
 import { Button, PageHeader, Tabs } from 'antd';
 import { PlusCircleOutlined } from './icons';
+import { triggerPanelAdd } from '../globals';
+import { QueryTable } from './sula';
 
 import './typeRepo.scss';
-
-import { QueryTable } from 'sula';
-
-// Prepare Sula
-import { registerFieldPlugins, registerRenderPlugins, registerActionPlugins, registerFilterPlugins, Icon } from 'sula';
-import { AppstoreOutlined, EditOutlined, UserOutlined } from '@ant-design/icons';
-import { triggerPanelAdd } from '../globals';
-// Register the plugins for Sula
-registerFieldPlugins();
-registerRenderPlugins();
-registerActionPlugins();
-registerFilterPlugins();
-// Register icons for Sula
-Icon.iconRegister({
-	user: UserOutlined,
-	edit: {
-		outlined: EditOutlined,
-	},
-	appStore: {
-		outlined: AppstoreOutlined,
-	},	
-});
-
 
 const { TabPane } = Tabs;
 
@@ -169,16 +148,18 @@ class TypeRepo extends React.Component {
 			// 	</Tabs>
 			// }
 		>
-			<QueryTable className="queryTable"
-				layout="vertical"
-				columns={columns}
-				remoteDataSource={remoteDataSource}
-				// fields={queryFields}
-				rowKey="id"
-				// actionsRender={actions}
-				rowSelection={{}}
-				tableProps={{ scroll: { y: 400 } }}
-			/>
+			<Suspense fallback={<div className="LoadingMsg">Loading the QueryTable...</div>}>
+				<QueryTable className="queryTable"
+					layout="vertical"
+					columns={columns}
+					remoteDataSource={remoteDataSource}
+					// fields={queryFields}
+					rowKey="id"
+					// actionsRender={actions}
+					rowSelection={{}}
+					tableProps={{ scroll: { y: 400 } }}
+				/>
+			</Suspense>
 		</PageHeader>
 
 		// return <Suspense fallback={<div className="LoadingMsg">Loading the Editor...</div>}>

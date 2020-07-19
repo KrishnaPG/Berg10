@@ -7,6 +7,22 @@ import { Button, PageHeader, Tabs } from 'antd';
 import importedComponent from 'react-imported-component';
 import 'jsoneditor-react/es/editor.min.css';
 
+import { CreateForm } from './sula';
+
+const config = {
+	fields: [
+		{
+			name: 'name',
+			label: 'Name',
+			field: 'input',
+		},
+	],
+	submit: {
+		url: 'https : //www.mocky.io/v2/5ed7a8b63200001ad9274ab5',
+		method: 'POST',
+	}
+};
+
 const JsonEditor = importedComponent(() => Promise.all([
 	import(/* webpackChunkName: "jsonEd", webpackPrefetch: true */ 'jsoneditor-react'),
 	import(/* webpackChunkName: "jsonEd", webpackPrefetch: true */ 'brace'),
@@ -50,6 +66,10 @@ class TypeRepoAddNew extends React.Component {
 				</Button>,
 			]}
 		>
+			<Suspense fallback={<div className="LoadingMsg">Loading the CreateForm...</div>}>
+				<CreateForm {...config} />
+			</Suspense>
+
 			<Suspense fallback={<div className="LoadingMsg">Loading the Editor...</div>}>
 				<JsonEditor
 					htmlElementProps={{ className: "json-editor-container" }}
