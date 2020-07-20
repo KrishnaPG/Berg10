@@ -4,8 +4,9 @@
  */
 import React, { Suspense } from 'react';
 import { Button, PageHeader, Tabs } from 'antd';
-import importedComponent from 'react-imported-component';
-import 'jsoneditor-react/es/editor.min.css';
+//import importedComponent from 'react-imported-component';
+
+
 
 import { CreateForm } from './sula';
 
@@ -16,6 +17,10 @@ const config = {
 			label: 'Name',
 			field: 'input',
 		},
+		{
+			name: "json",
+			field: "json"
+		}
 	],
 	submit: {
 		url: 'https : //www.mocky.io/v2/5ed7a8b63200001ad9274ab5',
@@ -23,22 +28,9 @@ const config = {
 	}
 };
 
-const JsonEditor = importedComponent(() => Promise.all([
-	import(/* webpackChunkName: "jsonEd", webpackPrefetch: true */ 'jsoneditor-react'),
-	import(/* webpackChunkName: "jsonEd", webpackPrefetch: true */ 'brace'),
-	import(/* webpackChunkName: "jsonEd", webpackPrefetch: true */ 'brace/mode/json'),
-	import(/* webpackChunkName: "jsonEd", webpackPrefetch: true */ 'brace/theme/github')
-]).then(([{ JsonEditor: Editor }, ace]) => {
-	return function EditorHoc(props) {
-		return (
-			<Editor
-				ace={ace}
-				theme="ace/theme/github"
-				{...props}
-			/>
-		);
-	}
-}), { async: true });
+
+
+
 
 class TypeRepoAddNew extends React.Component {
 
@@ -70,7 +62,7 @@ class TypeRepoAddNew extends React.Component {
 				<CreateForm {...config} />
 			</Suspense>
 
-			<Suspense fallback={<div className="LoadingMsg">Loading the Editor...</div>}>
+			{/* <Suspense fallback={<div className="LoadingMsg">Loading the Editor...</div>}>
 				<JsonEditor
 					htmlElementProps={{ className: "json-editor-container" }}
 					name="Schepe"
@@ -80,7 +72,7 @@ class TypeRepoAddNew extends React.Component {
 					value={{}}
 					onChange={this.handleChange}
 				/>
-			</Suspense>
+			</Suspense> */}
 		</PageHeader>
 	}
 
