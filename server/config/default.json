@@ -13,8 +13,7 @@
 		},
 		"idField": "_id",
 		"keyField": "_key",
-		"rayField": "_rayId",
-		"userTable": "users"
+		"rayField": "_rayId"
 	},
 	"jwt": {
 		"secret": null,

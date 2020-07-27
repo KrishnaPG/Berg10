@@ -21,6 +21,7 @@ const homeController = require('./controllers/home');
 const apiController = require('./controllers/api');
 const contactController = require('./controllers/contact');
 const userController = require('./controllers/user');
+const typedefController = require('./controllers/typedef');
 
 const express = require('express');
 const passportConfig = require('./auth/passport');
@@ -44,6 +45,9 @@ app.get('/api/user', userController.getUserDetails);
 app.get('/api/logout', apiController.logout);
 app.post('/api/login', userController.postLogin);
 app.post('/api/signup', userController.postSignup);
+
+// these use JWT
+app.get('/api/typedef', typedefController.get);
 
 // For oAuth based routes we use Sessions
 app.use(session(Object.assign({}, {

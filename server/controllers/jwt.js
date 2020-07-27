@@ -1,0 +1,26 @@
+/**
+ * Copyright © 2020 Cenacle Research India Private Limited.
+ * All Rights Reserved.
+ */
+
+const { createSigner, createVerifier } = require('fast-jwt');
+const key = config.jwt.secret || (Math.random() * performance.timeOrigin + performance.now()).toString(Math.ceil(Math.random() * 33) + 2); // creates a variable length random string
+const jwtSigner = createSigner(Object.assign({ key, algorithm: 'HS256' }, config.jwt));
+const jwtVerifier = createVerifier(Object.assign({ key, algorithm: 'HS256' }, config.jwt));
+console.log("jwt secret: ", key);
+
+
+function sendJWT(user, req, res) {
+	delete user.password; // do not leak it to the client
+	const jwt = jwtSigner({ email: user.email }); //TODO: customize the token expiration based on user's preference
+	res.send({ jwt, user });
+};
+
+function verifyJWT(req, res, cb) {
+	try {
+		const payload = jwtVerifier((req.headers.authorization || '').replace('Bearer ', ''));
+		cb(payload);
+	} catch (err) {
+		res.status(401).send(RPCError.invalidRequest(err.message));
+	}
+}
