@@ -6,11 +6,12 @@ const { sendJWT, verifyJWT } = require('./jwt');
 const Typedef = require('../models/Typedef');
 
 /**
-* Get /user
-* Returns the full user details and also renews the JWT
+* Get /typedef
+* Returns the type definition for the given query params
 */
-exports.getUserDetails = (req, res, next) => {
+exports.get = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
+		console.log("request: ", req);
 		// Typedef.findOne({ name:  }, (err, existingUser) => {
 		// 	if (err) { return next(err); }
 		// 	existingUser ?

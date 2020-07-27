@@ -2,19 +2,18 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
-const config = require('config');
 const crypto = require('crypto');
 const _ = require('lodash');
 const validator = require('validator');
 const mailChecker = require('mailchecker');
 const nodemailer = require('nodemailer');
 const passport = require('passport');
+
 const User = require('../models/User');
-const { promisify } = require('util');
-const { performance } = require('perf_hooks');
 const { RPCError } = require('../auth/utils');
 const { sendJWT, verifyJWT } = require('./jwt');
 
+const { promisify } = require('util');
 const randomBytesAsync = promisify(crypto.randomBytes);
 
 /**

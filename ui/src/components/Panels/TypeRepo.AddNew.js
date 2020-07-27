@@ -3,6 +3,7 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
+import Axios from 'axios'; 
 import { Button, PageHeader, Tabs } from 'antd';
 //import importedComponent from 'react-imported-component';
 
@@ -52,7 +53,7 @@ class TypeRepoAddNew extends React.Component {
 			title="Type Repository"
 			subTitle=""
 			extra={[
-				<Button key="2">Operation</Button>,
+				<Button key="2" onClick={this.onClick}>Operation</Button>,
 				<Button key="1" type="primary">
 					Primary
 				</Button>,
@@ -79,6 +80,18 @@ class TypeRepoAddNew extends React.Component {
 	handleChange = ev => {
 		console.log("content changed: ", ev);
 	}	
+
+	onClick = ev => {
+		return Axios.get(`http://localhost:8080/api/typedef?name="something"`, { headers: { Authorization: "Bearer " + jwt } })
+			.then(response => {
+				console.log("response: ", response);
+			})
+			.catch(ex => {				
+				if (ex.response && ex.response.data.error)
+					ex.message = ex.response.data.error.message;	// show any payload the server might have returned
+				console.log("exception: ", ex);
+			});		
+	}
 }
 
 export default TypeRepoAddNew;
