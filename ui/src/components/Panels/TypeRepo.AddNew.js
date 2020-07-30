@@ -3,10 +3,8 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
-import Axios from 'axios'; 
 import { Button, PageHeader, Tabs } from 'antd';
-//import importedComponent from 'react-imported-component';
-
+import { gAxios } from '../../globals/axios';
 
 
 import { CreateForm } from './sula';
@@ -82,15 +80,15 @@ class TypeRepoAddNew extends React.Component {
 	}	
 
 	onClick = ev => {
-		return Axios.get(`http://localhost:8080/api/typedef?name="something"`, { headers: { Authorization: "Bearer " + jwt } })
+		return gAxios.get(`typedef?name="something"`)
 			.then(response => {
 				console.log("response: ", response);
 			})
-			.catch(ex => {				
+			.catch(ex => {
 				if (ex.response && ex.response.data.error)
 					ex.message = ex.response.data.error.message;	// show any payload the server might have returned
 				console.log("exception: ", ex);
-			});		
+			});	
 	}
 }
 

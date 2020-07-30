@@ -5,7 +5,7 @@
 import React from 'react';
 import { Avatar, Card, Menu, Button } from 'antd';
 
-import { triggerLogout, triggerPanelAdd, triggerPanelTypeRepo } from './globals';
+import { triggerLogout, triggerPanelAdd, triggerPanelTypeRepo } from '../globals/triggers';
 import "./xplore.scss";
 
 const EditOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/EditOutlined'));

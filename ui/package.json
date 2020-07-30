@@ -14,7 +14,7 @@
     "react-dom": "^16.13.1",
     "react-imported-component": "^6.3.5",
     "react-scripts": "3.4.1",
-    "sula": "1.0.0-alpha.51",
+    "sula": "1.0.0-beta.6",
     "y-indexeddb": "9.0.3",
     "yjs": "^13.2.0"
   },

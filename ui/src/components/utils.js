@@ -26,9 +26,9 @@ function isTokenAlive(decoded) {
 
 // returns the payload if token is parsed correctly, and is not expired
 export function decodeJWT(token) {
-	const base64Url = token.split('.')[1];
-	const base64Str = base64Url.replace('-', '+').replace('_', '/');
 	try {
+		const base64Url = token.split('.')[1];
+		const base64Str = base64Url.replace('-', '+').replace('_', '/');
 		const decoded = JSON.parse(window.atob(base64Str));
 		return isTokenAlive(decoded);
 	} catch (ex) {

@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { Avatar, Card } from 'antd';
-import { triggerLogout } from './globals';
+import { triggerLogout } from '../globals/triggers';
 
 import "./home.scss";
 

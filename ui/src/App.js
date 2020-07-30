@@ -5,7 +5,7 @@
 import React, { Suspense } from 'react';
 import Axios from 'axios'; 
 import debounce from 'lodash/debounce';
-import { gEventBus } from './components/globals';
+import gEventBus from './globals/eventBus';
 import { getMatchingRoute, decodeJWT } from './components/utils';
 import './main.css';
 
@@ -87,7 +87,7 @@ class Main extends React.Component {
 	render() {
 		return this.state.user ?
 			(<Suspense fallback={<div className="LoadingMsg">Loading the Dashboard...</div>}>
-				<Dashboard user={this.state.user}/>
+				<Dashboard user={this.state.user} jwt={this.state.jwt}/>
 			</Suspense>) :
 			(<Suspense fallback={<div className="LoadingMsg">Preparing for Login...</div>}>
 				<LoginUI

@@ -1,9 +1,13 @@
+/**
+ * Copyright © 2020 Cenacle Research India Private Limited.
+ * All Rights Reserved.
+ */
 import React from 'react';
 import FlexLayout from 'flexlayout-react';
 
 import { default as flexFactory, iconFactory } from './flexFactory';
 import defaultLayout from './Layouts/default';
-import { gEventBus } from '../globals';
+import { gAxios, gEventBus } from '../../globals';
 
 class Dashboard extends React.Component {
 
@@ -27,6 +31,11 @@ class Dashboard extends React.Component {
 	componentWillUnmount() {
 		gEventBus.removeEventListener("panel.add", this.onPanelAdd);
 	}	
+	static getDerivedStateFromProps(props, state) {
+		// update the jwt for global axios instance whenever props changed
+		gAxios.defaults.headers.common['Authorization'] = `Bearer ${props.jwt}`;
+		return null;
+	}
 	
 	render() {
 		return <FlexLayout.Layout

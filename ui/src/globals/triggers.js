@@ -2,8 +2,7 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
-
-export const gEventBus = new EventTarget();
+import gEventBus from './eventBus';
 
 export const triggerLogout = () => {
 	gEventBus.dispatchEvent(new Event("logout"));

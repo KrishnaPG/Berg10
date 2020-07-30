@@ -2,8 +2,9 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
-const { sendJWT, verifyJWT } = require('./jwt');
 const Typedef = require('../models/Typedef');
+const { RPCError } = require('../auth/utils');
+const { sendJWT, verifyJWT } = require('./jwt');
 
 /**
 * Get /typedef
@@ -11,7 +12,8 @@ const Typedef = require('../models/Typedef');
 */
 exports.get = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
-		console.log("request: ", req);
+		res.send({ val: "dingbat" }); 
+		//console.log("request: ", req);
 		// Typedef.findOne({ name:  }, (err, existingUser) => {
 		// 	if (err) { return next(err); }
 		// 	existingUser ?
