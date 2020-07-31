@@ -3,16 +3,17 @@
  * All Rights Reserved.
  */
 import React from 'react';
-import { Avatar, Card } from 'antd';
 import { triggerLogout } from '../../globals/triggers';
 
 import "./home.scss";
 
+const Avatar = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/avatar/index'));
+const Card = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/card/index'));
+const Meta = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/card/Meta'));
+
 const EditOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/EditOutlined'));
 const LogoutOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/LogoutOutlined'));
 const SettingOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/SettingOutlined'));
-
-const { Meta } = Card;
 
 class Home extends React.Component {
 

@@ -3,21 +3,25 @@
  * All Rights Reserved.
  */
 import React from 'react';
-import { default as Message } from 'antd/es/message';
-import Button from 'antd/es/button';
-import Form from 'antd/es/form';
-import Input from 'antd/es/input';
-import Row from 'antd/es/row';
-import Col from 'antd/es/col';
-import Spin from 'antd/es/spin';
 import { getMatchingRoute } from '../../globals/utils';
 import './loginUI.scss';
+
+const Button = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/button/button'));
+const Col = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/grid/col'));
+const Form = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/form/Form'));
+const FormItem = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/form/FormItem'));
+const Input = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/input/Input'));
+const InputPassword = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/input/Password'));
+const Message = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/message/index'));
+const Row = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/grid/row'));
+const Spin = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/spin/index'));
 
 const GoogleOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/GoogleOutlined'));
 const LinkedinOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/LinkedinOutlined'));
 const GithubOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/GithubOutlined'));
 const MailOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/MailOutlined'));
 const LockOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/LockOutlined'));
+
 
 class LoginUI extends React.Component {
 
@@ -56,16 +60,16 @@ class LoginUI extends React.Component {
 
 		let RepeatPassword = null;
 		if (this.state.currentMode === 'Signup') {
-			RepeatPassword = <Form.Item
+			RepeatPassword = <FormItem
 				name="confirmPassword"
 				rules={[{ required: true, message: 'Please repeat the Password!' }]}
 			>
-				<Input.Password
+				<InputPassword
 					prefix={<LockOutlined className="site-form-item-icon" />}
 					placeholder="Password"
 					title="Repeat the Password"
 				/>
-			</Form.Item>
+			</FormItem>
 		}
 
 		return (
@@ -79,28 +83,28 @@ class LoginUI extends React.Component {
 							initialValues={{ remember: true }}
 							onFinish={this.handleSubmit}
 						>
-							<Form.Item
+							<FormItem
 								name="email"
 								rules={[{ required: true, message: 'Please enter your eMail!' }]}
 							>
 								<Input prefix={<MailOutlined className="site-form-item-icon" />} placeholder="EMail" title="Enter your EMail"/>
-							</Form.Item>
-							<Form.Item
+							</FormItem>
+							<FormItem
 								name="password"
 								rules={[{ required: true, message: 'Please input your Password!' }]}
 							>
-								<Input.Password
+								<InputPassword
 									prefix={<LockOutlined className="site-form-item-icon" />}
 									placeholder="Password"
 									title="Enter the Password"
 								/>
-							</Form.Item>
+							</FormItem>
 							{RepeatPassword}
-							<Form.Item>
+							<FormItem>
 								<Button type="primary" htmlType="submit" className="login-form-button">
 									{this.state.currentMode}
 								</Button>
-							</Form.Item>
+							</FormItem>
 						</Form>
 						<br />
 						{oAuthLinks}

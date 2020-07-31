@@ -3,11 +3,12 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
-import { Button, PageHeader, Tabs } from 'antd';
+import { CreateForm } from './sula';
 import { gAxios } from '../../../globals/axios';
 
+const Button = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/button/button'));
+const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/page-header/index'));
 
-import { CreateForm } from './sula';
 
 const config = {
 	fields: [

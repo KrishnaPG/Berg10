@@ -32,7 +32,7 @@ class Dashboard extends React.Component {
 	componentWillUnmount() {
 		unSubscribeToEvNotify(this.onNotify);
 		unSubscribeToEvPanelAdd(this.onPanelAdd);
-	}	
+	}
 	static getDerivedStateFromProps(props, state) {
 		// update the jwt for global axios instance whenever props changed
 		gAxios.defaults.headers.common['Authorization'] = `Bearer ${props.jwt}`;

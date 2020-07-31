@@ -3,12 +3,15 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
-import { Button, PageHeader, Tabs } from 'antd';
 import { PlusCircleOutlined } from './icons';
 import { triggerPanelAdd } from '../../../globals/triggers';
 import { QueryTable } from './sula';
 
 import './typeRepo.scss';
+
+const Button = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/button/button'));
+const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/page-header/index'));
+const Tabs = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/tabs/index'));
 
 const { TabPane } = Tabs;
 

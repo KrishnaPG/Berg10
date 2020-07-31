@@ -3,21 +3,21 @@
  * All Rights Reserved.
  */
 import React from 'react';
-import { Card, Menu } from 'antd';
-
 import { triggerLogout, triggerPanelAdd, triggerPanelTypeRepo } from '../../globals/triggers';
+
 import "./xplore.scss";
 
-const EditOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/EditOutlined'));
-const LogoutOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/LogoutOutlined'));
-const SettingOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/SettingOutlined'));
-const AppstoreOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/AppstoreOutlined'));
-const PieChartOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/PieChartOutlined'));
-const DesktopOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/DesktopOutlined'));
-const ContainerOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/ContainerOutlined'));
-const MailOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/MailOutlined'));
+export const Card = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/card/index'));
+export const Menu = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/menu/index'));
+export const MenuItem = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/menu/MenuItem'));
+export const SubMenu = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/menu/SubMenu'));
 
-const { SubMenu } = Menu;
+
+export const EditOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/EditOutlined'));
+export const MailOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/MailOutlined'));
+export const LogoutOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/LogoutOutlined'));
+export const SettingOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/SettingOutlined'));
+
 
 class Xplore extends React.Component {
 
@@ -39,7 +39,7 @@ class Xplore extends React.Component {
 					<SettingOutlined key="setting" />,
 					<EditOutlined key="edit" />,
 					<LogoutOutlined key="logout" title="Logout" onClick={triggerLogout} />,
-					<PieChartOutlined key="chart" />
+					<MailOutlined key="chart" />
 				]}
 			>
 				<Menu
@@ -49,27 +49,27 @@ class Xplore extends React.Component {
 					theme="dark"
 					inlineCollapsed={this.state.collapsed}
 				>
-					<Menu.Item key="1" icon={<PieChartOutlined />} onClick={triggerPanelTypeRepo}>
+					<MenuItem key="1" onClick={triggerPanelTypeRepo}>
 						Type Repo
-          </Menu.Item>
-					<Menu.Item key="2" icon={<DesktopOutlined />} onClick={triggerPanelAdd}>
+          </MenuItem>
+					<MenuItem key="2" onClick={triggerPanelAdd}>
 						Option 2
-          </Menu.Item>
-					<Menu.Item key="3" icon={<ContainerOutlined />} onClick={triggerPanelAdd}>
+          </MenuItem>
+					<MenuItem key="3" onClick={triggerPanelAdd}>
 						Option 3
-          </Menu.Item>
+          </MenuItem>
 					<SubMenu key="sub1" icon={<MailOutlined />} title="Navigation One">
-						<Menu.Item key="5" onClick={triggerPanelAdd}>Option 5</Menu.Item>
-						<Menu.Item key="6" onClick={triggerPanelAdd}>Option 6</Menu.Item>
-						<Menu.Item key="7">Option 7</Menu.Item>
-						<Menu.Item key="8">Option 8</Menu.Item>
+						<MenuItem key="5" onClick={triggerPanelAdd}>Option 5</MenuItem>
+						<MenuItem key="6" onClick={triggerPanelAdd}>Option 6</MenuItem>
+						<MenuItem key="7">Option 7</MenuItem>
+						<MenuItem key="8">Option 8</MenuItem>
 					</SubMenu>
-					<SubMenu key="sub2" icon={<AppstoreOutlined />} title="Navigation Two">
-						<Menu.Item key="9">Option 9</Menu.Item>
-						<Menu.Item key="10">Option 10</Menu.Item>
+					<SubMenu key="sub2" title="Navigation Two">
+						<MenuItem key="9">Option 9</MenuItem>
+						<MenuItem key="10">Option 10</MenuItem>
 						<SubMenu key="sub3" title="Submenu">
-							<Menu.Item key="11">Option 11</Menu.Item>
-							<Menu.Item key="12">Option 12</Menu.Item>
+							<MenuItem key="11">Option 11</MenuItem>
+							<MenuItem key="12">Option 12</MenuItem>
 						</SubMenu>
 					</SubMenu>
 				</Menu>				
