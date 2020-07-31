@@ -5,7 +5,7 @@
 import React, { Suspense } from 'react';
 import { Button, PageHeader, Tabs } from 'antd';
 import { PlusCircleOutlined } from './icons';
-import { triggerPanelAdd } from '../../globals/triggers';
+import { triggerPanelAdd } from '../../../globals/triggers';
 import { QueryTable } from './sula';
 
 import './typeRepo.scss';

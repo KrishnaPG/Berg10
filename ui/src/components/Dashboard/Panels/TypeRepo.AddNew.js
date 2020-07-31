@@ -4,7 +4,7 @@
  */
 import React, { Suspense } from 'react';
 import { Button, PageHeader, Tabs } from 'antd';
-import { gAxios } from '../../globals/axios';
+import { gAxios } from '../../../globals/axios';
 
 
 import { CreateForm } from './sula';

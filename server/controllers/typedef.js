@@ -12,13 +12,11 @@ const { sendJWT, verifyJWT } = require('./jwt');
 */
 exports.get = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
-		res.send({ val: "dingbat" }); 
-		//console.log("request: ", req);
-		// Typedef.findOne({ name:  }, (err, existingUser) => {
-		// 	if (err) { return next(err); }
-		// 	existingUser ?
-		// 		sendJWT(existingUser, req, res) :
-		// 		res.status(404).send(RPCError.invalidRequest(`No user exists with eMail: ${jwtPayload.email}`));
-		// });
+		Typedef.findOne(req.query, (err, typeDef) => {
+			if (err) { return next(err); }
+			typeDef ?
+				res.send(typeDef) :
+				res.status(404).send(RPCError.invalidRequest(`No typeDef record exists for query: ${JSON.stringify(req.query)}`));
+		});
 	});
 };

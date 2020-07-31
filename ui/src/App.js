@@ -3,10 +3,10 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
-import Axios from 'axios'; 
+import Axios from 'axios'; // TODO: remove this to reduce bundle size for loginUI
 import debounce from 'lodash/debounce';
-import gEventBus from './globals/eventBus';
-import { getMatchingRoute, decodeJWT } from './components/utils';
+import { subscribeToEvLogout, unSubscribeToEvLogout } from './globals/eventBus';
+import { getMatchingRoute, decodeJWT } from './globals/utils';
 import './main.css';
 
 const LoginUI = React.lazy(() => import(/* webpackChunkName: "loginUI", webpackPreload: true */ './components/Login/loginUI'));
@@ -71,11 +71,11 @@ class Main extends React.Component {
 
 	componentDidMount() {
 		this._isMounted = true;
-		gEventBus.addEventListener("logout", this.logout);
+		subscribeToEvLogout(this.logout);
 	}
 	componentWillUnmount() {
 		this._isMounted = false;
-		gEventBus.removeEventListener("logout", this.logout);
+		unSubscribeToEvLogout(this.logout);
 		this.props.idbP.destroy(); // close it safely
 	}
 	static getDerivedStateFromProps(props, state) {

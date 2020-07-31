@@ -5,11 +5,15 @@
 import gEventBus from './eventBus';
 
 export const triggerLogout = () => {
-	gEventBus.dispatchEvent(new Event("logout"));
+	gEventBus.dispatchEvent(new Event("ev.logout"));
+}
+
+export const triggerNotify = error => {
+	gEventBus.dispatchEvent(new CustomEvent("ev.notify", { bubbles: false, detail: error }));
 }
 
 export const triggerPanelAdd = panelSpec => {
-	gEventBus.dispatchEvent(new CustomEvent("panel.add", { bubbles: false, detail: panelSpec }));
+	gEventBus.dispatchEvent(new CustomEvent("ev.panel.add", { bubbles: false, detail: panelSpec }));
 }
 
 export const triggerPanelTypeRepo = () => {

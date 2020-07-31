@@ -7,7 +7,7 @@ import FlexLayout from 'flexlayout-react';
 
 import { default as flexFactory, iconFactory } from './flexFactory';
 import defaultLayout from './Layouts/default';
-import { gAxios, gEventBus } from '../../globals';
+import { gAxios, subscribeToEvNotify, unSubscribeToEvNotify, subscribeToEvPanelAdd, unSubscribeToEvPanelAdd } from '../../globals';
 
 class Dashboard extends React.Component {
 
@@ -26,10 +26,12 @@ class Dashboard extends React.Component {
 	}
 
 	componentDidMount() {
-		gEventBus.addEventListener("panel.add", this.onPanelAdd);
+		subscribeToEvPanelAdd(this.onPanelAdd);
+		subscribeToEvNotify(this.onNotify);
 	}
 	componentWillUnmount() {
-		gEventBus.removeEventListener("panel.add", this.onPanelAdd);
+		unSubscribeToEvNotify(this.onNotify);
+		unSubscribeToEvPanelAdd(this.onPanelAdd);
 	}	
 	static getDerivedStateFromProps(props, state) {
 		// update the jwt for global axios instance whenever props changed
@@ -49,6 +51,10 @@ class Dashboard extends React.Component {
 
 	onModelChange = ev => {
 		// console.log("model changed: ", ev);
+	}
+
+	onNotify = ev => {
+
 	}
 
 	onPanelAdd = ev => {

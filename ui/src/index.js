@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom';
 import * as serviceWorker from './serviceWorker';
-import { idbP, lastSession } from './components/store';
+import { idbP, lastSession } from './globals/store';
 
 const App = React.lazy(() => import(/* webpackChunkName: "App", webpackPreload: true */ './App'));
 

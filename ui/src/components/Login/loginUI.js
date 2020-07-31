@@ -3,8 +3,14 @@
  * All Rights Reserved.
  */
 import React from 'react';
-import { message as Message, Button, Form, Input, Row, Col, Spin } from 'antd';
-import { getMatchingRoute } from '../utils';
+import { default as Message } from 'antd/es/message';
+import Button from 'antd/es/button';
+import Form from 'antd/es/form';
+import Input from 'antd/es/input';
+import Row from 'antd/es/row';
+import Col from 'antd/es/col';
+import Spin from 'antd/es/spin';
+import { getMatchingRoute } from '../../globals/utils';
 import './loginUI.scss';
 
 const GoogleOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/GoogleOutlined'));
@@ -18,7 +24,7 @@ class LoginUI extends React.Component {
 	constructor(props) {
 		super(props);		
 		// configure the error message display options
-		Message.config({ maxCount: 2, duration: 2 });
+		// Message.config({ maxCount: 2, duration: 2 });
 
 		// check if we received an oAuth Error result
 		const [oAuthErr] = getMatchingRoute(window.location, "Err");
