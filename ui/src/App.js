@@ -3,14 +3,16 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
+import { saveSession, clearSession, closeYDB } from './globals/store';
 import Axios from 'axios'; // TODO: remove this to reduce bundle size for loginUI
 import debounce from 'lodash/debounce';
 import { subscribeToEvLogout, unSubscribeToEvLogout } from './globals/eventBus';
 import { getMatchingRoute, decodeJWT } from './globals/utils';
 import './main.css';
 
-const LoginUI = React.lazy(() => import(/* webpackChunkName: "loginUI", webpackPreload: true */ './components/Login/loginUI'));
+const LoginUI = React.lazy(() => import(/* webpackChunkName: "loginUI", webpackPrefetch: true */ './components/Login/loginUI'));
 const Dashboard = React.lazy(() => import(/* webpackChunkName: "dashboard", webpackPrefetch: true */ './components/Dashboard/dashboard'));
+
 
 class Main extends React.Component {
 
@@ -27,7 +29,7 @@ class Main extends React.Component {
 			_debouncedSave: debounce(() => {
 				console.log("saving state");
 				// save the session details to local storage
-				props.idbP.set({ user: this.state.user, jwt: this.state.jwt }, "lastSession");
+				saveSession({ user: this.state.user, jwt: this.state.jwt });
 			}, 1500)
 		};
 
@@ -41,7 +43,7 @@ class Main extends React.Component {
 			this.refreshUserDetails(token);
 		} else {
 			// check if we have a pre-existing token in storage
-			props.lastSession.then(session => {
+			props.lastSession.then(session => { console.log("last session is ready")
 				// if no old session exists, nothing to do
 				if (!session) return this.safeSetState({ isAuthInProgress: false });
 				const { jwt, user } = session;
@@ -76,7 +78,7 @@ class Main extends React.Component {
 	componentWillUnmount() {
 		this._isMounted = false;
 		unSubscribeToEvLogout(this.logout);
-		this.props.idbP.destroy(); // close it safely
+		closeYDB(); // close it safely
 	}
 	static getDerivedStateFromProps(props, state) {
 		// either props or the state has changed - trigger a session save
@@ -131,7 +133,7 @@ class Main extends React.Component {
 	logout = () => {
 		if (this.state.jwt)
 			Axios.get('http://localhost:8080/api/logout', { headers: { Authorization: "Bearer " + this.state.jwt } });
-		this.setState({ user: null, jwt: null, isAuthInProgress: false }, () => this.props.idbP.del("lastSession"));
+		this.setState({ user: null, jwt: null, isAuthInProgress: false }, clearSession);
 	}
 }
 

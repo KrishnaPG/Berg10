@@ -16,11 +16,11 @@ const Message = React.lazy(() => import(/* webpackChunkName: "antLogin", webpack
 const Row = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/grid/row'));
 const Spin = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/spin/index'));
 
-const GoogleOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/GoogleOutlined'));
-const LinkedinOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/LinkedinOutlined'));
-const GithubOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/GithubOutlined'));
-const MailOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/MailOutlined'));
-const LockOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/LockOutlined'));
+const GoogleOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPreload: true */ '@ant-design/icons/GoogleOutlined'));
+const LinkedinOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPreload: true */ '@ant-design/icons/LinkedinOutlined'));
+const GithubOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPreload: true */ '@ant-design/icons/GithubOutlined'));
+const MailOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPreload: true */ '@ant-design/icons/MailOutlined'));
+const LockOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPreload: true */ '@ant-design/icons/LockOutlined'));
 
 
 class LoginUI extends React.Component {

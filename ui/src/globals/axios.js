@@ -3,7 +3,7 @@
  * All Rights Reserved.
  */
 import Axios from 'axios';
-import { triggerLogout, triggerNotify } from './triggers';
+import { triggerLogout, triggerNotifyError, triggerNotifyWarning } from './triggers';
 
 export const gAxios = Axios.create({
 	baseURL: "http://localhost:8089/api/",
@@ -19,11 +19,11 @@ gAxios.interceptors.response.use(null, error => {
 		}
 		// 403 is unAuthorized. We just have to notify the user that they do not have permission.
 		// We do NOT trigger login for the 403 or other errors such as 404
-		triggerNotify(error.response.data.error);
+		triggerNotifyError(error.response.data.error);
 	}
 	else {
 		// some network error, or server did not respond
-		triggerNotify(error);
+		triggerNotifyWarning({ message: (error.message || error), description: (error.description || error.config.url)});
 	}
 	return Promise.reject(error);
 });

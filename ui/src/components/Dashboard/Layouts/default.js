@@ -33,6 +33,12 @@ export default {
 				{
 					"type": "tab",
 					"enableClose": false,
+					"name": "Notifications",
+					"component": "Notifications"
+				},				
+				{
+					"type": "tab",
+					"enableClose": false,
 					"name": "Activity Blotter",
 					"component": "grid"
 				},

@@ -8,8 +8,11 @@ export const triggerLogout = () => {
 	gEventBus.dispatchEvent(new Event("ev.logout"));
 }
 
-export const triggerNotify = error => {
-	gEventBus.dispatchEvent(new CustomEvent("ev.notify", { bubbles: false, detail: error }));
+export const triggerNotifyError = error => {
+	gEventBus.dispatchEvent(new CustomEvent("ev.notify.error", { bubbles: false, detail: error }));
+}
+export const triggerNotifyWarning = warning => {
+	gEventBus.dispatchEvent(new CustomEvent("ev.notify.warning", { bubbles: false, detail: warning }));
 }
 
 export const triggerPanelAdd = panelSpec => {

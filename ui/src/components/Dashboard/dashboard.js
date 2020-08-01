@@ -7,7 +7,18 @@ import FlexLayout from 'flexlayout-react';
 
 import { default as flexFactory, iconFactory } from './flexFactory';
 import defaultLayout from './Layouts/default';
-import { gAxios, subscribeToEvNotify, unSubscribeToEvNotify, subscribeToEvPanelAdd, unSubscribeToEvPanelAdd } from '../../globals';
+import {
+	gAxios,
+
+	subscribeToEvNotifyWarning,
+	unSubscribeToEvNotifyWarning,
+
+	subscribeToEvNotifyError,
+	unSubscribeToEvNotifyError,
+
+	subscribeToEvPanelAdd,
+	unSubscribeToEvPanelAdd
+} from '../../globals';
 
 class Dashboard extends React.Component {
 
@@ -16,6 +27,7 @@ class Dashboard extends React.Component {
 		this.state = {
 			layoutModel: null
 		};
+		// Load the FlexLayout from props
 		try {
 			this.state.layoutModel = FlexLayout.Model.fromJson(props.layoutJSON || defaultLayout);
 		} catch (ex) {
@@ -23,15 +35,23 @@ class Dashboard extends React.Component {
 			// happens if props.layoutJSON is corrupt (non-empty or invalid layout format etc.)
 			this.state.layoutModel = FlexLayout.Model.fromJson(defaultLayout);
 		}
+		// Lazy load the notifications module
+		import(/* webpackChunkName: "antd-notify" */ 'antd/es/notification/index').then(module => {
+			this.notification = module.default;
+			subscribeToEvNotifyError(this.onNotifyError);
+			subscribeToEvNotifyWarning(this.onNotifyWarning);
+			// when component is remounted, we need to resubscribe again. But
+			// will components remount without getting destructed and reconstructed?
+		});
 	}
 
 	componentDidMount() {
 		subscribeToEvPanelAdd(this.onPanelAdd);
-		subscribeToEvNotify(this.onNotify);
 	}
 	componentWillUnmount() {
-		unSubscribeToEvNotify(this.onNotify);
 		unSubscribeToEvPanelAdd(this.onPanelAdd);
+		unSubscribeToEvNotifyError(this.onNotifyError);
+		unSubscribeToEvNotifyWarning(this.onNotifyWarning);
 	}
 	static getDerivedStateFromProps(props, state) {
 		// update the jwt for global axios instance whenever props changed
@@ -53,15 +73,19 @@ class Dashboard extends React.Component {
 		// console.log("model changed: ", ev);
 	}
 
-	onNotify = ev => {
-
-	}
-
 	onPanelAdd = ev => {
 		const existingTab = ev.detail.bringToFocus ? this.state.layoutModel.getNodeById(ev.detail.id) : null;
 		existingTab ?
 			this.state.layoutModel.doAction(FlexLayout.Actions.selectTab(ev.detail.id)) :
 			this.refs.layout.addTabToActiveTabSet(ev.detail);
+	}
+
+	onNotifyWarning = ev => {
+		this.notification.warning({ placement: "bottomRight", ...ev.detail });
+	}
+
+	onNotifyError = ev => {
+		this.notification.error({ placement: "bottomRight", ...ev.detail });
 	}
 
 	// onPanelTypeRepo = ev => {

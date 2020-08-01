@@ -9,7 +9,7 @@ import { QueryTable } from './sula';
 
 import './typeRepo.scss';
 
-const Button = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/button/button'));
+const Button = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/button/button'));
 const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/page-header/index'));
 const Tabs = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/tabs/index'));
 

@@ -1,13 +1,13 @@
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom';
+import { lastSession } from './globals/store';
 import * as serviceWorker from './serviceWorker';
-import { idbP, lastSession } from './globals/store';
 
 const App = React.lazy(() => import(/* webpackChunkName: "App", webpackPreload: true */ './App'));
 
 ReactDOM.render(
   <Suspense fallback={<div className="LoadingMsg">Initializing the application...</div>}>
-    <App idbP={idbP} lastSession={lastSession} />
+    <App lastSession={lastSession} />
   </Suspense>,
   document.getElementById('root')
 );

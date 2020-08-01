@@ -6,7 +6,7 @@ import React, { Suspense } from 'react';
 import { CreateForm } from './sula';
 import { gAxios } from '../../../globals/axios';
 
-const Button = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/button/button'));
+const Button = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/button/button'));
 const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/page-header/index'));
 
 

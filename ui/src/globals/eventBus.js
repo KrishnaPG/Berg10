@@ -15,12 +15,20 @@ export function unSubscribeToEvLogout(fn) {
 	gEventBus.removeEventListener("ev.logout", fn);
 }
 
-// Notify
-export function subscribeToEvNotify(fn) {
-	gEventBus.addEventListener("ev.notify", fn);
+// Notify Error
+export function subscribeToEvNotifyError(fn) {
+	gEventBus.addEventListener("ev.notify.error", fn);
 }
-export function unSubscribeToEvNotify(fn) {
-	gEventBus.removeEventListener("ev.notify", fn);
+export function unSubscribeToEvNotifyError(fn) {
+	gEventBus.removeEventListener("ev.notify.error", fn);
+}
+
+// Notify Warning
+export function subscribeToEvNotifyWarning(fn) {
+	gEventBus.addEventListener("ev.notify.warning", fn);
+}
+export function unSubscribeToEvNotifyWarning(fn) {
+	gEventBus.removeEventListener("ev.notify.warning", fn);
 }
 
 // Panel Add

@@ -3,16 +3,36 @@
  * All Rights Reserved.
  */
 
-import { Doc } from 'yjs';
-import { IndexeddbPersistence } from 'y-indexeddb';
+let yDoc = null;
+let idbP = null;
 
-export const yDoc = new Doc();
+function init() {
+	return Promise.all([
+		import(/* webpackChunkName: "yJS", webpackPreload: true */ 'yjs'),
+		import(/* webpackChunkName: "yIDB", webpackPreload: true */ 'y-indexeddb')
+	]).then(([yJS, yIDB]) => {
+		yDoc = new yJS.Doc();
+		idbP = new yIDB.IndexeddbPersistence('Berg10', yDoc);
+		idbP.whenSynced.then(() => {
+			console.log('loaded data from indexed db');
+		});
+		return yDoc;
+	});
+}
 
-export const idbP = new IndexeddbPersistence('Berg10', yDoc);
-idbP.whenSynced.then(() => {
-	console.log('loaded data from indexed db');
-});
+export const lastSession = init().then(() => idbP.get("lastSession"));
 
-export const lastSession = idbP.get("lastSession");
+export function saveSession(sessionData) {
+	// save the session details to local storage
+	idbP.set(sessionData, "lastSession");
+}
 
-export default yDoc;
+export function clearSession() {
+	// delete the session details from the storage
+	idbP.del("lastSession");
+}
+
+export function closeYDB() {
+	// safely close the db access
+	idbP.destroy();
+}

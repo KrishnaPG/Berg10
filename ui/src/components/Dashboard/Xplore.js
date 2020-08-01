@@ -3,20 +3,20 @@
  * All Rights Reserved.
  */
 import React from 'react';
-import { triggerLogout, triggerPanelAdd, triggerPanelTypeRepo } from '../../globals/triggers';
+import { triggerLogout, triggerPanelAdd, triggerPanelTypeRepo, triggerNotifyWarning, triggerNotifyError } from '../../globals/triggers';
 
 import "./xplore.scss";
 
-export const Card = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/card/index'));
-export const Menu = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/menu/index'));
-export const MenuItem = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/menu/MenuItem'));
-export const SubMenu = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/menu/SubMenu'));
+const Card = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/card/index'));
+const Menu = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/menu/index'));
+const MenuItem = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/menu/MenuItem'));
+const SubMenu = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/lib/menu/SubMenu'));
 
 
-export const EditOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/EditOutlined'));
-export const MailOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/MailOutlined'));
-export const LogoutOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/LogoutOutlined'));
-export const SettingOutlined = React.lazy(() => import(/* webpackChunkName: "antIcons", webpackPreload: true */ '@ant-design/icons/SettingOutlined'));
+const EditOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/EditOutlined'));
+const MailOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/MailOutlined'));
+const LogoutOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/LogoutOutlined'));
+const SettingOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/SettingOutlined'));
 
 
 class Xplore extends React.Component {
@@ -59,10 +59,10 @@ class Xplore extends React.Component {
 						Option 3
           </MenuItem>
 					<SubMenu key="sub1" icon={<MailOutlined />} title="Navigation One">
-						<MenuItem key="5" onClick={triggerPanelAdd}>Option 5</MenuItem>
-						<MenuItem key="6" onClick={triggerPanelAdd}>Option 6</MenuItem>
-						<MenuItem key="7">Option 7</MenuItem>
-						<MenuItem key="8">Option 8</MenuItem>
+						<MenuItem key="5" onClick={ev => triggerNotifyWarning({ message: "Option 5" })}>Option 5</MenuItem>
+						<MenuItem key="6" onClick={ev => triggerNotifyWarning({ message: "Option 6" }) }>Option 6</MenuItem>
+						<MenuItem key="7" onClick={ev => triggerNotifyError({ message: "error7" }) }>Option 7</MenuItem>
+						<MenuItem key="8" onClick={ev => triggerNotifyError({ message: "error8" })}>Option 8</MenuItem>
 					</SubMenu>
 					<SubMenu key="sub2" title="Navigation Two">
 						<MenuItem key="9">Option 9</MenuItem>
@@ -72,7 +72,7 @@ class Xplore extends React.Component {
 							<MenuItem key="12">Option 12</MenuItem>
 						</SubMenu>
 					</SubMenu>
-				</Menu>				
+				</Menu>
 			</Card>
 		);
 	}
