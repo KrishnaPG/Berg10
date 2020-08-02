@@ -27,3 +27,12 @@ gAxios.interceptors.response.use(null, error => {
 	}
 	return Promise.reject(error);
 });
+
+
+export function setAxiosAuthBearer(token) {
+	gAxios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
+
+export function getTypeDef() {
+
+}

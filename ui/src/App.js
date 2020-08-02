@@ -4,7 +4,7 @@
  */
 import React, { Suspense } from 'react';
 import { saveSession, clearSession, closeYDB } from './globals/store';
-import Axios from 'axios'; // TODO: remove this to reduce bundle size for loginUI
+import Axios from 'axios';
 import debounce from 'lodash/debounce';
 import { subscribeToEvLogout, unSubscribeToEvLogout } from './globals/eventBus';
 import { getMatchingRoute, decodeJWT } from './globals/utils';

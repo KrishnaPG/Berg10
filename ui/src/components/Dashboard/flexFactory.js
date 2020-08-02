@@ -5,11 +5,11 @@
 import React, { Suspense } from 'react';
 import "./sidebar-card.scss";
 
-const Home = React.lazy(() => import(/* webpackChunkName: "fl-home", webpackPrefetch: true */ './Home'));
-const Notifications = React.lazy(() => import(/* webpackChunkName: "fl-notify", webpackPrefetch: true */ './Notifications'));
-const TypeRepo = React.lazy(() => import(/* webpackChunkName: "fl-typeRepo", webpackPrefetch: true */ './Panels/TypeRepo'));
-const TypeRepoAddNew = React.lazy(() => import(/* webpackChunkName: "fl-typeRepoAddNew", webpackPrefetch: true */ './Panels/TypeRepo.AddNew'));
-const Xplore = React.lazy(() => import(/* webpackChunkName: "fl-xplore", webpackPrefetch: true */ './Xplore'));
+const Home = React.lazy(() => import(/* webpackChunkName: "fl-home", webpackPreload: true */ './Home'));
+const Notifications = React.lazy(() => import(/* webpackChunkName: "fl-notify", webpackPreload: true */ './Notifications'));
+const TypeRepo = React.lazy(() => import(/* webpackChunkName: "fl-typeRepo", webpackPreload: true */ './Panels/TypeRepo'));
+const TypeRepoAddNew = React.lazy(() => import(/* webpackChunkName: "fl-typeRepoAddNew", webpackPreload: true */ './Panels/TypeRepo.AddNew'));
+const Xplore = React.lazy(() => import(/* webpackChunkName: "fl-xplore", webpackPreload: true */ './Xplore'));
 
 
 const componentMap = {

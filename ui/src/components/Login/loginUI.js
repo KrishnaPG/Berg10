@@ -6,21 +6,21 @@ import React from 'react';
 import { getMatchingRoute } from '../../globals/utils';
 import './loginUI.scss';
 
-const Button = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/button/button'));
-const Col = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/grid/col'));
-const Form = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/form/Form'));
-const FormItem = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/form/FormItem'));
-const Input = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/input/Input'));
-const InputPassword = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/input/Password'));
-const Message = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/message/index'));
-const Row = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/grid/row'));
-const Spin = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPreload: true */ 'antd/lib/spin/index'));
+const Button = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/button/button'));
+const Col = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/grid/col'));
+const Form = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/form/Form'));
+const FormItem = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/form/FormItem'));
+const Input = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/input/Input'));
+const InputPassword = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/input/Password'));
+const Message = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/message/index'));
+const Row = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/grid/row'));
+const Spin = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/spin/index'));
 
-const GoogleOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPreload: true */ '@ant-design/icons/GoogleOutlined'));
-const LinkedinOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPreload: true */ '@ant-design/icons/LinkedinOutlined'));
-const GithubOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPreload: true */ '@ant-design/icons/GithubOutlined'));
-const MailOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPreload: true */ '@ant-design/icons/MailOutlined'));
-const LockOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPreload: true */ '@ant-design/icons/LockOutlined'));
+const GoogleOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPrefetch: true */ '@ant-design/icons/GoogleOutlined'));
+const LinkedinOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPrefetch: true */ '@ant-design/icons/LinkedinOutlined'));
+const GithubOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPrefetch: true */ '@ant-design/icons/GithubOutlined'));
+const MailOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPrefetch: true */ '@ant-design/icons/MailOutlined'));
+const LockOutlined = React.lazy(() => import(/* webpackChunkName: "loginIcons", webpackPrefetch: true */ '@ant-design/icons/LockOutlined'));
 
 
 class LoginUI extends React.Component {

@@ -8,7 +8,7 @@ import FlexLayout from 'flexlayout-react';
 import { default as flexFactory, iconFactory } from './flexFactory';
 import defaultLayout from './Layouts/default';
 import {
-	gAxios,
+	setAxiosAuthBearer,
 
 	subscribeToEvNotifyWarning,
 	unSubscribeToEvNotifyWarning,
@@ -55,7 +55,7 @@ class Dashboard extends React.Component {
 	}
 	static getDerivedStateFromProps(props, state) {
 		// update the jwt for global axios instance whenever props changed
-		gAxios.defaults.headers.common['Authorization'] = `Bearer ${props.jwt}`;
+		setAxiosAuthBearer(props.jwt);
 		return null;
 	}
 	
