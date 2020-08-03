@@ -16,7 +16,7 @@ exports.get = (req, res, next) => {
 			if (err) { return next(err); }
 			typeDef ?
 				res.send(typeDef) :
-				res.status(404).send(RPCError.invalidRequest(`No typeDef record exists for query: ${JSON.stringify(req.query)}`));
+				res.status(404).send(RPCError.notFound(`No typeDef record exists for the query:\n ${JSON.stringify(req.query, null, " ")}`));
 		});
 	});
 };

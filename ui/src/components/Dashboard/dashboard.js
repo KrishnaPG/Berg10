@@ -81,11 +81,19 @@ class Dashboard extends React.Component {
 	}
 
 	onNotifyWarning = ev => {
-		this.notification.warning({ placement: "bottomRight", ...ev.detail });
+		this.notification.warning({ placement: "bottomRight", ...this.jsonErrorToNotifyObj(ev.detail) });
 	}
 
 	onNotifyError = ev => {
-		this.notification.error({ placement: "bottomRight", ...ev.detail });
+		this.notification.error({ placement: "bottomRight", ...this.jsonErrorToNotifyObj(ev.detail) });
+	}
+
+	jsonErrorToNotifyObj(error) {
+		const title = "message", message = "description";// AntD has this weird convention
+		return {
+			[title]: error.title || error.message || error,
+			[message]: (error.title ? error.message : error.description)
+		}
 	}
 
 	// onPanelTypeRepo = ev => {

@@ -7,6 +7,7 @@ import "./sidebar-card.scss";
 
 const Home = React.lazy(() => import(/* webpackChunkName: "fl-home", webpackPreload: true */ './Home'));
 const Notifications = React.lazy(() => import(/* webpackChunkName: "fl-notify", webpackPreload: true */ './Notifications'));
+const Settings = React.lazy(() => import(/* webpackChunkName: "fl-settings", webpackPreload: true */ './Settings'));
 const TypeRepo = React.lazy(() => import(/* webpackChunkName: "fl-typeRepo", webpackPreload: true */ './Panels/TypeRepo'));
 const TypeRepoAddNew = React.lazy(() => import(/* webpackChunkName: "fl-typeRepoAddNew", webpackPreload: true */ './Panels/TypeRepo.AddNew'));
 const Xplore = React.lazy(() => import(/* webpackChunkName: "fl-xplore", webpackPreload: true */ './Xplore'));
@@ -15,6 +16,7 @@ const Xplore = React.lazy(() => import(/* webpackChunkName: "fl-xplore", webpack
 const componentMap = {
 	"Home": () => <Suspense fallback={<div className="LoadingMsg">Loading the Home...</div>}><Home></Home></Suspense>,
 	"Notifications": () => <Suspense fallback={<div className="LoadingMsg">Loading the Notifications...</div>}><Notifications></Notifications></Suspense>,
+	"Settings": () => <Suspense fallback={<div className="LoadingMsg">Loading the Settings...</div>}><Settings></Settings></Suspense>,
 	"TypeRepo": () => <Suspense fallback={<div className="LoadingMsg">Loading the TypeRepo...</div>}><TypeRepo></TypeRepo></Suspense>,
 	"TypeRepo.AddNew": node => <Suspense fallback={<div className="LoadingMsg">Loading the TypeRepo.AddNew...</div>}><TypeRepoAddNew node={node}></TypeRepoAddNew></Suspense>,
 	"Xplore": () => <Suspense fallback={<div className="LoadingMsg">Loading the Xplore...</div>}><Xplore></Xplore></Suspense>,

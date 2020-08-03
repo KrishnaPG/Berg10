@@ -81,7 +81,7 @@ exports.getUserDetails = (req, res, next) => {
       if (err) { return next(err); }
       existingUser ?
         sendJWT(existingUser, req, res) :
-        res.status(404).send(RPCError.invalidRequest(`No user exists with eMail: ${jwtPayload.email}`));
+        res.status(404).send(RPCError.notFound(`No user exists with eMail: ${jwtPayload.email}`));
     });
   });
 };

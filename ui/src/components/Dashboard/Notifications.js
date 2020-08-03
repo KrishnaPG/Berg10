@@ -3,27 +3,42 @@
  * All Rights Reserved.
  */
 import React from 'react';
-import { subscribeToEvNotifyError, unSubscribeToEvNotifyError, subscribeToEvNotifyWarning, unSubscribeToEvNotifyWarning } from '../../globals/eventBus';
+import gEventLog from '../../globals/log';
+import {
+	subscribeToEvNotifyWarning,
+	unSubscribeToEvNotifyWarning,
+	subscribeToEvNotifyError,
+	unSubscribeToEvNotifyError,
+} from '../../globals';
 
 class Notify extends React.Component {
 
 	constructor(props) {
 		super(props);
-		this.state = {};
-
 	}
 
 	componentDidMount() {
+		subscribeToEvNotifyError(this.onNotification);
+		subscribeToEvNotifyWarning(this.onNotification);
 	}
 	componentWillUnmount() {
+		unSubscribeToEvNotifyError(this.onNotification);
+		unSubscribeToEvNotifyWarning(this.onNotification);
 	}
 
 	render() {
-		return (
-			<h1>Notify</h1>
+		return (<>
+			<h2>Notification Log</h2>
+		<ul>
+			{
+					gEventLog.map((obj, index) => (<li key={index}>{obj.title}: {obj.message}</li>))
+				}
+			</ul>
+			</>
 		);
 	}
 
+	onNotification = () => this.forceUpdate()
 
 };
 

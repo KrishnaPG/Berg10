@@ -11,7 +11,7 @@ import { getMatchingRoute, decodeJWT } from './globals/utils';
 import './main.css';
 
 const LoginUI = React.lazy(() => import(/* webpackChunkName: "loginUI", webpackPrefetch: true */ './components/Login/loginUI'));
-const Dashboard = React.lazy(() => import(/* webpackChunkName: "dashboard", webpackPrefetch: true */ './components/Dashboard/dashboard'));
+const Dashboard = React.lazy(() => import(/* webpackChunkName: "dashboard", webpackPrelooad: true */ './components/Dashboard/dashboard'));
 
 
 class Main extends React.Component {

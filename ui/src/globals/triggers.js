@@ -3,15 +3,18 @@
  * All Rights Reserved.
  */
 import gEventBus from './eventBus';
+import { logEvent } from './log';
 
 export const triggerLogout = () => {
 	gEventBus.dispatchEvent(new Event("ev.logout"));
 }
 
 export const triggerNotifyError = error => {
+	logEvent({ t: performance.now(), type: "warning", ...error });
 	gEventBus.dispatchEvent(new CustomEvent("ev.notify.error", { bubbles: false, detail: error }));
 }
 export const triggerNotifyWarning = warning => {
+	logEvent({ t: performance.now(), type: "error", ...warning });
 	gEventBus.dispatchEvent(new CustomEvent("ev.notify.warning", { bubbles: false, detail: warning }));
 }
 

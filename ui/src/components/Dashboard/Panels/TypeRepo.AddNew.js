@@ -4,7 +4,7 @@
  */
 import React, { Suspense } from 'react';
 import { CreateForm } from './sula';
-//import { gAxios } from '../../../globals/axios';
+import { getTypeDef } from '../../../globals/axios';
 
 const Button = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/button/button'));
 const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/page-header/index'));
@@ -80,16 +80,8 @@ class TypeRepoAddNew extends React.Component {
 		console.log("content changed: ", ev);
 	}	
 
-	onClick = ev => {
-		// return gAxios.get(`typedef?name="something"`)
-		// 	.then(response => {
-		// 		console.log("response: ", response);
-		// 	})
-		// 	.catch(ex => {
-		// 		if (ex.response && ex.response.data.error)
-		// 			ex.message = ex.response.data.error.message;	// show any payload the server might have returned
-		// 		console.log("exception: ", ex);
-		// 	});	
+	onClick = ev => {		
+		getTypeDef()
 	}
 }
 

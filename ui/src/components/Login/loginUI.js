@@ -5,6 +5,7 @@
 import React from 'react';
 import { getMatchingRoute } from '../../globals/utils';
 import './loginUI.scss';
+import Message from 'antd/lib/message/index';
 
 const Button = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/button/button'));
 const Col = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/grid/col'));
@@ -12,7 +13,6 @@ const Form = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPre
 const FormItem = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/form/FormItem'));
 const Input = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/input/Input'));
 const InputPassword = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/input/Password'));
-const Message = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/message/index'));
 const Row = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/grid/row'));
 const Spin = React.lazy(() => import(/* webpackChunkName: "antLogin", webpackPrefetch: true */ 'antd/lib/spin/index'));
 
@@ -28,7 +28,7 @@ class LoginUI extends React.Component {
 	constructor(props) {
 		super(props);		
 		// configure the error message display options
-		// Message.config({ maxCount: 2, duration: 2 });
+		Message.config({ maxCount: 2, duration: 2 });
 
 		// check if we received an oAuth Error result
 		const [oAuthErr] = getMatchingRoute(window.location, "Err");
