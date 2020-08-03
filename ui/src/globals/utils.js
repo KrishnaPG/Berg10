@@ -35,3 +35,13 @@ export function decodeJWT(token) {
 		return null;
 	}
 }
+
+export function safeParse(jsonStr) {
+	try {
+		return JSON.parse(jsonStr);
+	}
+	catch (ex) {
+		console.error("JSON.parse failed for: " + jsonStr);
+	}
+	return null;
+}

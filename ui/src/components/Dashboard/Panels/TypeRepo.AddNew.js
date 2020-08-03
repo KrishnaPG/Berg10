@@ -5,6 +5,7 @@
 import React, { Suspense } from 'react';
 import { CreateForm } from './sula';
 import { getTypeDef } from '../../../globals/axios';
+import { safeParse } from '../../../globals/utils';
 
 const Button = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/button/button'));
 const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/page-header/index'));
@@ -36,7 +37,15 @@ class TypeRepoAddNew extends React.Component {
 
 	constructor(props) {
 		super(props);
-		this.state = {}; console.log("typereportadd new: ", props);
+		this.state = {
+			editConfig: {
+				fields: [],
+				submit: {
+					url: 'https : //www.mocky.io/v2/5ed7a8b63200001ad9274ab5',
+					method: 'POST',
+				}
+			}
+		};
 	}
 
 	componentDidMount() {
@@ -59,7 +68,7 @@ class TypeRepoAddNew extends React.Component {
 			]}
 		>
 			<Suspense fallback={<div className="LoadingMsg">Loading the CreateForm...</div>}>
-				<CreateForm {...config} />
+				<CreateForm {...this.state.editConfig} />
 			</Suspense>
 
 			{/* <Suspense fallback={<div className="LoadingMsg">Loading the Editor...</div>}>
@@ -80,8 +89,30 @@ class TypeRepoAddNew extends React.Component {
 		console.log("content changed: ", ev);
 	}	
 
-	onClick = ev => {		
-		getTypeDef()
+	onClick = ev => {
+		const controlMap = {
+			"string": { field: "input" },
+			"json": { field: "json" },
+			"boolean": {
+				field: "switch",
+				valuePropName: "checked"
+			}
+		};
+		getTypeDef().then(typedef => {
+			// convert typedef.schema to fields definition
+			const schema = safeParse(typedef.schema);
+			const fields = Object.keys(schema).map(key => ({ name: key, label: key, ...controlMap[schema[key].type] }));
+			console.log("typedef: ", typedef, " fields: ", fields, " fields: ", JSON.stringify(fields));
+			this.setState({
+				editConfig: {
+					fields,
+					submit: {
+						url: 'https : //www.mocky.io/v2/5ed7a8b63200001ad9274ab5',
+						method: 'POST',
+					}
+				}
+			})
+		});
 	}
 }
 

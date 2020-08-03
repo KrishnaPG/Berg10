@@ -35,13 +35,5 @@ export function setAxiosAuthBearer(token) {
 }
 
 export function getTypeDef() {
-	return gAxios.get(`typedef?name=schepe`)
-		.then(response => {
-			console.log("response: ", response);
-		})
-		.catch(ex => {
-			if (ex.response && ex.response.data.error)
-				ex.message = ex.response.data.error.message;	// show any payload the server might have returned
-			console.log("exception: ", ex);
-		});
+	return gAxios.get(`typedef?name=schepe`).then(response => response.data);
 }

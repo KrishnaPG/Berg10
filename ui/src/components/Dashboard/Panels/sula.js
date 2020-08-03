@@ -29,7 +29,8 @@ const JsonEditor = imported(() => Promise.all([
 }), { async: true });
 
 function CustomInput(props) {
-	if (props.ctx) {
+	console.log("custom input: ", props);
+	if (props.ctx || !props.ctx) {
 		const { config = {}, ctx } = props;
 		return <Suspense fallback={<div className="LoadingMsg">Loading the Editor...</div>}>
 			<JsonEditor
@@ -39,7 +40,7 @@ function CustomInput(props) {
 				mode='code'
 				history={true}
 				value={{obj1: 10}}
-				onChange={this.handleChange}
+				onChange={props.onChange}
 			/>
 		</Suspense>;
 		//return <input {...config.props} style={{ display: ctx.visible ? '' : 'none' }} />;
@@ -63,7 +64,7 @@ const loadSula = () => import(/* webpackChunkName: "sula" */ "sula").then(sula =
 	// 	return <h2 disabled={mode === 'view'}>{{ ...config.props }}</h2>;
 	// })	
 	const comp = <h2>Json</h2>;
-	sula.registerFieldPlugin('json')(CustomInput);
+	sula.registerFieldPlugin('json')(JsonEditor);
 
 	// Register icons for Sula
 	sula.Icon.iconRegister({
