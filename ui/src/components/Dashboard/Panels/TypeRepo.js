@@ -4,8 +4,10 @@
  */
 import React, { Suspense } from 'react';
 import { PlusCircleOutlined } from './icons';
-import { triggerPanelAdd } from '../../../globals/triggers';
-import { QueryTable } from './sula';
+import { triggerPanelAdd, triggerNotifyError } from '../../../globals/triggers';
+import { getTypeDef } from '../../../globals/axios';
+import { safeParse } from '../../../globals/utils';
+import { QueryTable } from './sula/';
 
 import './typeRepo.scss';
 
@@ -122,14 +124,14 @@ class TypeRepo extends React.Component {
 
 	constructor(props) {
 		super(props);
-		this.state = {};
+		this.state = {
+			typedefQueryInProgress: false
+		};
 	}
 
 	componentDidMount() {
-		console.log("mounted repo");
 	}
 	componentWillUnmount() {
-		console.log("unmounted repo");
 	}
 
 	render() {
@@ -138,7 +140,7 @@ class TypeRepo extends React.Component {
 			title="Type Repository"
 			subTitle=""
 			extra={[
-				<Button key="3" icon={<PlusCircleOutlined />} onClick={this.onAddNew} >Add New Entry</Button>,
+				<Button key="3" icon={<PlusCircleOutlined />} onClick={this.onAddNew} loading={this.state.typedefQueryInProgress}>Add New Entry</Button>,
 				<Button key="2">Operation</Button>,
 				<Button key="1" type="primary">
 					Primary
@@ -164,18 +166,6 @@ class TypeRepo extends React.Component {
 				/>
 			</Suspense>
 		</PageHeader>
-
-		// return <Suspense fallback={<div className="LoadingMsg">Loading the Editor...</div>}>
-		// 	<JsonEditor
-		// 		htmlElementProps={{class: "json-editor-container"}}
-		// 		name="Schepe"
-		// 		allowedModes={['tree', 'view', 'form', 'code', 'text']}
-		// 		mode='code'
-		// 		history={true}
-		// 		value={{}}
-		// 		onChange={this.handleChange}
-		// 	/>
-		// </Suspense>;
 	}
 
 	handleChange = ev => {
@@ -184,7 +174,26 @@ class TypeRepo extends React.Component {
 
 	// clicked add new button
 	onAddNew = () => {
-		triggerPanelAdd({ component: "TypeRepo.AddNew", name: "New: Type", icon: <PlusCircleOutlined className="mr-4" />, config: { text: "i was added" } });
+		this.setState({ typedefQueryInProgress: true });
+		getTypeDef().then(typedef => {
+			try {
+				const schema = JSON.parse(typedef.schema);
+				triggerPanelAdd({
+					component: "TypeRepo.AddNew",
+					name: "New: Type",
+					icon: <PlusCircleOutlined className="mr-4" />,
+					config: {
+						text: "i was added",
+						typeSchema: schema
+					}
+				});
+			} catch (ex) {
+				ex.title = "Invalid Type Definition";
+				Promise.reject(ex);
+			}
+		}).catch(triggerNotifyError).finally(() => {
+			this.setState({ typedefQueryInProgress: false });
+		});
 	}	
 };
 

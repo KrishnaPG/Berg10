@@ -3,10 +3,22 @@
  * All Rights Reserved.
  */
 import Axios from 'axios';
+import { setupCache } from 'axios-cache-adapter';
 import { triggerLogout, triggerNotifyError, triggerNotifyWarning } from './triggers';
+
+// Create `axios-cache-adapter` instance
+const cache = setupCache({
+	exclude: {
+		query: false
+	},
+	limit: 100,
+	maxAge: 15 * 60 * 1000,
+	debug: false
+});
 
 export const gAxios = Axios.create({
 	baseURL: "http://localhost:8080/api/",
+	adapter: cache.adapter
 	//timeout: 1500
 });
 // setup an interceptor to handle any 401 or 403 errors.

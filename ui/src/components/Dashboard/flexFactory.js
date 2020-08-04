@@ -18,7 +18,7 @@ const componentMap = {
 	"Notifications": () => <Suspense fallback={<div className="LoadingMsg">Loading the Notifications...</div>}><Notifications></Notifications></Suspense>,
 	"Settings": () => <Suspense fallback={<div className="LoadingMsg">Loading the Settings...</div>}><Settings></Settings></Suspense>,
 	"TypeRepo": () => <Suspense fallback={<div className="LoadingMsg">Loading the TypeRepo...</div>}><TypeRepo></TypeRepo></Suspense>,
-	"TypeRepo.AddNew": node => <Suspense fallback={<div className="LoadingMsg">Loading the TypeRepo.AddNew...</div>}><TypeRepoAddNew node={node}></TypeRepoAddNew></Suspense>,
+	"TypeRepo.AddNew": flNode => <Suspense fallback={<div className="LoadingMsg">Loading the TypeRepo.AddNew...</div>}><TypeRepoAddNew {...flNode.getConfig()}></TypeRepoAddNew></Suspense>,
 	"Xplore": () => <Suspense fallback={<div className="LoadingMsg">Loading the Xplore...</div>}><Xplore></Xplore></Suspense>,
 	"test": () => <h2>Hello World!!</h2>
 };
