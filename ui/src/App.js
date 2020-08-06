@@ -4,7 +4,7 @@
  */
 import React, { Suspense } from 'react';
 import { saveSession, clearSession, closeYDB } from './globals/store';
-import Axios from 'axios';
+import { doLogin, doLogout, fetchUserDetails  } from './globals/axios';
 import debounce from 'lodash/debounce';
 import { subscribeToEvLogout, unSubscribeToEvLogout } from './globals/eventBus';
 import { getMatchingRoute, decodeJWT } from './globals/utils';
@@ -26,11 +26,12 @@ class Main extends React.Component {
 			isAuthInProgress: true,
 			busyMsg: "Loading previous sessions, if any...",
 
-			_debouncedSave: debounce(() => {
+			_debouncedSave: debounce(this.state._saveSession, 1500),
+			_saveSession: () => {
 				console.log("saving state");
 				// save the session details to local storage
 				saveSession({ user: this.state.user, jwt: this.state.jwt });
-			}, 1500)
+			}
 		};
 
 		// check if we received a token on the browser address bar
@@ -52,7 +53,7 @@ class Main extends React.Component {
 				const payload = decodeJWT(jwt);
 				if (!payload || payload.email !== user.email)
 					return this.logout();
-				// trigger the dashboard UI loading, by setting the user
+				// trigger the dashboard UI loading, by setting the jwt
 				this.safeSetState({ user, jwt, isAuthInProgress: false });
 				// Also, lets try to renew the JWT and update the user details from the server in parallel.
 				// We do not do server auth here synchronously because we support offline case,
@@ -82,12 +83,12 @@ class Main extends React.Component {
 	}
 	static getDerivedStateFromProps(props, state) {
 		// either props or the state has changed - trigger a session save
-		if (state.user) state._debouncedSave();
+		if (state.jwt) state._debouncedSave();
 		return null;
 	}
 
 	render() {
-		return this.state.user ?
+		return this.state.jwt ?
 			(<Suspense fallback={<div className="LoadingMsg">Loading the Dashboard...</div>}>
 				<Dashboard user={this.state.user} jwt={this.state.jwt}/>
 			</Suspense>) :
@@ -102,7 +103,7 @@ class Main extends React.Component {
 
 	onLoginFormSubmit = (formData) => {
 		this.setState({ isAuthInProgress: true, busyMsg: "Verifying Credentials..." });
-		return Axios.post(`http://localhost:8080/api/${formData.mode.toLowerCase()}`, formData)
+		return doLogin(formData)
 			.then(response => {
 				this.setState({ user: response.data.user, jwt: response.data.jwt, isAuthInProgress: false });
 			})
@@ -115,15 +116,16 @@ class Main extends React.Component {
 	}
 
 	refreshUserDetails(jwt) {
-		return Axios.get('http://localhost:8080/api/user', { headers: { Authorization: "Bearer " + jwt } }).then(res => {
-			this.safeSetState({ user: res.data.user, jwt: res.data.jwt, isAuthInProgress: false });
-		}).catch(error => {
-			 // do not clear the user, probably server is offline
-			this.safeSetState({ isAuthInProgress: false });
-			// if server responded and declared the request as unauthorized, clear the user (triggers the LoginUI)
-			if (error.response && (error.response.status === 401 || error.response.status === 403))
-				this.safeSetState({ user: null, jwt: null }); 
-		});
+		return fetchUserDetails(jwt).then(res => {
+				this.safeSetState({ user: res.data.user, jwt: res.data.jwt, isAuthInProgress: false });
+			});
+			// .catch(error => {
+			// 	// do not clear the user, probably server is offline
+			// 	this.safeSetState({ isAuthInProgress: false });
+			// 	// if server responded and declared the request as unauthorized, clear the user (triggers the LoginUI)
+			// 	if (error.response && (error.response.status === 401 || error.response.status === 403))
+			// 		this.safeSetState({ user: null, jwt: null });
+			// });
 	}
 
 	safeSetState(changedState) {
@@ -131,9 +133,10 @@ class Main extends React.Component {
 	}
 
 	logout = () => {
-		if (this.state.jwt)
-			Axios.get('http://localhost:8080/api/logout', { headers: { Authorization: "Bearer " + this.state.jwt } });
-		this.setState({ user: null, jwt: null, isAuthInProgress: false }, clearSession);
+		if (this.state.jwt) {
+			doLogout(this.state.jwt);
+			this.setState({ jwt: null, isAuthInProgress: false }, this.state._saveSession);
+		}
 	}
 }
 

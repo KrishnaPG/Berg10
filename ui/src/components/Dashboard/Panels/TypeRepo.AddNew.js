@@ -62,7 +62,7 @@ class TypeRepoAddNew extends React.Component {
 				submit: {
 					url: 'http://localhost:8080/api/typedef/new',
 					method: 'POST',
-					headers: getAxiosCommonHeaders()
+					//headers: getAxiosCommonHeaders()
 				},
 				back: "resetFields",
 				backButtonProps: {
@@ -75,7 +75,7 @@ class TypeRepoAddNew extends React.Component {
 
 	componentDidMount() {
 	}
-	componentWillUnmount() {		
+	componentWillUnmount() {
 	}
 
 	render() {
