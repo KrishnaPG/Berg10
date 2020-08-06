@@ -48,6 +48,7 @@ app.post('/api/signup', userController.postSignup);
 
 // these use JWT
 app.get('/api/typedef', typedefController.get);
+app.post('/api/typedef/new', typedefController.postNew);
 
 // For oAuth based routes we use Sessions
 app.use(session(Object.assign({}, {

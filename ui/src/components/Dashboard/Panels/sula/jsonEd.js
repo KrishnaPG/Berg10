@@ -6,6 +6,7 @@ import React, { Suspense } from 'react';
 
 import 'jsoneditor-react/es/editor.min.css';
 import { imported } from "react-imported-component/macro";
+const Skeleton = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/skeleton/Skeleton'));
 
 const JsonEditor = imported(() => Promise.all([
 	import(/* webpackChunkName: "jsonEd" */ 'jsoneditor-react'),
@@ -27,20 +28,17 @@ const JsonEditor = imported(() => Promise.all([
 class JsonFieldEditor extends React.Component {
 	constructor(props) {
 		super(props);
-		console.log("TestComp props:", props);
 		this.state = {};
 	}
-	componentDidMount() { console.log("TestComp::Mount") }
-	componentWillUnmount() { console.log("TestComp::Unmount") }
 	render() {
-		return <Suspense fallback={<div className="LoadingMsg">Loading the Editor...</div>}>
+		return <Suspense fallback={<Skeleton active />}>
 			<JsonEditor
 				htmlElementProps={{ className: "json-editor-container" }}
 				name="Schepe"
 				allowedModes={['tree', 'view', 'form', 'code', 'text']}
 				mode='code'
 				history={true}
-				value={this.props.value || { obj: 10 }}
+				value={this.props.value || { key: "value" }}
 				onChange={this.props.onChange}
 			/>
 		</Suspense>;

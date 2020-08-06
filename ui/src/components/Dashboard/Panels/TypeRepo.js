@@ -6,7 +6,6 @@ import React, { Suspense } from 'react';
 import { PlusCircleOutlined } from './icons';
 import { triggerPanelAdd, triggerNotifyError } from '../../../globals/triggers';
 import { getTypeDef } from '../../../globals/axios';
-import { safeParse } from '../../../globals/utils';
 import { QueryTable } from './sula/';
 
 import './typeRepo.scss';
@@ -179,13 +178,14 @@ class TypeRepo extends React.Component {
 			try {
 				const schema = JSON.parse(typedef.schema);
 				triggerPanelAdd({
-					component: "TypeRepo.AddNew",
-					name: "New: Type",
-					icon: <PlusCircleOutlined className="mr-4" />,
+					bringToFocus: true,
 					config: {
-						text: "i was added",
 						typeSchema: schema
-					}
+					},
+					component: "TypeRepo.AddNew",
+					icon: <PlusCircleOutlined className="mr-4" />,
+					id: "New: Type",
+					name: "New: Type"
 				});
 			} catch (ex) {
 				ex.title = "Invalid Type Definition";

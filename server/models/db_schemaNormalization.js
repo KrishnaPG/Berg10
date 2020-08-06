@@ -1,6 +1,6 @@
 const ObjectPath = require('object-path');
-const { builtIns, $extends } = require('./schemaUtils');
 const { DepGraph } = require('dependency-graph');
+const { builtIns, $extends } = require('./db_schemaUtils');
 
 const builtInFieldTypes = {
 	"boolean": true,

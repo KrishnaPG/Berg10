@@ -42,10 +42,14 @@ gAxios.interceptors.response.use(null, error => {
 });
 
 
+export function getAxiosCommonHeaders() {
+	return gAxios.defaults.headers.common;
+}
+
 export function setAxiosAuthBearer(token) {
 	gAxios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 }
 
 export function getTypeDef() {
-	return gAxios.get(`typedef?name=schepe`).then(response => response.data);
+	return gAxios.get("typedef?name=schepe").then(response => response.data);
 }

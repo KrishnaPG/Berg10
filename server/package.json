@@ -12,9 +12,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "admin-bro": "^2.4.2",
-    "admin-bro-expressjs": "^2.0.5",
-    "admin-bro-sequelizejs": "^0.4.4",
     "arangojs": "^6.14.1",
     "axios": "^0.19.2",
     "bcrypt": "^5.0.0",
@@ -36,6 +33,7 @@
     "express-ws": "^4.0.0",
     "fast-jwt": "^0.1.1",
     "helmet": "^3.23.0",
+    "joi": "17.2.0",
     "lodash.merge": "^4.6.2",
     "mailchecker": "^3.3.9",
     "moment": "^2.26.0",

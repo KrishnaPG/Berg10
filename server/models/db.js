@@ -5,7 +5,8 @@
 const { Database } = require('arangojs');
 
 const dbConfig = require('config').db;
-const { normalizeTables, isGeoType } = require('./schemaNormalization');
+const { normalizeTables, isGeoType } = require('./db_schemaNormalization');
+const { getValidators } = require('./db_schemaValidation');
 
 const db = new Database(dbConfig);
 db.useDatabase(dbConfig.dbName);
@@ -50,7 +51,7 @@ function ensureTables(builtinTables) {
 function ensureTypeRecord(typeDefColl, key, typeDefn) {
 	return typeDefColl.firstExample({ [dbConfig.keyField]: key }).catch(ex => {
 		if (ex.code == 404) {
-			// whenever the schepeDefn.js is changed, ensure to update this code
+			// whenever the db_builtinTables.js is changed, ensure to update this code
 			return typeDefColl.save({
 				[dbConfig.keyField]: key,
 				name: key,
@@ -65,7 +66,10 @@ function ensureTypeRecord(typeDefColl, key, typeDefn) {
 module.exports = db;
 
 module.exports.init = function () {
-	const builtinTables = normalizeTables(require('./schepeDefn'));
+	const builtinTables = normalizeTables(require('./db_builtinTables'));
+	const tableValidators = getValidators(builtinTables);
+	console.log("validators: ", tableValidators);
+	//return Promise.reject("-----some error------");
 	return ensureTables(builtinTables).then(() => {
 		const userColl = db.collection("users");
 		const typeDefColl = db.collection("typedef");

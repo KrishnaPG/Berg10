@@ -20,3 +20,18 @@ exports.get = (req, res, next) => {
 		});
 	});
 };
+
+/**
+* Post /typedef
+* Creates a new type definition entry from the given query params
+*/
+exports.postNew = (req, res, next) => {
+	verifyJWT(req, res, jwtPayload => {
+		Typedef.save(req.body, (err, typeDef) => {
+			if (err) { return next(err); }
+			typeDef ?
+				res.send(typeDef) :
+				res.status(500).send(RPCError.generic(ex.message));
+		});
+	});
+};
