@@ -5,7 +5,7 @@
 import React, { Suspense } from 'react';
 import { PlusCircleOutlined } from './icons';
 import { triggerPanelAdd, triggerNotifyError } from '../../../globals/triggers';
-import { getTypeDef } from '../../../globals/axios';
+import { AxiosBaseComponent, getTypeDef } from '../../../globals/axios';
 import { QueryTable } from './sula/';
 
 import './typeRepo.scss';
@@ -119,18 +119,13 @@ const actions = [
 
 
 
-class TypeRepo extends React.Component {
+class TypeRepo extends AxiosBaseComponent {
 
 	constructor(props) {
 		super(props);
 		this.state = {
 			typedefQueryInProgress: false
 		};
-	}
-
-	componentDidMount() {
-	}
-	componentWillUnmount() {
 	}
 
 	render() {
@@ -189,10 +184,10 @@ class TypeRepo extends React.Component {
 				});
 			} catch (ex) {
 				ex.title = "Invalid Type Definition";
-				Promise.reject(ex);
+				triggerNotifyError(ex);
 			}
-		}).catch(triggerNotifyError).finally(() => {
-			this.setState({ typedefQueryInProgress: false });
+		}).finally(() => {
+			this.safeSetState({ typedefQueryInProgress: false });
 		});
 	}	
 };

@@ -24,6 +24,6 @@ exports.verifyJWT = (req, res, cb) => {
 		const payload = jwtVerifier((req.headers.authorization || '').replace('Bearer ', ''));
 		cb(payload);
 	} catch (err) {
-		res.status(401).send(RPCError.invalidRequest(err.message));
+		res.status(401).send(RPCError.unAuthenticated(err.message));
 	}
 }

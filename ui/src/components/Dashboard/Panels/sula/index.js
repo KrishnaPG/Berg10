@@ -2,7 +2,7 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
-import React, { Suspense } from 'react';
+import React from 'react';
 import JsonFieldEditor from './jsonEd';
 
 import { AppstoreOutlined, EditOutlined, UserOutlined } from '@ant-design/icons';

@@ -10,7 +10,7 @@ const { sendJWT, verifyJWT } = require('./jwt');
 * Get /typedef
 * Returns the type definition for the given query params
 */
-exports.get = (req, res, next) => {
+exports.find = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
 		Typedef.findOne(req.query, (err, typeDef) => {
 			if (err) { return next(err); }
@@ -25,13 +25,15 @@ exports.get = (req, res, next) => {
 * Post /typedef
 * Creates a new type definition entry from the given query params
 */
-exports.postNew = (req, res, next) => {
+exports.create = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
 		Typedef.save(req.body, (err, typeDef) => {
-			if (err) { return next(err); }
-			typeDef ?
-				res.send(typeDef) :
-				res.status(500).send(RPCError.generic(ex.message));
+			if (err) { return res.status(err.statusCode).send(RPCError.generic(err.message, err.name, err.code)); }
+			res.send(typeDef);
 		});
 	});
 };
+
+exports.get = exports.update = exports.remove = (req, res, next) => {
+	res.status(404).send(RPCError.notFound(`Not Implemented`));
+}

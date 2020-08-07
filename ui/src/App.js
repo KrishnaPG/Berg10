@@ -3,7 +3,7 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
-import { saveSession, clearSession, closeYDB } from './globals/store';
+import { saveSession, closeYDB } from './globals/store';
 import { doLogin, doLogout, fetchUserDetails  } from './globals/axios';
 import debounce from 'lodash/debounce';
 import { subscribeToEvLogout, unSubscribeToEvLogout } from './globals/eventBus';
@@ -19,6 +19,11 @@ class Main extends React.Component {
 	constructor(props) {
 		super(props);
 		this._isMounted = false;
+		this._saveSession = () => {
+			console.log("saving state");
+			// save the session details to local storage
+			saveSession({ user: this.state.user, jwt: this.state.jwt });
+		};
 		
 		this.state = {
 			user: null,
@@ -26,12 +31,7 @@ class Main extends React.Component {
 			isAuthInProgress: true,
 			busyMsg: "Loading previous sessions, if any...",
 
-			_debouncedSave: debounce(this.state._saveSession, 1500),
-			_saveSession: () => {
-				console.log("saving state");
-				// save the session details to local storage
-				saveSession({ user: this.state.user, jwt: this.state.jwt });
-			}
+			_debouncedSave: debounce(this._saveSession, 1500),
 		};
 
 		// check if we received a token on the browser address bar
@@ -44,7 +44,7 @@ class Main extends React.Component {
 			this.refreshUserDetails(token);
 		} else {
 			// check if we have a pre-existing token in storage
-			props.lastSession.then(session => { console.log("last session is ready")
+			props.lastSession.then(session => {
 				// if no old session exists, nothing to do
 				if (!session) return this.safeSetState({ isAuthInProgress: false });
 				const { jwt, user } = session;
@@ -83,7 +83,7 @@ class Main extends React.Component {
 	}
 	static getDerivedStateFromProps(props, state) {
 		// either props or the state has changed - trigger a session save
-		if (state.jwt) state._debouncedSave();
+		if (state.user) state._debouncedSave();
 		return null;
 	}
 
@@ -135,8 +135,10 @@ class Main extends React.Component {
 	logout = () => {
 		if (this.state.jwt) {
 			doLogout(this.state.jwt);
-			this.setState({ jwt: null, isAuthInProgress: false }, this.state._saveSession);
+			this.setState({ jwt: null, isAuthInProgress: false }, this._saveSession);
 		}
+		else // probably called from constructor due to invalid local storage data
+			this.safeSetState({ user:null, jwt: null, isAuthInProgress: false });
 	}
 }
 

@@ -6,16 +6,7 @@ import React from 'react';
 import gSettings from '../../globals/settings';
 
 class Settings extends React.Component {
-
-	constructor(props) {
-		super(props);
-	}
-
-	componentDidMount() {
-	}
-	componentWillUnmount() {
-	}
-
+	
 	render() {
 
 		return (<>

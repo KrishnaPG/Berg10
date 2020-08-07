@@ -10,11 +10,11 @@ export const triggerLogout = () => {
 }
 
 export const triggerNotifyError = error => {
-	logEvent({ t: performance.now(), type: "warning", ...error });
+	logEvent({ t: new Date(), type: "error", ...error });
 	gEventBus.dispatchEvent(new CustomEvent("ev.notify.error", { bubbles: false, detail: error }));
 }
 export const triggerNotifyWarning = warning => {
-	logEvent({ t: performance.now(), type: "error", ...warning });
+	logEvent({ t: new Date(), type: "warning", ...warning });
 	gEventBus.dispatchEvent(new CustomEvent("ev.notify.warning", { bubbles: false, detail: warning }));
 }
 

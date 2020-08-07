@@ -13,10 +13,6 @@ import {
 
 class Notify extends React.Component {
 
-	constructor(props) {
-		super(props);
-	}
-
 	componentDidMount() {
 		subscribeToEvNotifyError(this.onNotification);
 		subscribeToEvNotifyWarning(this.onNotification);
@@ -31,7 +27,7 @@ class Notify extends React.Component {
 			<h2>Notification Log</h2>
 		<ul>
 			{
-					gEventLog.map((obj, index) => (<li key={index}>{obj.title}: {obj.message}</li>))
+					gEventLog.map((obj, index) => (<li key={index}>[{obj.t.toLocaleString()}] {obj.title}: {obj.message}</li>))
 				}
 			</ul>
 			</>

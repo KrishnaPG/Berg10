@@ -32,6 +32,7 @@ module.exports = {
 	RPCError: {
 		invalidRequest: (message, code = -32600, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "Invalid Request" }, id }),
 		notFound: (message, code = -32601, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "NotFound" }, id }),
-		generic: (message, code = -32000, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "Error" }, id }),
+		unAuthenticated: (message, code = -32401, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "UnAuthenticated" }, id }),
+		generic: (message, title = "Error", code = -32000, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title }, id }),
 	}
 }

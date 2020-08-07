@@ -42,13 +42,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // these do NOT need sessions
 app.get('/api/user', userController.getUserDetails);
-app.get('/api/logout', apiController.logout);
-app.post('/api/login', userController.postLogin);
-app.post('/api/signup', userController.postSignup);
+app.post('/api/user/logout', apiController.logout);
+app.post('/api/user/login', userController.postLogin);
+app.post('/api/user/signup', userController.postSignup);
 
 // these use JWT
-app.get('/api/typedef', typedefController.get);
-app.post('/api/typedef/new', typedefController.postNew);
+app.get('/api/typedef', typedefController.find);
+app.post('/api/typedef', typedefController.create);
+app.get('/api/typedef/:id', typedefController.get);
+app.put('/api/typedef/:id', typedefController.update);
+app.delete('/api/typedef/:id', typedefController.remove);
 
 // For oAuth based routes we use Sessions
 app.use(session(Object.assign({}, {

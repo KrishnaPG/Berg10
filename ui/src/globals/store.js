@@ -13,9 +13,7 @@ function init() {
 	]).then(([yJS, yIDB]) => {
 		yDoc = new yJS.Doc();
 		idbP = new yIDB.IndexeddbPersistence('Berg10', yDoc);
-		idbP.whenSynced.then(() => {
-			console.log('loaded data from indexed db');
-		});
+		idbP.whenSynced.then(() => {});
 		return yDoc;
 	});
 }

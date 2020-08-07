@@ -2,28 +2,22 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
-// import Axios from 'axios';
-// import { setupCache } from 'axios-cache-adapter';
+import React from 'react';
+
 import { triggerLogout, triggerNotifyError, triggerNotifyWarning } from './triggers';
 
+let Axios = null;
+
 function init() {
-	console.log("axios being init");
 	return Promise.all([
 		import(/* webpackChunkName: "axiosBase", webpackPrefetch: true */ 'axios'),
-		import(/* webpackChunkName: "axiosCache", webpackPrefetch: true */ 'axios-cache-adapter')
-	]).then(([Axios, { setupCache }]) => {
-		console.log("axios loaded");
+		import(/* webpackChunkName: "axiosExt", webpackPrefetch: true */ 'axios-extensions')
+	]).then(([AxiosModule, { cacheAdapterEnhancer }]) => {
+		Axios = AxiosModule;
+
 		// Create `axios-cache-adapter` instance
-		const cache = setupCache({
-			exclude: {
-				query: false
-			},
-			limit: 100,
-			maxAge: 15 * 60 * 1000,
-			debug: true
-		});
 		Axios.defaults.baseURL = "http://localhost:8080/api/";
-		Axios.defaults.adapter = cache.adapter;
+		Axios.defaults.adapter = cacheAdapterEnhancer(Axios.defaults.adapter);
 
 		// setup an interceptor to handle any 401 or 403 errors.
 		Axios.interceptors.response.use(null, error => {
@@ -36,7 +30,7 @@ function init() {
 				}
 				// 403 is unAuthorized. We just have to notify the user that they do not have permission.
 				// We do NOT trigger login for the 403 or other errors such as 404
-				triggerNotifyError(error.response.data.error);
+				triggerNotifyError(error.response.data.error || { title: error.response.statusText, message: error.response.data });
 			}
 			else {
 				// some network error, or server did not respond
@@ -46,12 +40,6 @@ function init() {
 		});
 
 		return Axios;
-		// const axiosInstance = Axios.create({
-		// 	baseURL: "http://localhost:8080/api/",
-		// 	//adapter: cache.adapter
-		// 	//timeout: 1500
-		// });
-		// return axiosInstance;
 	});
 }
 
@@ -66,13 +54,13 @@ const _loadAxios_PostInit = () => _axiosLoadPromise;
 let loadAxios = _loadAxios_PreInit;
 
 export function doLogin(formData) {
-	return loadAxios().then(Axios => Axios.post(`api/${formData.mode.toLowerCase()}`, formData));
+	return loadAxios().then(Axios => Axios.post(`user/${formData.mode.toLowerCase()}`, formData));
 }
 export function fetchUserDetails(jwt) {
-	return loadAxios().then(Axios => Axios.get('api/user', { headers: { Authorization: "Bearer " + jwt } }));	
+	return loadAxios().then(Axios => Axios.get('user', { headers: { Authorization: "Bearer " + jwt }, cache: false }));
 }
 export function doLogout(jwt) {
-	return loadAxios().then(Axios => Axios.get('api/logout', { headers: { Authorization: "Bearer " + jwt } }));
+	return loadAxios().then(Axios => Axios.post('user/logout', { headers: { Authorization: "Bearer " + jwt } }));
 }
 
 // // Create `axios-cache-adapter` instance
@@ -112,13 +100,29 @@ export function doLogout(jwt) {
 
 
 export function getAxiosCommonHeaders() {
-	return gAxios.defaults.headers.common;
+	return Axios.defaults.headers.common;
 }
 
 export function setAxiosAuthBearer(token) {
-	gAxios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+	loadAxios().then(Axios => Axios.defaults.headers.common['Authorization'] = `Bearer ${token}`);
 }
 
 export function getTypeDef() {
-	return gAxios.get("typedef?name=schepe").then(response => response.data);
+	return Axios.get("typedef?name=schepe").then(response => response.data);
+}
+
+export class AxiosBaseComponent extends React.Component {
+	constructor(props) {
+		super(props);
+		this._isMounted = false;
+	}
+	componentDidMount() {
+		this._isMounted = true;
+	}
+	componentWillUnmount() {
+		this._isMounted = false;
+	}
+	safeSetState(changedState) {
+		return this._isMounted ? this.setState(changedState) : Object.assign(this.state, changedState);
+	}
 }
