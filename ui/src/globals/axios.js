@@ -21,6 +21,9 @@ function init() {
 
 		// setup an interceptor to handle any 401 or 403 errors.
 		Axios.interceptors.response.use(null, error => {
+			if (Axios.isCancel(error))
+				return Promise.reject(error);
+			
 			if (error.response) {
 				// Vault gives incorrect error code 400, when the client-token is missing
 				if (error.response.status <= 401 && error.response.status >= 400) {
@@ -63,42 +66,6 @@ export function doLogout(jwt) {
 	return loadAxios().then(Axios => Axios.post('user/logout', { headers: { Authorization: "Bearer " + jwt } }));
 }
 
-// // Create `axios-cache-adapter` instance
-// const cache = setupCache({
-// 	exclude: {
-// 		query: false
-// 	},
-// 	limit: 100,
-// 	maxAge: 15 * 60 * 1000,
-// 	debug: false
-// });
-
-// export const gAxios = Axios.create({
-// 	baseURL: "http://localhost:8080/api/",
-// 	adapter: cache.adapter
-// 	//timeout: 1500
-// });
-// // setup an interceptor to handle any 401 or 403 errors.
-// gAxios.interceptors.response.use(null, error => {
-// 	if (error.response) {
-// 		// Vault gives incorrect error code 400, when the client-token is missing
-// 		if (error.response.status <= 401 && error.response.status >= 400) {
-// 			// TODO: save layout (we may need to show it exactly so that user can resume after login)
-// 			// unAuthenticated user, trigger the logout, which will display the loginUI
-// 			triggerLogout();
-// 		}
-// 		// 403 is unAuthorized. We just have to notify the user that they do not have permission.
-// 		// We do NOT trigger login for the 403 or other errors such as 404
-// 		triggerNotifyError(error.response.data.error);
-// 	}
-// 	else {
-// 		// some network error, or server did not respond
-// 		triggerNotifyWarning({ title: (error.message || error), message: (error.description || error.config.url) });
-// 	}
-// 	return Promise.reject(error);
-// });
-
-
 export function getAxiosCommonHeaders() {
 	return Axios.defaults.headers.common;
 }
@@ -107,22 +74,55 @@ export function setAxiosAuthBearer(token) {
 	loadAxios().then(Axios => Axios.defaults.headers.common['Authorization'] = `Bearer ${token}`);
 }
 
-export function getTypeDef() {
-	return Axios.get("typedef?name=schepe").then(response => response.data);
-}
+// export function getTypeDef() {
+// 	return Axios.get("typedef?name=schepe").then(response => response.data);
+// }
 
 export class AxiosBaseComponent extends React.Component {
 	constructor(props) {
 		super(props);
 		this._isMounted = false;
+		this._callTrackers = {};
+		this._pendingCalls = {};
+		this.state = { lastQueryMadeAt: null }
 	}
 	componentDidMount() {
 		this._isMounted = true;
 	}
 	componentWillUnmount() {
+		// Cancel all pending axios calls.
+		Object.values(this._callTrackers).forEach(tracker => tracker.cancel("Component Unmounting"));
 		this._isMounted = false;
 	}
 	safeSetState(changedState) {
 		return this._isMounted ? this.setState(changedState) : Object.assign(this.state, changedState);
+	}
+
+	isCancel(error) {
+		return Axios.isCancel(error);
+	}
+
+	getTypeDef() {
+		const tracker = this._callTrackers["getTypeDef"];
+		if (tracker) {
+			// Abort any previous calls that are in-progress. Does nothing if call has already been resolved or rejected.
+			tracker.cancel("Aborting old call");
+		}
+		// trigger ui update.
+		this._pendingCalls["getTypeDef"] = (this._pendingCalls["getTypeDef"] || 0) + 1;
+		this.setState({ lastQueryMadeAt: performance.now() });
+		// load the axios and make the call
+		return loadAxios().then(Axios => {
+			const tracker = Axios.CancelToken.source();
+			this._callTrackers["getTypeDef"] = tracker;
+			// make the actual call
+			return Axios.get("typedef?name=schepe", { cancelToken: tracker.token })
+				.then(response => response.data)
+				.finally(() => {
+					--this._pendingCalls["getTypeDef"];
+					// trigger ui update to hide any spinners
+					this.safeSetState({ lastQueryMadeAt: performance.now() });
+				});
+		});
 	}
 }

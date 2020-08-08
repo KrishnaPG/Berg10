@@ -123,9 +123,10 @@ class TypeRepo extends AxiosBaseComponent {
 
 	constructor(props) {
 		super(props);
-		this.state = {
-			typedefQueryInProgress: false
-		};
+		// this.state = {
+		// 	typedefQueryInProgress: false,
+		// 	...this.state
+		// };
 	}
 
 	render() {
@@ -134,7 +135,7 @@ class TypeRepo extends AxiosBaseComponent {
 			title="Type Repository"
 			subTitle=""
 			extra={[
-				<Button key="3" icon={<PlusCircleOutlined />} onClick={this.onAddNew} loading={this.state.typedefQueryInProgress}>Add New Entry</Button>,
+				<Button key="3" icon={<PlusCircleOutlined />} onClick={this.onAddNew} loading={this._pendingCalls["getTypeDef"]}>Add New Entry</Button>,
 				<Button key="2">Operation</Button>,
 				<Button key="1" type="primary">
 					Primary
@@ -168,8 +169,8 @@ class TypeRepo extends AxiosBaseComponent {
 
 	// clicked add new button
 	onAddNew = () => {
-		this.setState({ typedefQueryInProgress: true });
-		getTypeDef().then(typedef => {
+		//this.setState({ typedefQueryInProgress: true });
+		this.getTypeDef().then(typedef => {
 			try {
 				const schema = JSON.parse(typedef.schema);
 				triggerPanelAdd({
@@ -184,11 +185,9 @@ class TypeRepo extends AxiosBaseComponent {
 				});
 			} catch (ex) {
 				ex.title = "Invalid Type Definition";
-				triggerNotifyError(ex);
+				throw(ex);
 			}
-		}).finally(() => {
-			this.safeSetState({ typedefQueryInProgress: false });
-		});
+		}).catch(error => { if (!this.isCancel(error)) triggerNotifyError(error); });
 	}	
 };
 
