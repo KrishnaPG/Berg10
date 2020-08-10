@@ -5,7 +5,7 @@
 import React from 'react';
 import gSettings from '../../globals/settings';
 
-class Settings extends React.Component {
+class Settings extends React.PureComponent {
 	
 	render() {
 

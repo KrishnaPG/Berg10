@@ -15,7 +15,7 @@ const EditOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons"
 const LogoutOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/LogoutOutlined'));
 const SettingOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/SettingOutlined'));
 
-class Home extends React.Component {
+class Home extends React.PureComponent {
 
 	constructor(props) {
 		super(props);

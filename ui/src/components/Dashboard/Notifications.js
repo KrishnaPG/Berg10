@@ -11,7 +11,7 @@ import {
 	unSubscribeToEvNotifyError,
 } from '../../globals';
 
-class Notify extends React.Component {
+class Notify extends React.PureComponent {
 
 	componentDidMount() {
 		subscribeToEvNotifyError(this.onNotification);

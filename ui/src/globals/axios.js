@@ -3,7 +3,7 @@
  * All Rights Reserved.
  */
 import React from 'react';
-
+import { getServerBaseURL } from './settings';
 import { triggerLogout, triggerNotifyError, triggerNotifyWarning } from './triggers';
 
 let Axios = null;
@@ -16,7 +16,7 @@ function init() {
 		Axios = AxiosModule;
 
 		// Create `axios-cache-adapter` instance
-		Axios.defaults.baseURL = "http://localhost:8080/api/";
+		Axios.defaults.baseURL = getServerBaseURL();
 		Axios.defaults.adapter = cacheAdapterEnhancer(Axios.defaults.adapter);
 
 		// setup an interceptor to handle any 401 or 403 errors.
@@ -74,11 +74,7 @@ export function setAxiosAuthBearer(token) {
 	loadAxios().then(Axios => Axios.defaults.headers.common['Authorization'] = `Bearer ${token}`);
 }
 
-// export function getTypeDef() {
-// 	return Axios.get("typedef?name=schepe").then(response => response.data);
-// }
-
-export class AxiosBaseComponent extends React.Component {
+export class AxiosBaseComponent extends React.PureComponent {
 	constructor(props) {
 		super(props);
 		this._isMounted = false;

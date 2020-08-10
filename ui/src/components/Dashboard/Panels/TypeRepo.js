@@ -3,35 +3,42 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
+import Barrier from '../../RenderBarrier';
 import { PlusCircleOutlined } from './icons';
+import { AxiosBaseComponent } from '../../../globals/axios';
+import { getServerDBIdField } from '../../../globals/settings';
 import { triggerPanelAdd, triggerNotifyError } from '../../../globals/triggers';
-import { AxiosBaseComponent, getTypeDef } from '../../../globals/axios';
 import { QueryTable } from './sula/';
 
 import './typeRepo.scss';
 
 const Button = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/button/button'));
 const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/page-header/index'));
+const Switch = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPrefetch: true */ 'antd/lib/switch/index'));
 const Tabs = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/tabs/index'));
+const Tooltip = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPrefetch: true */ 'antd/lib/tooltip/index'));
+
 
 const { TabPane } = Tabs;
 
 const remoteDataSource = {
-	url: 'https://randomuser.me/api',
+	url: 'http://localhost:8080/api/typedef',
 	method: 'GET',
 	convertParams({ params }) {
+		console.log("params: ", params);
 		return {
-			results: params.pageSize,
-			...params,
+			$limit: params.pageSize,
+			$skip: (params.current - 1) * params.pageSize,
+			//$sort: "",
 		};
 	},
 	converter({ data }) {
 		return {
-			list: data.results.map((item, index) => {
+			list: data.map((item, index) => {
 				return {
 					...item,
 					id: `${index}`,
-					name: `${item.name.first} ${item.name.last}`,
+					//name: `${item.name.first} ${item.name.last}`,
 					index,
 				};
 			}),
@@ -41,26 +48,27 @@ const remoteDataSource = {
 };
 const columns = [
 	{
-		title: 'Index',
-		key: 'index',
-	},
-	{
-		title: 'Nat',
-		key: 'nat',
+		title: '_key',
+		key: '_key',
 	},
 	{
 		title: 'Name',
 		key: 'name',
+	},
+	{
+		title: 'Schema',
+		key: 'schema',
 		copyable: true,
 		ellipsis: true,
 		width: 200,
-	},
+	},	
 	{
-		title: 'Age',
-		key: 'age',
-		render: (ctx) => {
-			return <span>{ctx.record.registered.age}</span>;
-		},
+		title: 'Private',
+		key: 'private',
+		render: ctx => <Switch checked={ctx.record.private} checkedChildren="Yes" unCheckedChildren="No" disabled={true} size="small"/>
+		// render: (ctx) => {
+		// 	return <span>{ctx.record.registered.age}</span>;
+		// },
 	},
 	{
 		title: 'Operation',
@@ -123,10 +131,7 @@ class TypeRepo extends AxiosBaseComponent {
 
 	constructor(props) {
 		super(props);
-		// this.state = {
-		// 	typedefQueryInProgress: false,
-		// 	...this.state
-		// };
+		this.lastQueryTime = performance.now();
 	}
 
 	render() {
@@ -149,16 +154,24 @@ class TypeRepo extends AxiosBaseComponent {
 			// }
 		>
 			<Suspense fallback={<div className="LoadingMsg">Loading the QueryTable...</div>}>
-				<QueryTable className="queryTable"
-					layout="vertical"
-					columns={columns}
-					remoteDataSource={remoteDataSource}
-					// fields={queryFields}
-					rowKey="id"
-					// actionsRender={actions}
-					rowSelection={{}}
-					tableProps={{ scroll: { y: 400 } }}
-				/>
+				<Barrier lastModifiedAt={this.lastQueryTime}>
+					<QueryTable className="queryTable"
+						layout="vertical"
+						columns={columns}
+						remoteDataSource={remoteDataSource}
+						// fields={queryFields}
+						rowKey={getServerDBIdField()}
+						// actionsRender={actions}
+						rowSelection={{}}
+						tableProps={{
+							expandable: {
+								expandedRowRender: record => <pre>{record.schema}</pre>,
+								rowExpandable: () => true,
+							},
+							scroll: { y: 400 },
+						}}
+					/>
+				</Barrier>
 			</Suspense>
 		</PageHeader>
 	}

@@ -9,3 +9,5 @@ The Resource REST endpoints are compatible with FeathersJS endpoints. Below is a
 | .update()       | PUT         | /messages/1 |
 | .patch()        | PATCH       | /messages/1 |
 | .remove()       | DELETE      | /messages/1 |
+
+Reference: [FeathersJS REST](https://docs.feathersjs.com/api/client/rest.html#find)

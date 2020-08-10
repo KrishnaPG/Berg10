@@ -20,7 +20,7 @@ import {
 	unSubscribeToEvPanelAdd
 } from '../../globals';
 
-class Dashboard extends React.Component {
+class Dashboard extends React.PureComponent {
 
 	constructor(props) {
 		super(props);

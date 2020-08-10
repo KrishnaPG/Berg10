@@ -39,7 +39,7 @@ const defaultValues = {
 	"boolean": false,
 	"json": {}
 };
-function getDefaultValues(typeSchema) {
+function getFieldDefaultValues(typeSchema) {
 	const retVal = {};
 	for (let [fld, fldDefn] of Object.entries(typeSchema)) {
 		retVal[fld] = fldDefn.default || defaultValues[fldDefn.type]
@@ -47,14 +47,14 @@ function getDefaultValues(typeSchema) {
 	return retVal;
 }
 
-class TypeRepoAddNew extends React.Component {
+class TypeRepoAddNew extends React.PureComponent {
 
 	constructor(props) {
 		super(props); 
 		// convert typedef.schema to sula-form fields definition
 		const schema = props.typeSchema;
 		const fields = Object.entries(schema).map(getSulaFormField);
-		const initialValues = getDefaultValues(schema);
+		const initialValues = getFieldDefaultValues(schema);
 		this.state = {
 			editConfig: {
 				initialValues,

@@ -20,10 +20,11 @@ exports.sendJWT = (user, req, res) => {
 };
 
 exports.verifyJWT = (req, res, cb) => {
+	let payload = null;
 	try {
-		const payload = jwtVerifier((req.headers.authorization || '').replace('Bearer ', ''));
-		cb(payload);
+		 payload = jwtVerifier((req.headers.authorization || '').replace('Bearer ', ''));
 	} catch (err) {
-		res.status(401).send(RPCError.unAuthenticated(err.message));
+		return res.status(401).send(RPCError.unAuthenticated(err.message));
 	}
+	if(payload) cb(payload);
 }

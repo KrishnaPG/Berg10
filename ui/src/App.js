@@ -118,14 +118,9 @@ class Main extends React.Component {
 	refreshUserDetails(jwt) {
 		return fetchUserDetails(jwt).then(res => {
 				this.safeSetState({ user: res.data.user, jwt: res.data.jwt, isAuthInProgress: false });
+			}).catch(error => {
+				//Nothing to do here. Axios interceptors would have already called logout in case of unAuth
 			});
-			// .catch(error => {
-			// 	// do not clear the user, probably server is offline
-			// 	this.safeSetState({ isAuthInProgress: false });
-			// 	// if server responded and declared the request as unauthorized, clear the user (triggers the LoginUI)
-			// 	if (error.response && (error.response.status === 401 || error.response.status === 403))
-			// 		this.safeSetState({ user: null, jwt: null });
-			// });
 	}
 
 	safeSetState(changedState) {
@@ -134,7 +129,7 @@ class Main extends React.Component {
 
 	logout = () => {
 		if (this.state.jwt) {
-			doLogout(this.state.jwt);
+			doLogout(this.state.jwt).catch(console.warn);
 			this.setState({ jwt: null, isAuthInProgress: false }, this._saveSession);
 		}
 		else // probably called from constructor due to invalid local storage data

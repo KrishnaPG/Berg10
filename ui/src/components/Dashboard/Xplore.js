@@ -19,7 +19,7 @@ const LogoutOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcon
 const SettingOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/SettingOutlined'));
 
 
-class Xplore extends React.Component {
+class Xplore extends React.PureComponent {
 
 	constructor(props) {
 		super(props);
@@ -27,7 +27,11 @@ class Xplore extends React.Component {
 		};
 	}
 
-	render() {
+	// shouldComponentUpdate(nextProps, nextState) {
+	// 	return false;
+	// }
+
+	render() { console.log("xplore render")
 		return (
 			<Card id="xplore-card" className="sidebar-card"
 				cover={
