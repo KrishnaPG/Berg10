@@ -9,7 +9,8 @@
 			"username": "dev",
 			"password": "devPass"
 		},
-		"idField": "_id"
+		"idField": "_id",
+		"keyField": "_key"
 	},	
 	"logger": {
 		"pino": {

@@ -5,7 +5,14 @@
 import React from 'react';
 import JsonFieldEditor from './jsonEd';
 
-import { AppstoreOutlined, EditOutlined, UserOutlined } from '@ant-design/icons';
+import {
+	DeleteOutlined,
+	EditOutlined,
+	ExpandAltOutlined,
+	FileSearchOutlined,
+	PlusCircleOutlined,
+	UserOutlined
+} from '../icons';
 
 
 const loadSula = () => import(/* webpackChunkName: "sula" */ "sula").then(sula => {	
@@ -20,12 +27,13 @@ const loadSula = () => import(/* webpackChunkName: "sula" */ "sula").then(sula =
 	// Register icons for Sula
 	sula.Icon.iconRegister({
 		user: UserOutlined,
+		delete: DeleteOutlined,
 		edit: {
 			outlined: EditOutlined,
 		},
-		appStore: {
-			outlined: AppstoreOutlined,
-		},
+		new: PlusCircleOutlined,
+		preview: FileSearchOutlined,
+		view: ExpandAltOutlined
 	});
 	return sula;
 });

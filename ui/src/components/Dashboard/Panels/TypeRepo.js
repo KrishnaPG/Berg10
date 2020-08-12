@@ -54,6 +54,8 @@ const columns = [
 	{
 		title: 'Name',
 		key: 'name',
+		sorter: true,
+		filterRender: 'search'
 	},
 	{
 		title: 'Schema',
@@ -65,20 +67,83 @@ const columns = [
 	{
 		title: 'Private',
 		key: 'private',
-		render: ctx => <Switch checked={ctx.record.private} checkedChildren="Yes" unCheckedChildren="No" disabled={true} size="small"/>
-		// render: (ctx) => {
-		// 	return <span>{ctx.record.registered.age}</span>;
-		// },
+		render: ctx => <Switch checked={ctx.record.private} checkedChildren="Yes" unCheckedChildren="No" disabled={true} size="small"/>,
+		sorter: true,
+		filters: [
+			{
+				value: true,
+				text: "Yes"
+			},
+			{
+				value: false,
+				text: "No"
+			}
+		]
 	},
 	{
 		title: 'Operation',
 		key: 'operation',
 		render: [
 			{
+				type: 'icon',
+				text: 'Preview',
+				tooltip: 'Preview',
+				visible: true,
+				props: {
+					type: 'preview',
+				},
+				action: [
+					{
+						type: 'drawerform',
+						title: 'View',
+						mode: 'view',
+						remoteValues: {
+							url: 'typedef',
+							params: { id: '#{record._id}' },
+							method: 'get',
+						},
+						//fields: fieldsConfig('view', this.format),
+					},
+				],
+			},
+			{
+				type: 'icon',
+				text: 'Quick Edit',
+				tooltip: 'Quick Edit',
+				visible: true,
+				props: {
+					type: 'edit',
+				},
+				action: [
+					{
+						type: 'drawerform',
+						mode: 'edit',
+						title: 'Edit',
+						remoteValues: {
+							url: 'typedef',
+							params: { id: '#{record._id}' },
+							method: 'get',
+						},
+						//fields: fieldsConfig('edit', this.format),
+						submit: {
+							url: '/api/release/edit.json',
+							method: 'post',
+							params: { id: '#{record.id}' },
+							successMessage: 'edit.success',
+							finish: {
+								type: 'refreshtable',
+							},
+						},
+					},
+				],
+			},
+			{
 				confirm: 'Delete？',
 				type: 'icon',
+				text: "Delete",
+				tooltip: 'Delete',
 				props: {
-					type: "appStore"
+					type: "delete"
 				},
 				action: [
 					{

@@ -34,6 +34,15 @@ exports.create = (req, res, next) => {
 	});
 };
 
-exports.get = exports.update = exports.remove = (req, res, next) => {
+exports.get = (req, res, next) => {
+	verifyJWT(req, res, jwtPayload => {
+		Typedef.findByKey(req.body, (err, typeDef) => {
+			if (err) { return res.status(err.statusCode).send(RPCError.generic(err.message, err.name, err.code)); }
+			res.send(typeDef);
+		});
+	});	
+}
+
+exports.update = exports.remove = (req, res, next) => {
 	res.status(404).send(RPCError.notFound(`Not Implemented`));
 }

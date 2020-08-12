@@ -47,16 +47,20 @@ class Typedef {
 		*/
 	}
 
-	static findOne(id) {
-		return Typedef.findById(id);
+	static findOne(query) {
+		return Typedef.findByKey(query);
 	}
 
-	static findMany(ids) {
-		return db.typeDefColl.lookupByKeys(ids);
+	static findMany(keys) {
+		return db.typeDefColl.lookupByKeys(query);
 	}
 
 	static findById(id) {
-		return db.typeDefColl.firstExample({ [config.db.idField]: id });
+		return db.typeDefColl.firstExample(query);//{ [config.db.idField]: id }
+	}
+
+	static findByKey(query) {
+		return db.typeDefColl.firstExample(query);//{ [config.db.keyField]: _key }
 	}
 
 	static create(params) {
