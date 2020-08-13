@@ -11,7 +11,7 @@ db.notifyChange = changeObj => console.log("change Object: ", changeObj);
 class Typedef {
 
 	static save(typeDef, cb) {
-		return (typeDef._key ?
+		return (typeDef[config.db.idField] ?
 			db.typeDefColl.update({ [config.db.idField]: typeDef[config.db.idField] }, typeDef) :
 			db.typeDefColl.save(typeDef))
 			.then(_result => cb(null))

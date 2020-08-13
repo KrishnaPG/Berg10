@@ -62,7 +62,7 @@ exports.postSignup = (req, res, next) => {
   User.findOne({ email: req.body.email }, (err, existingUser) => {
     if (err) { return next(err); }
     if (existingUser) {
-      return res.status(409).send(RPCError.invalidRequest('Account with that email address already exists.'));
+      return res.status(409).send(RPCError.duplicate(`[${req.body.email}]: Account with that email address already exists`));
     }
     user.save((err) => {
       if (err) { return next(err); }

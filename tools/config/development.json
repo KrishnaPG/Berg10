@@ -1,0 +1,55 @@
+{
+	"cors": {
+		"allowedOrigins": ["http*://localhost*", "http*://*.surge.sh"]
+	},
+	"db": {
+		"url": "http://13.235.161.29:8529",
+		"dbName": "default",
+		"auth": {
+			"username": "dev",
+			"password": "devPass"
+		},
+		"idField": "_id",
+		"keyField": "_key"
+	},	
+	"logger": {
+		"pino": {
+			"level": "trace",
+			"prettyPrint": {
+				"colorize": true,
+				"translateTime": "SYS:standard"
+			}
+		}
+	},
+	"passport": {
+		"github": {
+			"clientID": "512b910f75a7693425a0",
+			"clientSecret": "2b3acdb7efc1fdda598adc6cea98dfdff5bd8b70",
+			"callbackURL": "http://localhost:8080/auth/github/callback",
+			"passReqToCallback": true,
+			"scope": ["user:email"]
+		},
+		"google": {
+			"clientID": "975446056155-u44va7d4gup2mqreujfl7r69u5rb2h98.apps.googleusercontent.com",
+			"clientSecret": "Ll3zJG789GA1r0zwzUtNDC_Z",
+			"callbackURL": "http://localhost:8080/auth/google/callback",
+			"passReqToCallback": true
+		},
+		"linkedIn": {
+			"clientID": "78ighjqkvbcq8s",
+			"clientSecret": "rMc0OeHX00PIESqs",
+			"callbackURL": "http://localhost:8080/auth/linkedin/callback",
+			"scope": [
+				"r_liteprofile",
+				"r_emailaddress"
+			],
+			"passReqToCallback": true
+		},
+		"twitter": {
+			"consumerKey": "process.env.TWITTER_KEY",
+			"consumerSecret": "process.env.TWITTER_SECRET",
+			"callbackURL": "http://localhost:8080/auth/twitter/callback",
+			"passReqToCallback": true
+		}
+	}
+}

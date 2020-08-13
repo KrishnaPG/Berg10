@@ -1,0 +1,21 @@
+{
+  "name": "berg10.tools",
+  "version": "1.0.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.19.2",
+    "config": "3.3.1"
+  },
+  "devDependencies": {},
+  "nodemonConfig": {
+    "ignore": [
+      "test/*",
+      "docs/*",
+      "public/*",
+      "node_modules/*"
+    ],
+    "delay": "1500"
+  }
+}

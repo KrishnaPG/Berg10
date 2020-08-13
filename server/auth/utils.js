@@ -30,6 +30,7 @@ module.exports = {
 	},
 
 	RPCError: {
+		duplicate: (message, code = -32409, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "Already Exists" }, id }),
 		invalidRequest: (message, code = -32600, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "Invalid Request" }, id }),
 		notFound: (message, code = -32601, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "NotFound" }, id }),
 		unAuthenticated: (message, code = -32401, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "UnAuthenticated" }, id }),

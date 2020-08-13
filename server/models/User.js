@@ -43,7 +43,7 @@ class User {
 
 function saveUser(user, cb) {
 	return User.hashPassword(user)
-		.then(user => user._key ? db.userColl.update({ [config.db.idField]: user[config.db.idField] }, user) : db.userColl.save(user))
+		.then(user => user[config.db.idField] ? db.userColl.update({ [config.db.idField]: user[config.db.idField] }, user) : db.userColl.save(user))
 		.then(_result => cb(null))
 		.catch(ex => cb(ex));
 }

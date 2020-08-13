@@ -5,7 +5,7 @@
 const { Database } = require('arangojs');
 
 const dbConfig = require('config').db;
-const { normalizeTables, isGeoType } = require('./db_schemaNormalization');
+const { normalizeTables, isGeoType, isRelationTable } = require('./db_schemaNormalization');
 const { getValidators } = require('./db_schemaValidation');
 
 const db = new Database(dbConfig);
@@ -19,6 +19,20 @@ const createColl = name => {
 		exists ? coll : coll.create({ waitForSync: true }).then(() => coll).catch(ex => err("createColl('" + name + "')", ex))
 	);
 };
+const createEdgeColl = (edgeName, fromName, toName, g) => {
+	const coll = db.edgeCollection(edgeName);
+	return coll.exists().then(exists => {
+		if (exists) return coll;
+		return coll.create({ waitForSync: true })
+			.then(() => g.addEdgeDefinition({ collection: edgeName, from: [fromName], to: [toName] }))
+			.then(() => coll)
+			.catch(ex => err("createEdgeColl('" + name + "')", ex));
+	});
+}; 
+
+function ensureGraphExists(g) {
+	return g.exists().then(exists => exists ? g : g.create({}));
+}
 
 function ensureIndices(c, tbl, tblDefn) {
 	const p = [];
@@ -39,13 +53,34 @@ function ensureIndices(c, tbl, tblDefn) {
 	return Promise.all(p);
 }
 
+function ensureEdgeRelations(builtinTables) {
+	const p = [];
+	const g = db.graph("system_relations");
+	for (let [tbl, tblDefn] of Object.entries(builtinTables)) {
+		if (isRelationTable(tbl)) continue;
+
+		for (let [fld, fldDefn] of Object.entries(tblDefn)) {
+			if (fldDefn.foreignKey) {
+				// insert an edge between tbl and fld.type collections with tbl.fld as the name of relation
+				// there could be multiple edges for the same relation. E.g. person -> [addresses]
+				const from = tbl;
+				const to = fldDefn.type;
+				const edgeName = fld;
+				p.push(createEdgeColl(edgeName, from, to, g));
+			}
+		}
+	}
+	return ensureGraphExists(g).then(() => Promise.all(p));
+}
+
 
 function ensureTables(builtinTables) {
 	const p = [];
 	for (let [tbl, tblDefn] of Object.entries(builtinTables)) {
+		if (isRelationTable(tbl)) continue;
 		p.push(createColl(tbl).then(coll => ensureIndices(coll, tbl, tblDefn)));
 	}
-	return Promise.all(p);
+	return Promise.all(p).then(() => ensureEdgeRelations(builtinTables));
 }
 
 function ensureTypeRecord(typeDefColl, key, typeDefn) {
