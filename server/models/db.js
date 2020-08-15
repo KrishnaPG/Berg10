@@ -8,15 +8,17 @@ const dbConfig = require('config').db;
 const { normalizeTables, isGeoType, isRelationTable } = require('./db_schemaNormalization');
 const { getValidators } = require('./db_schemaValidation');
 
+const RelationGraphName = "system_relations";
+
 const db = new Database(dbConfig);
 db.useDatabase(dbConfig.dbName);
 db.useBasicAuth(dbConfig.auth.username, dbConfig.auth.password);
 
-const err = (msg, ex) => { throw new Error(" Context: " + msg + ", " + ex.stack); };
+const err = (msg, ex) => { throw new Error(msg + ", " + ex.stack); };
 const createColl = name => {
 	const coll = db.collection(name);
 	return coll.exists().then(exists =>
-		exists ? coll : coll.create({ waitForSync: true }).then(() => coll).catch(ex => err("createColl('" + name + "')", ex))
+		exists ? coll : coll.create({ waitForSync: true }).then(() => coll).catch(ex => err(`createColl('${name}')`, ex))
 	);
 };
 const createEdgeColl = (edgeName, fromName, toName, g) => {
@@ -26,7 +28,7 @@ const createEdgeColl = (edgeName, fromName, toName, g) => {
 		return coll.create({ waitForSync: true })
 			.then(() => g.addEdgeDefinition({ collection: edgeName, from: [fromName], to: [toName] }))
 			.then(() => coll)
-			.catch(ex => err("createEdgeColl('" + name + "')", ex));
+			.catch(ex => err(`createEdgeColl('${edgeName}': '${fromName}' -> '${toName}')`, ex));
 	});
 }; 
 
@@ -55,12 +57,12 @@ function ensureIndices(c, tbl, tblDefn) {
 
 function ensureEdgeRelations(builtinTables) {
 	const p = [];
-	const g = db.graph("system_relations");
+	const g = db.graph(RelationGraphName);
 	for (let [tbl, tblDefn] of Object.entries(builtinTables)) {
 		if (isRelationTable(tbl)) continue;
 
 		for (let [fld, fldDefn] of Object.entries(tblDefn)) {
-			if (fldDefn.foreignKey) {
+			if (fldDefn.foreignKey && fldDefn.isArray) {
 				// insert an edge between tbl and fld.type collections with tbl.fld as the name of relation
 				// there could be multiple edges for the same relation. E.g. person -> [addresses]
 				const from = tbl;
@@ -103,14 +105,15 @@ module.exports = db;
 module.exports.init = function () {
 	const builtinTables = normalizeTables(require('./db_builtinTables'));
 	const tableValidators = getValidators(builtinTables);
-	console.log("validators: ", tableValidators);
-	//return Promise.reject("-----some error------");
 	return ensureTables(builtinTables).then(() => {
-		const userColl = db.collection("users");
-		const typeDefColl = db.collection("typedef");
-		module.exports.userColl = userColl;
-		module.exports.typeDefColl = typeDefColl;
-		return ensureTypeRecord(typeDefColl, "schepe", builtinTables["typedef"]);
+		const relationGraph = db.graph(RelationGraphName);
+		module.exports.aclColl = db.collection("acls");
+		module.exports.userColl = db.collection("users");
+		module.exports.groupColl = db.collection("groups");
+		module.exports.typeDefColl = db.collection("typeDefs");
+		module.exports.relationGraph = relationGraph;
+		module.exports.membershipEdges = relationGraph.edgeCollection("memberOf");
+		return ensureTypeRecord(module.exports.typeDefColl, "schepe", builtinTables["typeDefs"]);
 	});
 }
 

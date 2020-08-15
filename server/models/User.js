@@ -2,7 +2,6 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
-const config = require('config');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const db = require('./db');
@@ -18,7 +17,7 @@ class User {
 		});
 	}
 	static findById(id, cb = (err, user) => { }) { //TODO: implement caching - this is a high frequency call
-		return db.userColl.firstExample({ [config.db.idField]: id }).then(user => cb(null, makeInstance(user))).catch(ex => {
+		return db.userColl.firstExample({ [db.idField]: id }).then(user => cb(null, makeInstance(user))).catch(ex => {
 			if (ex.code == 404) return cb(null, null);
 			cb(ex);
 		});
@@ -41,9 +40,26 @@ class User {
 	}
 };
 
+function createUser(user) {
+	return db.userColl.save(user);
+	// return db.beginTransaction({ read: [], write: [db.userColl, db.aclColl, db.groupColl] }).then(trx => {
+	// 	const p = [
+
+	// 	]
+	// 	return trx.run(() => db.userColl.save(user))
+	// 		.then(({ _key }) => {
+	// 			return Promise.all([
+	// 				db.aclColl.save({ resKey: _key, resType: "group" })
+	// 			]);
+	// 		})
+	// 		.then(() => trx.commit())
+	// 		.catch(ex => trx.abort().then(() => { throw ex; }));
+	// });
+}
+
 function saveUser(user, cb) {
 	return User.hashPassword(user)
-		.then(user => user[config.db.idField] ? db.userColl.update({ [config.db.idField]: user[config.db.idField] }, user) : db.userColl.save(user))
+		.then(user => user[db.idField] ? db.userColl.update({ [db.idField]: user[db.idField] }, user) : createUser(user))
 		.then(_result => cb(null))
 		.catch(ex => cb(ex));
 }
