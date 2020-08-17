@@ -3,6 +3,7 @@
  * All Rights Reserved.
  */
 const config = require('config');
+const chalk = require('chalk');
 
 const Axios = require('axios');
 Axios.defaults.baseURL = `http://${config.server.host}:${config.server.port}/api/`;
@@ -40,6 +41,8 @@ function createUsers(n = 20) {
 	return Promise.all(p);
 }
 
+const delay = t => new Promise((resolve, reject) => setTimeout(resolve, t));
+
 async function main() {
 	// ensure that the user knows what he is doing
 	const message = `
@@ -56,15 +59,31 @@ Usage: ${process.argv[0]} ${process.argv[1]} -y [gDataPrefix]
 	if (process.argv.length > 3)
 		gDataPrefix = process.argv[3];
 	
-	const builtinTables = normalizeTables(require('../server/models/db_builtinTables'));
-	console.log("tables: ", builtinTables);
+	console.log(chalk.green('[✓]'), "Arguments validated");
+
+	const rpc = {
+		jsonrpc: "2.0",
+		method: "invoke",
+		params: {
+			rid: "typedef",
+			method: "createInstance"
+		}
+	};
+	await Axios.post("invoke", rpc)
+		.then(console.log)
+		.catch(ex => { console.warn("  " + getAxiosErrorMsg(ex)) })
+
+	process.stdout.write("--> Normalizing Tables\r");
+	//const builtinTables = normalizeTables(require('../server/models/db_builtinTables'));
+	console.log(chalk.green('[✓]'), "Normalizing Tables");
 
 	process.exit(0);
 	
-	console.log("Creating Users")
+	process.stdout.write("--> Creating Users\r");
 	await createUsers(5);
+	console.log(chalk.green('[✓]'), "Creating Users")
 
-	console.log("Done");
+	console.log(chalk.green('[✓]'), "Done");
 }
 
 main();

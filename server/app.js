@@ -22,6 +22,7 @@ const apiController = require('./controllers/api');
 const contactController = require('./controllers/contact');
 const userController = require('./controllers/user');
 const typedefController = require('./controllers/typedef');
+const invokeProviderMethod = require('./providers');
 
 const express = require('express');
 const passportConfig = require('./auth/passport');
@@ -52,6 +53,9 @@ app.post('/api/typedef', typedefController.create);
 app.get('/api/typedef/:_key', typedefController.get);
 app.put('/api/typedef/:_key', typedefController.update);
 app.delete('/api/typedef/:_key', typedefController.remove);
+
+app.post('/api/invoke', invokeProviderMethod);
+
 
 // For oAuth based routes we use Sessions
 app.use(session(Object.assign({}, {

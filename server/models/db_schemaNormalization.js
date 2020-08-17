@@ -81,7 +81,7 @@ function normalizeFieldDefn(tbl, fld, fldDefn, pendingTables, isArrayAllowed = t
 			return null;
 		} else if (fldDefn.length > 1) {
 			// must be enum values
-			return { type: "enum", values: fldDefn };
+			return { type: "enum", values: fldDefn, index: true };
 		}
 	} else {
 		switch (typeof fldDefn) {

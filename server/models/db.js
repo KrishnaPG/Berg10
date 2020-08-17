@@ -100,6 +100,29 @@ function ensureTypeRecord(typeDefColl, key, typeDefn) {
 	});
 }
 
+function ensureCustomIndices() {
+	// specific indices on graph edges that are not represented in the table structure
+	const p = [];
+	// user membership to groups vary based on ugCtx
+	p.push(module.exports.membershipEdges.ensureIndex({ type: "persistent", fields: ["ugCtx, appCtx"] }) // TODO: can we remove the appCtx here?
+		.catch(ex => err(`ensureIndex('membershipEdges.ugCtx')`, ex)));
+	// resource belongs to different resourceGroup vary based on rgCtx
+	p.push(module.exports.resourceBelongsTo.ensureIndex({ type: "persistent", fields: ["rgCtx, appCtx"] })
+		.catch(ex => err(`ensureIndex('resourceBelongsTo.rgCtx')`, ex)));
+	// permission differ based on permCtx
+	p.push(module.exports.permissionEdges.ensureIndex({ type: "persistent", fields: ["permCtx, appCtx"] })
+		.catch(ex => err(`ensureIndex('permissionEdges.permCtx')`, ex)));
+	// The available list of userGroups and resourceGroups vary based on appCtx
+	p.push(module.exports.userOwnedUG.ensureIndex({ type: "persistent", fields: ["appCtx"] })
+		.catch(ex => err(`ensureIndex('userOwnedUG.appCtx')`, ex)));
+	p.push(module.exports.userOwnedRG.ensureIndex({ type: "persistent", fields: ["appCtx"] })
+		.catch(ex => err(`ensureIndex('userOwnedRG.appCtx')`, ex)));
+	// make the combination unique
+	p.push(module.exports.resGroupMethods.ensureIndex({ type: "persistent", fields: ["rg, type, method, permit"], unique: true })
+		.catch(ex => err(`ensureIndex('resGroupMethods.unique')`, ex)));	
+	return Promise.all(p);
+}
+
 module.exports = db;
 
 module.exports.init = function () {
@@ -107,14 +130,23 @@ module.exports.init = function () {
 	const tableValidators = getValidators(builtinTables);
 	return ensureTables(builtinTables).then(() => {
 		const relationGraph = db.graph(RelationGraphName);
+
 		module.exports.aclColl = db.collection("acls");
 		module.exports.userColl = db.collection("users");
-		module.exports.groupColl = db.collection("groups");
 		module.exports.typeDefColl = db.collection("typeDefs");
+		module.exports.resGroupColl = db.collection("resourceGroups");
+		module.exports.userGroupColl = db.collection("userGroups");
+		module.exports.resGroupMethods = db.collection("resGroupMethods");
+
 		module.exports.relationGraph = relationGraph;
+		module.exports.userOwnedUG = relationGraph.edgeCollection("createdUG");
+		module.exports.userOwnedRG = relationGraph.edgeCollection("createdRG");
 		module.exports.membershipEdges = relationGraph.edgeCollection("memberOf");
-		return ensureTypeRecord(module.exports.typeDefColl, "schepe", builtinTables["typeDefs"]);
-	});
+		module.exports.permissionEdges = relationGraph.edgeCollection("permission");
+		module.exports.resourceBelongsTo = relationGraph.edgeCollection("belongsTo");
+
+		return ensureCustomIndices();
+	}).then(() => ensureTypeRecord(module.exports.typeDefColl, "schepe", builtinTables["typeDefs"]));
 }
 
 module.exports.idField = dbConfig.idField;
