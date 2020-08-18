@@ -20,6 +20,7 @@ const extendedFieldTypes = {
 	"code": { type: "text", format: "code", nullable: true },
 	"email": { type: "string", format: "email", unique: true, nullable: false, index: true, max: 32 },
 	"html": { type: "text", format: "html", nullable: true },
+	"regex": { type: "string", format: "regex", nullable: false, index: false, max: 128 },
 	"richText": { type: "text", format: "rtf", nullable: true },
 	"url": { type: "string", format: "url", nullable: true, index: true, max: 128 }
 };

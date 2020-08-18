@@ -113,13 +113,13 @@ function ensureCustomIndices() {
 	const p = [];
 
 	// user membership to groups vary based on ugCtx
-	p.push(module.exports.membershipEdges.ensureIndex({ type: "persistent", fields: ["ugCtx, appCtx"] }) // TODO: can we remove the appCtx here?
+	p.push(module.exports.membershipEdges.ensureIndex({ type: "persistent", fields: ["ugCtx", "appCtx"] }) // TODO: can we remove the appCtx here?
 		.catch(ex => err(`ensureIndex('membershipEdges.ugCtx')`, ex)));
 	// resource belongs to different resourceGroup vary based on rgCtx
-	p.push(module.exports.resourceBelongsTo.ensureIndex({ type: "persistent", fields: ["rgCtx, appCtx"] })
+	p.push(module.exports.resourceBelongsTo.ensureIndex({ type: "persistent", fields: ["rgCtx", "appCtx"] })
 		.catch(ex => err(`ensureIndex('resourceBelongsTo.rgCtx')`, ex)));
 	// permission differ based on permCtx
-	p.push(module.exports.permissionEdges.ensureIndex({ type: "persistent", fields: ["permCtx, appCtx"] })
+	p.push(module.exports.permissionEdges.ensureIndex({ type: "persistent", fields: ["permCtx", "appCtx"] })
 		.catch(ex => err(`ensureIndex('permissionEdges.permCtx')`, ex)));
 	
 	// The available list of userGroups and resourceGroups vary based on appCtx
@@ -133,8 +133,10 @@ function ensureCustomIndices() {
 	// make the combination unique
 	p.push(module.exports.resourceBelongsTo.ensureIndex({ type: "persistent", fields: ["_from", "rgCtx"], unique: true })
 		.catch(ex => err(`ensureIndex('resourceBelongsTo.unique')`, ex)));
-	p.push(module.exports.resGroupMethods.ensureIndex({ type: "persistent", fields: ["rg, type, method, permit"], unique: true })
+	p.push(module.exports.resGroupMethods.ensureIndex({ type: "persistent", fields: ["rg", "type", "method"], unique: true })
 		.catch(ex => err(`ensureIndex('resGroupMethods.unique')`, ex)));
+	p.push(module.exports.permissionEdges.ensureIndex({ type: "persistent", fields: ["_from", "_to"], unique: true })
+		.catch(ex => err(`ensureIndex('permissionEdges.unique')`, ex)));
 	
 	return Promise.all(p);
 }

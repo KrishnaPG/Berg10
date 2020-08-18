@@ -35,6 +35,7 @@ class User {
 class Resource {
 	static createNew(resource, acl) {
 		// TODO: is the user allowed to create new resources? check permissions
+		// TODO: update the resource.ownerUG 
 		const t = new Date();
 		return Promise.all([
 			// create the resource
@@ -56,9 +57,17 @@ class Resource {
 					db.membershipEdges.save({ t }, acl.user.id, ownerUG[db.idField]).then(() => ownerUG)
 				)
 			])
-		).then(([defaultRG, ownerUG]) => {
-			// give all permissions on defaultRG to the owner group
-		});		
+		).then(([defaultRG, ownerUG]) => 
+			db.resGroupMethods.save({
+				rg: defaultRG[db.idField],
+				type: resource.type,
+				method: ".+",	// all methods
+				permit: "allow"
+			}).then(resGroupMethod => 
+				// give all permissions on defaultRG to the owner group
+				db.permissionEdges.save({ t, permCtx: acl.permCtx }, ownerUG[db.idField], resGroupMethod[db.idField])
+			)
+		);
 	}
 }
 

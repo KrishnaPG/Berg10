@@ -39,7 +39,7 @@ module.exports = {
 	resGroupMethods: {
 		rg: "resourceGroups",
 		type: "typeDefs",
-		method: "typeMethods",
+		method:"regex",
 		permit: ["allow", "deny"]
 	},
 	// secCtx: {
