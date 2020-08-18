@@ -85,24 +85,33 @@ function ensureTables(builtinTables) {
 	return Promise.all(p).then(() => ensureEdgeRelations(builtinTables));
 }
 
-function ensureTypeRecord(typeDefColl, key, typeDefn) {
-	return typeDefColl.firstExample({ [dbConfig.keyField]: key }).catch(ex => {
-		if (ex.code == 404) {
-			// whenever the db_builtinTables.js is changed, ensure to update this code
-			return typeDefColl.save({
-				[dbConfig.keyField]: key,
-				name: key,
-				schema: JSON.stringify(typeDefn),
-				private: false
-			});
-		}
-		err("ensureTypeRecord", ex);
+function ensureRecord(coll, record) {
+	return coll.firstExample({ [dbConfig.keyField]: record[dbConfig.keyField] }).catch(ex => { 
+		if (ex.code == 404) 
+			return coll.save(record);
+		err(`ensureRecord('${coll.name}','${record[dbConfig.keyField]}')`, ex);
 	});
 }
+
+// function ensureTypeRecord(typeDefColl, key, typeDefn) {
+// 	return typeDefColl.firstExample({ [dbConfig.keyField]: key }).catch(ex => {
+// 		if (ex.code == 404) {
+// 			// whenever the db_builtinTables.js is changed, ensure to update this code
+// 			return typeDefColl.save({
+// 				[dbConfig.keyField]: key,
+// 				name: key,
+// 				schema: JSON.stringify(typeDefn),
+// 				private: false
+// 			});
+// 		}
+// 		err("ensureTypeRecord", ex);
+// 	});
+// }
 
 function ensureCustomIndices() {
 	// specific indices on graph edges that are not represented in the table structure
 	const p = [];
+
 	// user membership to groups vary based on ugCtx
 	p.push(module.exports.membershipEdges.ensureIndex({ type: "persistent", fields: ["ugCtx, appCtx"] }) // TODO: can we remove the appCtx here?
 		.catch(ex => err(`ensureIndex('membershipEdges.ugCtx')`, ex)));
@@ -112,14 +121,60 @@ function ensureCustomIndices() {
 	// permission differ based on permCtx
 	p.push(module.exports.permissionEdges.ensureIndex({ type: "persistent", fields: ["permCtx, appCtx"] })
 		.catch(ex => err(`ensureIndex('permissionEdges.permCtx')`, ex)));
+	
 	// The available list of userGroups and resourceGroups vary based on appCtx
 	p.push(module.exports.userOwnedUG.ensureIndex({ type: "persistent", fields: ["appCtx"] })
 		.catch(ex => err(`ensureIndex('userOwnedUG.appCtx')`, ex)));
 	p.push(module.exports.userOwnedRG.ensureIndex({ type: "persistent", fields: ["appCtx"] })
 		.catch(ex => err(`ensureIndex('userOwnedRG.appCtx')`, ex)));
+	p.push(module.exports.userDefaultRG.ensureIndex({ type: "persistent", fields: ["_from", "appCtx"], unique: true })
+		.catch(ex => err(`ensureIndex('userDefaultRG.appCtx')`, ex)));
+	
 	// make the combination unique
+	p.push(module.exports.resourceBelongsTo.ensureIndex({ type: "persistent", fields: ["_from", "rgCtx"], unique: true })
+		.catch(ex => err(`ensureIndex('resourceBelongsTo.unique')`, ex)));
 	p.push(module.exports.resGroupMethods.ensureIndex({ type: "persistent", fields: ["rg, type, method, permit"], unique: true })
-		.catch(ex => err(`ensureIndex('resGroupMethods.unique')`, ex)));	
+		.catch(ex => err(`ensureIndex('resGroupMethods.unique')`, ex)));
+	
+	return Promise.all(p);
+}
+
+function ensureBuiltinRecords() {
+	const p = [];
+	
+	// create user groups
+	p.push(ensureRecord(module.exports.userGroupColl, {
+		[dbConfig.keyField]: "ug-Everyone",
+		name: "Everyone",
+		description: "Everyone without any restriction. Includes logged-in, non-logged-in and every other user category without bounds."
+	}).then(group => module.exports.builtIn.userGroups.Everyone = group[dbConfig.idField]));
+
+	p.push(ensureRecord(module.exports.userGroupColl, {
+		[dbConfig.keyField]: "ug-LoginUsers",
+		name: "LoginUsers",
+		description: "All users with a login account. Excludes any guest users that have no login account."
+	}).then(group => module.exports.builtIn.userGroups.LoginUsers = group[dbConfig.idField]));
+
+	p.push(ensureRecord(module.exports.userGroupColl, {
+		[dbConfig.keyField]: "ug-Guests",
+		name: "Guests",
+		description: "Users that have no login account"
+	}));
+	
+	// create resource groups
+	p.push(ensureRecord(module.exports.resGroupColl, {
+		[dbConfig.keyField]: "rg-Public",
+		name: "Public",
+		description: "A resource group that is accessible to Everyone"
+	}).then(group => module.exports.builtIn.resourceGroups.Public = group[dbConfig.idField]));
+
+	// ensure the typeDef record
+	// p.push(ensureRecord(module.exports.typeDefColl, {
+	// 	[dbConfig.keyField]: "schepe",
+	// 	name: "schepe",
+	// 	schema: JSON.stringify(builtinTables["typeDefs"]),
+	// 	private: false
+	// }));
 	return Promise.all(p);
 }
 
@@ -134,6 +189,7 @@ module.exports.init = function () {
 		module.exports.aclColl = db.collection("acls");
 		module.exports.userColl = db.collection("users");
 		module.exports.typeDefColl = db.collection("typeDefs");
+		module.exports.resourceColl = db.collection("resources");
 		module.exports.resGroupColl = db.collection("resourceGroups");
 		module.exports.userGroupColl = db.collection("userGroups");
 		module.exports.resGroupMethods = db.collection("resGroupMethods");
@@ -141,13 +197,23 @@ module.exports.init = function () {
 		module.exports.relationGraph = relationGraph;
 		module.exports.userOwnedUG = relationGraph.edgeCollection("createdUG");
 		module.exports.userOwnedRG = relationGraph.edgeCollection("createdRG");
+		module.exports.userDefaultRG = relationGraph.edgeCollection("defaultRG");
 		module.exports.membershipEdges = relationGraph.edgeCollection("memberOf");
 		module.exports.permissionEdges = relationGraph.edgeCollection("permission");
 		module.exports.resourceBelongsTo = relationGraph.edgeCollection("belongsTo");
 
 		return ensureCustomIndices();
-	}).then(() => ensureTypeRecord(module.exports.typeDefColl, "schepe", builtinTables["typeDefs"]));
-}
+	}).then(ensureBuiltinRecords);
+};
+
+module.exports.builtIn = {
+	userGroups: {},
+	resourceGroups: {}
+};
+
+module.exports.defaults = {
+	appCtx: "defApp"
+};
 
 module.exports.idField = dbConfig.idField;
 module.exports.keyField = dbConfig.keyField;

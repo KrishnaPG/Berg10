@@ -40,21 +40,28 @@ class User {
 	}
 };
 
-function createUser(user) {
-	return db.userColl.save(user);
-	// return db.beginTransaction({ read: [], write: [db.userColl, db.aclColl, db.groupColl] }).then(trx => {
-	// 	const p = [
-
-	// 	]
-	// 	return trx.run(() => db.userColl.save(user))
-	// 		.then(({ _key }) => {
-	// 			return Promise.all([
-	// 				db.aclColl.save({ resKey: _key, resType: "group" })
-	// 			]);
-	// 		})
-	// 		.then(() => trx.commit())
-	// 		.catch(ex => trx.abort().then(() => { throw ex; }));
-	// });
+function createUser(user, { appCtx = db.defaults.appCtx } = {}) {
+	return db.beginTransaction({ read: [], write: [db.userColl, db.membershipEdges, db.resGroupColl, db.userDefaultRG] }).then(trx => { 
+		return trx.run(() => db.userColl.save(user))
+			.then(userRecord => {
+				const t = new Date();
+				// add user to "Everyone" user-group
+				const p1 = trx.run(() => db.membershipEdges.save({ t }, userRecord[db.idField], db.builtIn.userGroups.Everyone));
+				// create a default resource-group for the user, and assign 
+				const p2 = trx.run(() => db.resGroupColl.save({
+					[db.keyField]: `rg-u${userRecord[db.keyField]}-${appCtx}`,
+					name: "default",
+					description: `Default Resource Group for the user [${userRecord[db.idField]}] under appCtx [${appCtx}]`
+				}))
+					.then(resGroup => trx.run(() =>
+						db.userDefaultRG.save({ t, appCtx }, userRecord[db.idField], resGroup[db.idField])
+					));
+				return Promise.all([p1, p2]);
+			})
+			.then(() => trx.commit())
+			.catch(ex => trx.abort().finally(() => { throw new Error(`createUser failed with error: ${ex.message}`); }));
+	});
+	// if we have to add to `LoginUsers` group we need AppCtx, since group memberships are context sensitive
 }
 
 function saveUser(user, cb) {
