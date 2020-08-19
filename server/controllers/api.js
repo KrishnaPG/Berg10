@@ -3,7 +3,8 @@
  * All Rights Reserved.
  */
 const config = require('config');
-const Utils = require('../auth/utils');
+const Utils = require('../utils/auth');
+const { RPCResponse, RPCError } = require('../utils/rpc');
 
 const AllowedOrigins = config.cors.allowedOrigins.map(el => Utils.wildcardToRegExp(el)); // pre-bake to regExps
 
@@ -13,7 +14,7 @@ exports.getUser = (req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin);
   res.header('Access-Control-Allow-Credentials', true);
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  req.isAuthenticated() ? res.send({ sessionID: req.sessionID, user: req.user }) : res.sendStatus(401);
+  req.isAuthenticated() ? res.send(RPCResponse({ sessionID: req.sessionID, user: req.user })) : res.sendStatus(401);
 };
 
 exports.logout = (req, res, next) => {
@@ -26,8 +27,8 @@ exports.logout = (req, res, next) => {
   res.clearCookie(config.session.name);
   req.session ? req.session.destroy(err => {
     req.user = null;
-    err ? res.send(err) : res.send({ result: "success" });
-  }) : res.send({ result: "success" });
+    err ? res.send(RPCError(err)) : res.send(RPCResponse("success"));
+  }) : res.send(RPCResponse("success"));
 };
 
 

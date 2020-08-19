@@ -30,7 +30,7 @@ module.exports = {
 	userGroups: {
 		name: { type: "string", unique: true, nullable: false, index: true, max: 32 },
 		description: { type: "text", nullable: true },
-		permission: ["resGroupMethods"],
+		permissions: ["resGroupMethods"],
 	},
 	resourceGroups: {
 		name: { type: "string", nullable: false, index: true, max: 32 },

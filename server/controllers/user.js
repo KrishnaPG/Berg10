@@ -10,7 +10,7 @@ const nodemailer = require('nodemailer');
 const passport = require('passport');
 
 const User = require('../models/User');
-const { RPCError } = require('../auth/utils');
+const { RPCResponse, RPCError } = require('../utils/rpc');
 const { sendJWT, verifyJWT } = require('./jwt');
 
 const { promisify } = require('util');
@@ -64,9 +64,9 @@ exports.postSignup = (req, res, next) => {
     if (existingUser) {
       return res.status(409).send(RPCError.duplicate(`[${req.body.email}]: Account with that email address already exists`));
     }
-    user.save((err) => {
+    user.save((err, userRecord) => {
       if (err) { return next(err); }
-      sendJWT(user, req, res);
+      sendJWT(userRecord, req, res);
     });
   });
 };

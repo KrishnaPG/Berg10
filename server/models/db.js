@@ -21,6 +21,7 @@ const createColl = name => {
 		exists ? coll : coll.create({ waitForSync: true }).then(() => coll).catch(ex => err(`createColl('${name}')`, ex))
 	);
 };
+
 const createEdgeColl = (edgeName, fromName, toName, g) => {
 	const coll = db.edgeCollection(edgeName);
 	return coll.exists().then(exists => {
@@ -31,6 +32,25 @@ const createEdgeColl = (edgeName, fromName, toName, g) => {
 			.catch(ex => err(`createEdgeColl('${edgeName}': '${fromName}' -> '${toName}')`, ex));
 	});
 }; 
+
+function ensureEdgeRelations(g, builtinTables) {
+	const p = [];
+	for (let [tbl, tblDefn] of Object.entries(builtinTables)) {
+		if (isRelationTable(tbl)) continue;
+
+		for (let [fld, fldDefn] of Object.entries(tblDefn)) {
+			if (fldDefn.foreignKey && fldDefn.isArray) {
+				// insert an edge between tbl and fld.type collections with tbl.fld as the name of relation
+				// there could be multiple edges for the same relation. E.g. person -> [addresses]
+				const from = tbl;
+				const to = fldDefn.type;
+				const edgeName = fld;
+				p.push(createEdgeColl(edgeName, from, to, g));
+			}
+		}
+	}
+	return Promise.all(p);
+}
 
 function ensureGraphExists(g) {
 	return g.exists().then(exists => exists ? g : g.create({}));
@@ -55,58 +75,22 @@ function ensureIndices(c, tbl, tblDefn) {
 	return Promise.all(p);
 }
 
-function ensureEdgeRelations(builtinTables) {
-	const p = [];
-	const g = db.graph(RelationGraphName);
-	for (let [tbl, tblDefn] of Object.entries(builtinTables)) {
-		if (isRelationTable(tbl)) continue;
-
-		for (let [fld, fldDefn] of Object.entries(tblDefn)) {
-			if (fldDefn.foreignKey && fldDefn.isArray) {
-				// insert an edge between tbl and fld.type collections with tbl.fld as the name of relation
-				// there could be multiple edges for the same relation. E.g. person -> [addresses]
-				const from = tbl;
-				const to = fldDefn.type;
-				const edgeName = fld;
-				p.push(createEdgeColl(edgeName, from, to, g));
-			}
-		}
-	}
-	return ensureGraphExists(g).then(() => Promise.all(p));
-}
-
-
 function ensureTables(builtinTables) {
 	const p = [];
 	for (let [tbl, tblDefn] of Object.entries(builtinTables)) {
 		if (isRelationTable(tbl)) continue;
 		p.push(createColl(tbl).then(coll => ensureIndices(coll, tbl, tblDefn)));
 	}
-	return Promise.all(p).then(() => ensureEdgeRelations(builtinTables));
+	return Promise.all(p);
 }
 
 function ensureRecord(coll, record) {
 	return coll.firstExample({ [dbConfig.keyField]: record[dbConfig.keyField] }).catch(ex => { 
 		if (ex.code == 404) 
-			return coll.save(record);
+			return coll.save(record, { waitForSync: true });
 		err(`ensureRecord('${coll.name}','${record[dbConfig.keyField]}')`, ex);
 	});
 }
-
-// function ensureTypeRecord(typeDefColl, key, typeDefn) {
-// 	return typeDefColl.firstExample({ [dbConfig.keyField]: key }).catch(ex => {
-// 		if (ex.code == 404) {
-// 			// whenever the db_builtinTables.js is changed, ensure to update this code
-// 			return typeDefColl.save({
-// 				[dbConfig.keyField]: key,
-// 				name: key,
-// 				schema: JSON.stringify(typeDefn),
-// 				private: false
-// 			});
-// 		}
-// 		err("ensureTypeRecord", ex);
-// 	});
-// }
 
 function ensureCustomIndices() {
 	// specific indices on graph edges that are not represented in the table structure
@@ -137,6 +121,8 @@ function ensureCustomIndices() {
 		.catch(ex => err(`ensureIndex('resGroupMethods.unique')`, ex)));
 	p.push(module.exports.permissionEdges.ensureIndex({ type: "persistent", fields: ["_from", "_to"], unique: true })
 		.catch(ex => err(`ensureIndex('permissionEdges.unique')`, ex)));
+	p.push(module.exports.typeMethodsColl.ensureIndex({ type: "persistent", fields: ["typedef", "name"], unique: true })
+		.catch(ex => err(`ensureIndex('typeMethodsColl.unique')`, ex)));
 	
 	return Promise.all(p);
 }
@@ -183,30 +169,36 @@ function ensureBuiltinRecords() {
 module.exports = db;
 
 module.exports.init = function () {
+	
+	const relationGraph = db.graph(RelationGraphName);
 	const builtinTables = normalizeTables(require('./db_builtinTables'));
-	const tableValidators = getValidators(builtinTables);
-	return ensureTables(builtinTables).then(() => {
-		const relationGraph = db.graph(RelationGraphName);
 
-		module.exports.aclColl = db.collection("acls");
-		module.exports.userColl = db.collection("users");
-		module.exports.typeDefColl = db.collection("typeDefs");
-		module.exports.resourceColl = db.collection("resources");
-		module.exports.resGroupColl = db.collection("resourceGroups");
-		module.exports.userGroupColl = db.collection("userGroups");
-		module.exports.resGroupMethods = db.collection("resGroupMethods");
+	return ensureTables(builtinTables)
+		.then(() => ensureGraphExists(relationGraph))
+		.then(() => ensureEdgeRelations(relationGraph, builtinTables))
+		.then(() => {
+			module.exports.aclColl = db.collection("acls");
+			module.exports.userColl = db.collection("users");
+			module.exports.typeDefColl = db.collection("typeDefs");
+			module.exports.resourceColl = db.collection("resources");
+			module.exports.resGroupColl = db.collection("resourceGroups");
+			module.exports.userGroupColl = db.collection("userGroups");
+			module.exports.typeMethodsColl = db.collection("typeMethods");
+			module.exports.resGroupMethods = db.collection("resGroupMethods");
 
-		module.exports.relationGraph = relationGraph;
-		module.exports.userOwnedUG = relationGraph.edgeCollection("createdUG");
-		module.exports.userOwnedRG = relationGraph.edgeCollection("createdRG");
-		module.exports.userDefaultRG = relationGraph.edgeCollection("defaultRG");
-		module.exports.membershipEdges = relationGraph.edgeCollection("memberOf");
-		module.exports.permissionEdges = relationGraph.edgeCollection("permission");
-		module.exports.resourceBelongsTo = relationGraph.edgeCollection("belongsTo");
+			module.exports.relationGraph = relationGraph;
+			module.exports.userOwnedUG = relationGraph.edgeCollection("createdUG");
+			module.exports.userOwnedRG = relationGraph.edgeCollection("createdRG");
+			module.exports.userDefaultRG = relationGraph.edgeCollection("defaultRG");
+			module.exports.membershipEdges = relationGraph.edgeCollection("memberOf");
+			module.exports.permissionEdges = relationGraph.edgeCollection("permissions");
+			module.exports.resourceBelongsTo = relationGraph.edgeCollection("belongsTo");
 
-		return ensureCustomIndices();
-	}).then(ensureBuiltinRecords);
+			return ensureCustomIndices();
+		}).then(ensureBuiltinRecords);
 };
+
+module.exports.ensureRecord = ensureRecord;
 
 module.exports.builtIn = {
 	userGroups: {},

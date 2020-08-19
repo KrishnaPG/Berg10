@@ -4,8 +4,8 @@
  */
 const config = require('config');
 const chalk = require('chalk');
-const { Axios, getAxiosErrorMsg } = require('./utils');
-
+const { db, Axios, getAxiosErrorMsg } = require('./utils');
+debugger;
 
 // gets applied as prefix to all created data items
 let gDataPrefix = "";
@@ -13,6 +13,31 @@ let gDataPrefix = "";
 // utility functions
 const getNoOfDigits = n => (Math.trunc(Math.log10(n)) + 1);
 
+function createResource(type, user) {
+	const rpc = {
+		jsonrpc: "2.0",
+		method: "invoke",
+		params: {	user,	resource: { type }	}
+	};
+	return Axios.post("invoke", rpc);
+}
+
+// create few resources
+async function createResources(users) {
+	const printerMethods = [
+		{
+			name: "print", inputs: {}, outputs: {}, typedef: "tPrinter", [db.keyField]: "_tPrinter.print"
+		},
+		{
+			name: "scan", inputs: {}, outputs: {}, typedef: "tPrinter", [db.keyField]: "_tPrinter.scan"
+		},
+		{
+			name: "fax", inputs: {}, outputs: {}, typedef: "tPrinter", [db.keyField]: "_tPrinter.fax"
+		}
+	];
+	await Promise.all(printerMethods.map(method => db.ensureRecord(db.typeMethodsColl, method)));
+	return Promise.all(users.map(user => createResource("tPrinter", user)));
+}
 
 // create bulk users
 function createUsers(n = 20) {
@@ -23,7 +48,7 @@ function createUsers(n = 20) {
 	{
 		email = `${gDataPrefix}user${i.toString().padStart(nDigits, "0")}@test.abc`;
 		password = confirmPassword = `${gDataPrefix}userPassword#`;
-		p.push(Axios.post("user/signup", { email, password, confirmPassword }).catch(ex => { console.warn("  " + getAxiosErrorMsg(ex))  }));
+		p.push(Axios.post("user/signup", { email, password, confirmPassword }).then(response => response.data.result.user));
 	}
 	return Promise.all(p);
 }
@@ -44,31 +69,22 @@ Usage: ${process.argv[0]} ${process.argv[1]} -y [gDataPrefix]
 
 	// override the prefix as per user preference
 	if (process.argv.length > 3)
-		gDataPrefix = process.argv[3];
-	
+		gDataPrefix = process.argv[3];	
 	console.log(chalk.green('[✓]'), "Override confirmed");
-
-	const rpc = {
-		jsonrpc: "2.0",
-		method: "invoke",
-		params: {
-			rid: "typedef",
-			method: "createInstance"
-		}
-	};
-	await Axios.post("invoke", rpc)
-		.then(console.log)
-		.catch(ex => { console.warn("  " + getAxiosErrorMsg(ex)) });
-
-	process.stdout.write("--> Normalizing Tables\r");
-	//const builtinTables = normalizeTables(require('../server/models/db_builtinTables'));
-	console.log(chalk.green('[✓]'), "Normalizing Tables");
+	
+	process.stdout.write("--> Initializing the Database\r");
+	await db.init();
+	console.log(chalk.green('[✓]'), "Initializing the Database");
 
 	process.stdout.write("--> Creating Users\r");
-	await createUsers(5);
-	console.log(chalk.green('[✓]'), "Creating Users")
+	const users = await createUsers(5);
+	console.log(chalk.green('[✓]'), "Creating Users");
+
+	process.stdout.write("--> Creating Resources\r");
+	await createResources(users);
+	console.log(chalk.green('[✓]'), "Creating Resources");
 
 	console.log(chalk.green('[✓]'), "Done");
 }
 
-main();
+main().catch(ex => console.warn(getAxiosErrorMsg(ex)));

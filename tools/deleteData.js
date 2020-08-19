@@ -29,7 +29,7 @@ Usage: ${process.argv[0]} ${process.argv[1]} -y [gDataPrefix]
 	console.log(chalk.green('[✓]'), "Override confirmed");
 
 	// delete all data from all collections
-	db.collections()
+	await db.collections()
 		.then(colls => waitForAll(colls, coll =>coll.truncate()))
 		.then(() => console.log(chalk.green('[✓]'), "Deleted all the data"))
 		.catch(console.error);

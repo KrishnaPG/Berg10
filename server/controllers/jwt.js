@@ -4,7 +4,7 @@
  */
 const config = require('config');
 const { performance } = require('perf_hooks');
-const { RPCError } = require('../auth/utils');
+const { RPCResponse, RPCError } = require('../utils/rpc');
 
 const { createSigner, createVerifier } = require('fast-jwt');
 const key = config.jwt.secret || (Math.random() * performance.timeOrigin + performance.now()).toString(Math.ceil(Math.random() * 33) + 2); // creates a variable length random string
@@ -16,7 +16,7 @@ console.log("jwt secret: ", key);
 exports.sendJWT = (user, req, res) => {
 	delete user.password; // do not leak it to the client
 	const jwt = jwtSigner({ email: user.email }); //TODO: customize the token expiration based on user's preference
-	res.send({ jwt, user });
+	res.send(RPCResponse({ jwt, user }));
 };
 
 exports.verifyJWT = (req, res, cb) => {

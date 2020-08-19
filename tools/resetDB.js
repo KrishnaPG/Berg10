@@ -5,8 +5,6 @@
 const chalk = require('chalk');
 const { db, waitForAll } = require('./utils');
 
-debugger;
-
 async function main() {
 
 	// ensure that the user knows what he is doing
@@ -23,7 +21,7 @@ Usage: ${process.argv[0]} ${process.argv[1]} -y
 	console.log(chalk.green('[✓]'), "Override confirmed");
 
 	// delete all graphs
-	db.graphs()
+	await db.graphs()
 		.then(gphs => waitForAll(gphs, gph => gph.drop()))
 		.then(() => console.log(chalk.green('[✓]'), "Deleted all graphs"))
 		.then(() => db.collections())

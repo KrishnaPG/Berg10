@@ -2,14 +2,8 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
-const { Database } = require('arangojs');
 const config = require('config');
-
-const dbConfig = config.db;
-const db = new Database(dbConfig);
-db.useDatabase(dbConfig.dbName);
-db.useBasicAuth(dbConfig.auth.username, dbConfig.auth.password);
-module.exports.db = db;
+module.exports.db = require('../server/models/db');
 
 const Axios = require('axios');
 Axios.defaults.baseURL = `http://${config.server.host}:${config.server.port}/api/`;

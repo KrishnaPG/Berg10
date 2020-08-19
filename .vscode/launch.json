@@ -7,6 +7,17 @@
 	{
 		"type": "node",
 		"request": "launch",
+		"name": "Launch Tools/LoadTestData",
+		"program": "${workspaceFolder}/tools/loadTestData.js",
+		"args": ["-y"],
+		"skipFiles": [
+			"<node_internals>/**"
+		],
+		"cwd": "${workspaceFolder}/tools"
+	},
+	{
+		"type": "node",
+		"request": "launch",
 		"name": "Launch Tools/ResetDB",
 		"program": "${workspaceFolder}/tools/resetDB.js",
 		"skipFiles": [

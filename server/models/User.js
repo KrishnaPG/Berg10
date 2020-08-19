@@ -35,40 +35,50 @@ class User {
 			});
 		});
 	}
-	save(cb = (err, user) => { }) {
+	save(cb) {
 		return saveUser(this, cb);
 	}
 };
 
 function createUser(user, { appCtx = db.defaults.appCtx } = {}) {
-	return db.beginTransaction({ read: [], write: [db.userColl, db.membershipEdges, db.resGroupColl, db.userDefaultRG] }).then(trx => { 
-		return trx.run(() => db.userColl.save(user))
-			.then(userRecord => {
-				const t = new Date();
-				// add user to "Everyone" user-group
-				const p1 = trx.run(() => db.membershipEdges.save({ t }, userRecord[db.idField], db.builtIn.userGroups.Everyone));
-				// create a default resource-group for the user, and assign 
-				const p2 = trx.run(() => db.resGroupColl.save({
-					[db.keyField]: `rg-u${userRecord[db.keyField]}-${appCtx}`,
-					name: "default",
-					description: `Default Resource Group for the user [${userRecord[db.idField]}] under appCtx [${appCtx}]`
-				}))
-					.then(resGroup => trx.run(() =>
-						db.userDefaultRG.save({ t, appCtx }, userRecord[db.idField], resGroup[db.idField])
-					));
-				return Promise.all([p1, p2]);
-			})
-			.then(() => trx.commit())
-			.catch(ex => trx.abort().finally(() => { throw new Error(`createUser failed with error: ${ex.message}`); }));
-	});
+	return db.userColl.save(user)
+		.then(userRecord => {
+			const t = new Date();
+			// add user to "Everyone" user-group
+			const p1 = db.membershipEdges.save({ t }, userRecord[db.idField], db.builtIn.userGroups.Everyone);
+			// create a default resource-group for the user 
+			const p2 = db.resGroupColl.save({
+				[db.keyField]: `rg-u${userRecord[db.keyField]}-${appCtx}`,
+				name: "default",
+				description: `Default Resource Group for the user [${userRecord[db.idField]}] under appCtx [${appCtx}]`
+			}).then(resGroup =>
+				// assign the defaultRG to the user under the current appCtx
+				db.userDefaultRG.save({ t, appCtx }, userRecord[db.idField], resGroup[db.idField])
+			);
+			return Promise.all([p1, p2]).then(() => userRecord);
+		});
 	// if we have to add to `LoginUsers` group we need AppCtx, since group memberships are context sensitive
 }
 
 function saveUser(user, cb) {
 	return User.hashPassword(user)
-		.then(user => user[db.idField] ? db.userColl.update({ [db.idField]: user[db.idField] }, user) : createUser(user))
-		.then(_result => cb(null))
-		.catch(ex => cb(ex));
+		.then(user => {
+			// if user already exists, just update the record
+			if (user[db.idField]) {
+				return db.userColl.update({ [db.idField]: user[db.idField] }, user)
+					.then(() => { if(cb) cb(null, user); return user; })
+			}
+			// else create new user record
+			return createUser(user)
+				.then(userRecord => {
+					Object.assign(user, userRecord);	// assign any ids the database might have sent
+					if(cb) cb(null, user);
+					return user;
+				})
+		}).catch(ex => {
+			if (!cb) throw new Error(`[${user.email}] unable to save the record: ${ex.message}`);
+			cb(ex);
+		});
 }
 
 function makeInstance(user) {

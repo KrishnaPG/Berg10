@@ -6,6 +6,6 @@ const JOI = require('joi');
 
 module.exports.getValidators = function (normalizedTables) {
 	for (let [tbl, tblDefn] of Object.entries(normalizedTables)) {
-		console.log(`${tbl}: ${tblDefn}`);
+		//console.log(`${tbl}: ${tblDefn}`);
 	}
 }

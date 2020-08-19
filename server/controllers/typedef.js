@@ -3,7 +3,7 @@
  * All Rights Reserved.
  */
 const Typedef = require('../models/Typedef');
-const { RPCError } = require('../auth/utils');
+const { RPCResponse, RPCError } = require('../utils/rpc');
 const { sendJWT, verifyJWT } = require('./jwt');
 
 /**
@@ -15,7 +15,7 @@ exports.find = (req, res, next) => {
 		console.log("req.params: ", req.query);
 		Typedef.find(req.query).then(results => {
 			results ?
-				res.send(results) :
+				res.send(RPCResponse(results)) :
 				res.status(404).send(RPCError.notFound(`No typeDef record exists for the query:\n ${JSON.stringify(req.query, null, " ")}`));
 		});
 	});
@@ -28,8 +28,8 @@ exports.find = (req, res, next) => {
 exports.create = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
 		Typedef.create(req.body, (err, typeDef) => {
-			if (err) { return res.status(err.statusCode).send(RPCError.generic(err.message, err.name, err.code)); }
-			res.send(typeDef);
+			if (err) { return res.status(err.statusCode).send(RPCError(err)); }
+			res.send(RPCResponse(typeDef));
 		});
 	});
 };
@@ -37,8 +37,8 @@ exports.create = (req, res, next) => {
 exports.get = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
 		Typedef.findByKey(req.body, (err, typeDef) => {
-			if (err) { return res.status(err.statusCode).send(RPCError.generic(err.message, err.name, err.code)); }
-			res.send(typeDef);
+			if (err) { return res.status(err.statusCode).send(RPCError(err)); }
+			res.send(RPCResponse(typeDef));
 		});
 	});	
 }
