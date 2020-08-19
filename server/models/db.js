@@ -113,6 +113,8 @@ function ensureCustomIndices() {
 		.catch(ex => err(`ensureIndex('userOwnedRG.appCtx')`, ex)));
 	p.push(module.exports.userDefaultRG.ensureIndex({ type: "persistent", fields: ["_from", "appCtx"], unique: true })
 		.catch(ex => err(`ensureIndex('userDefaultRG.appCtx')`, ex)));
+	p.push(module.exports.userDefaultRG.ensureIndex({ type: "persistent", fields: ["_to"], unique: true }) // no one else shares the same resource-group
+		.catch(ex => err(`ensureIndex('userDefaultRG.appCtx')`, ex)));
 	
 	// make the combination unique
 	p.push(module.exports.resourceBelongsTo.ensureIndex({ type: "persistent", fields: ["_from", "rgCtx"], unique: true })

@@ -195,7 +195,12 @@ function normalizePendingRelations(pendingRelations, normTables) {
 			if (referredTypeDefn.foreignKey)
 				throw new Error(`${tbl}.${fld} is a foreign key pointing to another foreign key: ${referredTypeDefn.foreignKey}`);
 			
-			const fldType = { type: foreignKeyTable, foreignKey: fldDefn.foreignKey.replace(foreignKeyTable, ''), index: true };
+			const fldType = {
+				type: foreignKeyTable,
+				foreignKey: fldDefn.foreignKey.replace(foreignKeyTable, ''),
+				index: true, // index all foreign keys
+				unique: fldDefn.unique
+			};
 			
 			// set type of array meta fields to be the referred table
 			if (fldDefn.isArray && fldDefn.relationTable) {

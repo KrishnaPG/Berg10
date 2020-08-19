@@ -2,10 +2,12 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
+const { performance } = require('perf_hooks');
 
-const Typedef = require('./typedef');
 const db = require('../models/db');
 const { RPCResponse, RPCError } = require('../utils/rpc');
+
+const randomId = () => Math.ceil(Math.random() * performance.timeOrigin + performance.now()).toString(36).padStart(8, "0"); // minimum 8 chars id
 
 function getKeyFromUserId(userId) {
 	return userId.replace("users/", "");
@@ -25,7 +27,7 @@ class User {
 	static createDefaultRG(userId, appCtx) {
 		// create a system resource-group for the user, under the given appCtx
 		return db.resGroupColl.save({
-			[db.keyField]: `rg-def-u${getKeyFromUserId(userId)}-${appCtx}`,
+			[db.keyField]: `rg-u${getKeyFromUserId(userId)}-${appCtx}`,
 			name: "default",
 			description: `Default Resource Group for the user [${userId}] under appCtx [${appCtx}]`
 		}).then(resGroup =>
@@ -41,9 +43,16 @@ class User {
 
 class Resource {
 	static createNew(resource, acl) {
+		
 		// TODO: is the user allowed to create new resources? check permissions
-		// TODO: update the resource.ownerUG 
 		const t = new Date(), userId = acl.user[db.idField];
+		
+		// TODO: for the resource of given type, get its consistent hash as the resourceKey
+		const resourceKey = `r${randomId()}`;
+		const ugResOwnerKey = `ug-${resourceKey}-owner`;
+		resource[db.keyField] = resourceKey;
+		resource["ownerUG"] = `userGroups/${ugResOwnerKey}`; // record for this will be created later below
+
 		return Promise.all([
 			// create the resource
 			db.resourceColl.save(resource),
@@ -56,8 +65,8 @@ class Resource {
 				db.resourceBelongsTo.save({ t, rgCtx: acl.rgCtx }, resRecord[db.idField], defaultRGId).then(() => defaultRGId),
 				// create a resource-owner user-group
 				db.userGroupColl.save({
-					[db.keyField]: `ug-r${resRecord[db.keyField]}-owner`,
-					name: `ug-r${resRecord[db.idField]}-owner`,
+					[db.keyField]: ugResOwnerKey,
+					name: ugResOwnerKey,
 					description: `Owner group for the resource [${resRecord[db.idField]}]`
 				}).then(ownerUG =>
 					// add current user to the resource-owner group, irrespective of contexts

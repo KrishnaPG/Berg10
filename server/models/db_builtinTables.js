@@ -18,7 +18,9 @@ module.exports = {
 	resources: {
 		type: "typeDefs",
 		belongsTo: ["resourceGroups"],// different RG for different rgCtx ()
-		ownerUG: "userGroups"					// the owner-group for the resource, created by the system
+		ownerUG: {	// the owner-group for the resource, created by the system
+			type: "fk", foreignKey: "userGroups", unique: true
+		}
 	},
 	users: {
 		email: "email",
