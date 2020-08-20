@@ -13,7 +13,7 @@ module.exports = {
 		name: { type: "string", unique: true, nullable: false, index: true, max: 64 },
 		inputs: "json",
 		outputs: "json",
-		typedef: "typeDefs"
+		type: "typeDefs"
 	},
 	resources: {
 		type: "typeDefs",

@@ -8,9 +8,9 @@ const collMethods = {
 	"findMany": (coll, ids) => coll.lookupByKeys(ids),
 	"find": (coll, { offset, limit, sort, desc }) => {
 		return db.query(AQL`
-				FOR r IN ${coll}
+				FOR r IN \`${coll}\`
 				LIMIT ${offset}, ${limit}
-				SORT r.${sort} ${desc ? "DESC" : "ASC"}
+				SORT r["${sort}"] ${desc ? "DESC" : "ASC"}
 				RETURN r
 		`).then(cursor => cursor.all());
 	}

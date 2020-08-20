@@ -21,7 +21,7 @@ class Typedef {
 	static count(filter) {
 		const filterExpr = AQL.literal(Typedef.convertFilter(filter));
 		return db.query(AQL`
-			FOR r IN ${db.typeDefColl}
+			FOR r IN \`${db.typeDefColl}\`
 				${filterExpr}
 				COLLECT WITH COUNT INTO length
 			RETURN length
@@ -32,16 +32,16 @@ class Typedef {
 		const filterExpr = AQL.literal("");//Typedef.convertFilter(filter));
 		//const sortExpr = AQL.literal(`SORT r.${sort} ${desc ? "DESC" : "ASC"}`);
 		return db.query(AQL`
-				FOR r IN ${db.typeDefColl}
+				FOR r IN \`${db.typeDefColl}\`
 				${filterExpr}
 				LIMIT ${offset}, ${limit}
 				RETURN r
 		`).then(cursor => cursor.all());
 
 		/* Ref: https://www.arangodb.com/docs/stable/drivers/js-reference-aql.html
-				FOR u IN users
+				FOR u IN `users`
 				FILTER u.active == true AND u.gender == "f"
-				SORT u.age ASC
+				SORT u["age"] ASC
 				LIMIT 5
 				RETURN u
 		*/
