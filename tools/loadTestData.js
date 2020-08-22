@@ -16,27 +16,48 @@ const getNoOfDigits = n => (Math.trunc(Math.log10(n)) + 1);
 function createResource(type, user) {
 	const rpc = {
 		jsonrpc: "2.0",
-		method: "invoke",
+		method: "Resource.createNew",
 		params: {	user,	resource: { type }	}
 	};
 	return Axios.post("invoke", rpc);
+}
+
+function createUserGroup(group, memberIds, user) {
+	const rpc = {
+		jsonrpc: "2.0",
+		method: "UserGroup.createNew",
+		params: { user, group, memberIds }
+	};
+	return Axios.post("invoke", rpc);	
 }
 
 // create few resources
 async function createResources(users) {
 	const printerMethods = [
 		{
-			name: "print", inputs: {}, outputs: {}, typedef: "tPrinter", [db.keyField]: "_tPrinter.print"
+			name: "print", inputs: {}, outputs: {}, type: "tPrinter", [db.keyField]: "_tPrinter.print"
 		},
 		{
-			name: "scan", inputs: {}, outputs: {}, typedef: "tPrinter", [db.keyField]: "_tPrinter.scan"
+			name: "scan", inputs: {}, outputs: {}, type: "tPrinter", [db.keyField]: "_tPrinter.scan"
 		},
 		{
-			name: "fax", inputs: {}, outputs: {}, typedef: "tPrinter", [db.keyField]: "_tPrinter.fax"
+			name: "fax", inputs: {}, outputs: {}, type: "tPrinter", [db.keyField]: "_tPrinter.fax"
 		}
 	];
 	await Promise.all(printerMethods.map(method => db.ensureRecord(db.typeMethodsColl, method)));
-	return Promise.all(users.map(user => createResource("tPrinter", user)));
+	await Promise.all(users.map(user => createResource("tPrinter", user)));
+	const p = [];
+	for (let uIndex = 1; uIndex <= users.length; ++uIndex) {
+		const memberIds = [];
+		for (let m = 1; m <= uIndex; ++m)
+			memberIds.push(users[m-1][db.idField]);
+		for (let i = 1; i <= 5; ++i) {
+			p.push(createUserGroup({
+				name: `ug${uIndex}${i}`, description: `UG ${i} for user [user${uIndex}]`
+			}, memberIds, users[uIndex-1]));
+		}
+	}
+	return Promise.all(p);
 }
 
 // create bulk users

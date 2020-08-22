@@ -88,8 +88,19 @@ class Resource {
 }
 
 class UserGroup {
-	static createNew({ name, description }) {
-		return db.userGroupColl.save({ name, description });
+	// creates a new user-group and adds the list of users to that group.
+	// TODO: security
+	//	1. check if user is allowed to create user-Groups
+	//	2. ensure the members have given consent to be added to the group(some kind of token from them)
+	static createNew({ name, description }, memberUserIds, acl) {
+		return db.userGroupColl.save({ name, description }).then(uGroup => {
+			const t = new Date(), groupId = uGroup[db.idField], userId = acl.user[db.idField];
+			// mark the creator for the group
+			const p1 = db.userOwnedUG.save({ t, appCtx: acl.appCtx }, userId, groupId);
+			// add the members to the group
+			const p2 = memberUserIds.map(memId => db.membershipEdges.save({ t, ugCtx: acl.ugCtx }, memId, groupId));
+			return Promise.all([p1, ...p2]);
+		});
 	}
 };
 
@@ -109,7 +120,19 @@ module.exports = (req, res, next) => {
 		permCtx: "defPermCtx",
 		appCtx: "defAppCtx"
 	};
-	Resource.createNew(rpcRequest.params.resource, acl)
-		.then(resource => res.send(RPCResponse(resource)))
-		.catch(ex => res.status(ex.code || 500).send(RPCError(ex)));
+	switch (rpcRequest.method) {
+		case "Resource.createNew": {
+			return Resource.createNew(rpcRequest.params.resource, acl)
+				.then(resource => res.send(RPCResponse(resource)))
+				.catch(ex => res.status(ex.code || 500).send(RPCError(ex)));
+		}
+		case "UserGroup.createNew": {
+			return UserGroup.createNew(rpcRequest.params.group, rpcRequest.params.memberIds, acl)
+				.then(result => res.send(RPCResponse(result)))
+				.catch(ex => res.status(ex.code || 500).send(RPCError(ex)));
+		}
+		default: {
+			return res.status(404).send(RPCError.notFound(`Unknown Method: ${rpcRequest.method}`));
+		}
+	}
 }

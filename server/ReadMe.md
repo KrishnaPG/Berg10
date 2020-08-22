@@ -35,4 +35,5 @@ A `user` may belong to multiple `userGroup`s. When a user signs-up,
  User can create additional `userGroup`s. Each `userGroup` may have different access permissions for each of his `resourceGroup`s.
 
  When a new `appCtx` is created:
-  1. for each user, create a new default `resourceGroup` and assign it
+  1. for each user, create a new default `resourceGroup` and assign it,
+  2. make sure the `ugCtx`, `rgCtx`, `permCtx` are derived uniquely from the name of `appCtx`.
