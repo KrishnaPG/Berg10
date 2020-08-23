@@ -123,7 +123,7 @@ function ensureCustomIndices() {
 		.catch(ex => err(`ensureIndex('resGroupMethods.unique')`, ex)));
 	p.push(module.exports.permissionEdges.ensureIndex({ type: "persistent", fields: ["_from", "_to"], unique: true })
 		.catch(ex => err(`ensureIndex('permissionEdges.unique')`, ex)));
-	p.push(module.exports.typeMethodsColl.ensureIndex({ type: "persistent", fields: ["typedef", "name"], unique: true })
+	p.push(module.exports.typeMethodsColl.ensureIndex({ type: "persistent", fields: ["type", "name"], unique: true })
 		.catch(ex => err(`ensureIndex('typeMethodsColl.unique')`, ex)));
 	
 	return Promise.all(p);

@@ -32,7 +32,7 @@ function createUserGroup(group, memberIds, user) {
 }
 
 // create few resources
-async function createResources(users) {
+async function createResources(userDocs) {
 	const printerMethods = [
 		{
 			name: "print", inputs: {}, outputs: {}, type: "tPrinter", [db.keyField]: "_tPrinter.print"
@@ -45,16 +45,17 @@ async function createResources(users) {
 		}
 	];
 	await Promise.all(printerMethods.map(method => db.ensureRecord(db.typeMethodsColl, method)));
-	await Promise.all(users.map(user => createResource("tPrinter", user)));
+	await Promise.all(userDocs.map(userDoc => createResource("tPrinter", userDoc)));
+	// create user-groups
 	const p = [];
-	for (let uIndex = 1; uIndex <= users.length; ++uIndex) {
+	for (let uIndex = 1; uIndex <= userDocs.length; ++uIndex) {
 		const memberIds = [];
 		for (let m = 1; m <= uIndex; ++m)
-			memberIds.push(users[m-1][db.idField]);
-		for (let i = 1; i <= 5; ++i) {
+			memberIds.push(userDocs[m-1][db.idField]);
+		for (let i = 1; i <= uIndex; ++i) {
 			p.push(createUserGroup({
 				name: `ug${uIndex}${i}`, description: `UG ${i} for user [user${uIndex}]`
-			}, memberIds, users[uIndex-1]));
+			}, memberIds.slice(0, i), userDocs[uIndex-1]));
 		}
 	}
 	return Promise.all(p);

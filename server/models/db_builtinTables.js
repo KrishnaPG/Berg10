@@ -10,7 +10,7 @@ module.exports = {
 		private: { type: "boolean", index: true, default: false }
 	},
 	typeMethods: {
-		name: { type: "string", unique: true, nullable: false, index: true, max: 64 },
+		name: { type: "string", unique: false, nullable: false, index: true, max: 64 },
 		inputs: "json",
 		outputs: "json",
 		type: "typeDefs"
