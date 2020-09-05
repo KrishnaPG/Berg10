@@ -110,6 +110,12 @@ class ResourceGroup {
 	}
 };
 
+class Typedef {
+	static createNew(typedef, acl) {
+		return db.typeDefColl.save(typedef);
+	}
+}
+
 module.exports = (req, res, next) => {
 	console.log("req.body", req.body);
 	const rpcRequest = req.body;
@@ -128,6 +134,11 @@ module.exports = (req, res, next) => {
 		}
 		case "UserGroup.createNew": {
 			return UserGroup.createNew(rpcRequest.params.group, rpcRequest.params.memberIds, acl)
+				.then(result => res.send(RPCResponse(result)))
+				.catch(ex => res.status(ex.code || 500).send(RPCError(ex)));
+		}
+		case "Typedef.createNew": {
+			return Typedef.createNew(rpcRequest.params.typedef, acl)
 				.then(result => res.send(RPCResponse(result)))
 				.catch(ex => res.status(ex.code || 500).send(RPCError(ex)));
 		}

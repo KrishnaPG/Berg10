@@ -75,6 +75,30 @@ function createUsers(n = 20) {
 	return Promise.all(p);
 }
 
+const types = [
+	{
+		name: "post",
+		schema: JSON.stringify({
+			title: "string",
+		})
+	},
+	{
+		name: "likes",
+		schema: JSON.stringify({
+			post: "post",
+			by: ""
+		})
+	}
+];
+function createTypes(types) {
+	const rpc = {
+		jsonrpc: "2.0",
+		method: "Resource.createNew",
+		params: { user, resource: { type } }
+	};
+	return Axios.post("invoke", rpc);
+}
+
 const delay = t => new Promise((resolve, reject) => setTimeout(resolve, t));
 
 async function main() {
@@ -105,6 +129,10 @@ Usage: ${process.argv[0]} ${process.argv[1]} -y [gDataPrefix]
 	process.stdout.write("--> Creating Resources\r");
 	await createResources(users);
 	console.log(chalk.green('[✓]'), "Creating Resources");
+
+	// process.stdout.write("--> Creating Types\r");
+	// await createTypes(types);
+	// console.log(chalk.green('[✓]'), "Creating Types");
 
 	console.log(chalk.green('[✓]'), "Done");
 }

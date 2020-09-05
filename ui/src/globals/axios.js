@@ -20,7 +20,7 @@ function init() {
 		Axios.defaults.adapter = cacheAdapterEnhancer(Axios.defaults.adapter);
 
 		// setup an interceptor to handle any 401 or 403 errors.
-		Axios.interceptors.response.use(null, error => {
+		Axios.interceptors.response.use(response => response.data.result, error => {
 			if (Axios.isCancel(error))
 				return Promise.reject(error);
 			

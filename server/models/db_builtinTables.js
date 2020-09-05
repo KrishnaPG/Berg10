@@ -4,16 +4,21 @@
  */
 module.exports = {
 	// whenever these are changed, also update the create methods in the db.js
-	typeDefs: {
-		name: { type: "string", unique: true, nullable: false, index: true, max: 32 },
-		schema: "json",
-		private: { type: "boolean", index: true, default: false }
+	interfaces: {
+		name: { type: "string", unique: true, nullable: false, index: true, max: 64 },
+		description: { type: "text", nullable: true }
 	},
-	typeMethods: {
-		name: { type: "string", unique: false, nullable: false, index: true, max: 64 },
-		inputs: "json",
-		outputs: "json",
-		type: "typeDefs"
+	interfaceMethods: {
+		interface: "interfaces",
+		name: { type: "string", unique: false, nullable: false, index: true, max: 32 },
+		inputSchema: "json",
+		outputSchema: "json",
+		description: { type: "text", nullable: true }
+	},
+	typeDefs: {
+		name: { type: "string", unique: true, nullable: false, index: true, max: 64 },
+		schema: "json",
+		supportedInterfaces: ["interfaces"]
 	},
 	resources: {
 		type: "typeDefs",
@@ -33,6 +38,7 @@ module.exports = {
 		name: { type: "string", unique: true, nullable: false, index: true, max: 32 },
 		description: { type: "text", nullable: true },
 		permissions: ["resGroupMethods"],
+		profileExt: "typeDefs"
 	},
 	resourceGroups: {
 		name: { type: "string", nullable: false, index: true, max: 32 },
@@ -40,17 +46,9 @@ module.exports = {
 	},
 	resGroupMethods: {
 		rg: "resourceGroups",
-		type: "typeDefs",
+		interface: "interfaces",
 		method:"regex",
 		permit: ["allow", "deny"]
 	},
-	// secCtx: {
-	// 	appCtx: { type: "string", nullable: false, index: true, max: 32 },
-	// },
-	acls: {
-		resKey: { type: "string", nullable: false, index: true, max: 128 },
-		resType: { type: "string", nullable: false, index: true, max: 32 },
-		// list of actions and groups which have permissions for those actions
-	}
 	// whenever these are changed, also update the create methods in the db.js
 };

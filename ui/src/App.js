@@ -104,8 +104,8 @@ class Main extends React.Component {
 	onLoginFormSubmit = (formData) => {
 		this.setState({ isAuthInProgress: true, busyMsg: "Verifying Credentials..." });
 		return doLogin(formData)
-			.then(response => {
-				this.setState({ user: response.data.user, jwt: response.data.jwt, isAuthInProgress: false });
+			.then(result => {
+				this.setState({ user: result.user, jwt: result.jwt, isAuthInProgress: false });
 			})
 			.catch(ex => {
 				this.setState({ user: null, jwt: null, isAuthInProgress: false });
@@ -116,8 +116,8 @@ class Main extends React.Component {
 	}
 
 	refreshUserDetails(jwt) {
-		return fetchUserDetails(jwt).then(res => {
-				this.safeSetState({ user: res.data.user, jwt: res.data.jwt, isAuthInProgress: false });
+		return fetchUserDetails(jwt).then(result => {
+			this.safeSetState({ user: result.user, jwt: result.jwt, isAuthInProgress: false });
 			}).catch(error => {
 				//Nothing to do here. Axios interceptors would have already called logout in case of unAuth
 			});

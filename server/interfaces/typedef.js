@@ -11,14 +11,16 @@ const schema = JOI.object({
 });
 
 module.exports = {
+	name: "iTypedef",
 	methods: {
 		"createInstance": {
 			description: "Allows you to define a new type",
-			inputs: {},
-			outputs: {},
-		}
+			inputSchema: {},
+			outputSchema: {},
+			fn: createInstance
+		}		
 	},
-	schema
+	description: "The built-in typedef interface"
 };
 
 function createInstance({ type, ...other}) {

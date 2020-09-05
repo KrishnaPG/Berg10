@@ -7,6 +7,7 @@ const { Database } = require('arangojs');
 const dbConfig = require('config').db;
 const { normalizeTables, isGeoType, isRelationTable } = require('./db_schemaNormalization');
 const { getValidators } = require('./db_schemaValidation');
+const registerInterfaces = require('../interfaces/');
 
 const RelationGraphName = "system_relations";
 
@@ -119,12 +120,14 @@ function ensureCustomIndices() {
 	// make the combination unique
 	p.push(module.exports.resourceBelongsTo.ensureIndex({ type: "persistent", fields: ["_from", "rgCtx"], unique: true })
 		.catch(ex => err(`ensureIndex('resourceBelongsTo.unique')`, ex)));
-	p.push(module.exports.resGroupMethods.ensureIndex({ type: "persistent", fields: ["rg", "type", "method"], unique: true })
-		.catch(ex => err(`ensureIndex('resGroupMethods.unique')`, ex)));
+	p.push(module.exports.rgMethodsColl.ensureIndex({ type: "persistent", fields: ["rg", "type", "method"], unique: true })
+		.catch(ex => err(`ensureIndex('rgMethodsColl.unique')`, ex)));
 	p.push(module.exports.permissionEdges.ensureIndex({ type: "persistent", fields: ["_from", "_to"], unique: true })
 		.catch(ex => err(`ensureIndex('permissionEdges.unique')`, ex)));
-	p.push(module.exports.typeMethodsColl.ensureIndex({ type: "persistent", fields: ["type", "name"], unique: true })
-		.catch(ex => err(`ensureIndex('typeMethodsColl.unique')`, ex)));
+	p.push(module.exports.iMethodsColl.ensureIndex({ type: "persistent", fields: ["interface", "name"], unique: true })
+		.catch(ex => err(`ensureIndex('iMethodsColl.unique')`, ex)));
+	p.push(module.exports.typedefInterfaces.ensureIndex({ type: "persistent", fields: ["_from", "_to"], unique: true })
+		.catch(ex => err(`ensureIndex('typedefInterfaces.unique')`, ex)));
 	
 	return Promise.all(p);
 }
@@ -150,6 +153,18 @@ function ensureBuiltinRecords() {
 		name: "Guests",
 		description: "Users that have no login account"
 	}));
+
+	p.push(ensureRecord(module.exports.userGroupColl, {
+		[dbConfig.keyField]: "ug-Admin",
+		name: "Admin",
+		description: "Users that have Administrative Powers"
+	}));
+
+	p.push(ensureRecord(module.exports.userGroupColl, {
+		[dbConfig.keyField]: "ug-Inactive",
+		name: "Inactive",
+		description: "Users that are marked as inactive gets denied all permissions"
+	}));
 	
 	// create resource groups
 	p.push(ensureRecord(module.exports.resGroupColl, {
@@ -157,6 +172,17 @@ function ensureBuiltinRecords() {
 		name: "Public",
 		description: "A resource group that is accessible to Everyone"
 	}).then(group => module.exports.builtIn.resourceGroups.Public = group[dbConfig.idField]));
+	
+	p.push(ensureRecord(module.exports.resGroupColl, {
+		[dbConfig.keyField]: "rg-System",
+		name: "System",
+		description: "Built-in system resources. These are editable only by Admin users, and cannot be deleted."
+	}).then(group => module.exports.builtIn.resourceGroups.System = group[dbConfig.idField]));
+
+	p.push(registerInterfaces(module.exports, dbConfig));
+
+	// TODO: ensure the built-in types (e.g. users etc.)
+	// TODO: setup the interfaces for each built-in types
 
 	// ensure the typeDef record
 	// p.push(ensureRecord(module.exports.typeDefColl, {
@@ -165,6 +191,7 @@ function ensureBuiltinRecords() {
 	// 	schema: JSON.stringify(builtinTables["typeDefs"]),
 	// 	private: false
 	// }));
+
 	return Promise.all(p);
 }
 
@@ -179,22 +206,23 @@ module.exports.init = function () {
 		.then(() => ensureGraphExists(relationGraph))
 		.then(() => ensureEdgeRelations(relationGraph, builtinTables))
 		.then(() => {
-			module.exports.aclColl = db.collection("acls");
 			module.exports.userColl = db.collection("users");
 			module.exports.typeDefColl = db.collection("typeDefs");
 			module.exports.resourceColl = db.collection("resources");
 			module.exports.resGroupColl = db.collection("resourceGroups");
+			module.exports.rgMethodsColl = db.collection("resGroupMethods");
 			module.exports.userGroupColl = db.collection("userGroups");
-			module.exports.typeMethodsColl = db.collection("typeMethods");
-			module.exports.resGroupMethods = db.collection("resGroupMethods");
+			module.exports.interfaceColl = db.collection("interfaces");
+			module.exports.iMethodsColl = db.collection("interfaceMethods");
 
 			module.exports.relationGraph = relationGraph;
 			module.exports.userOwnedUG = relationGraph.edgeCollection("createdUG");
 			module.exports.userOwnedRG = relationGraph.edgeCollection("createdRG");
 			module.exports.userDefaultRG = relationGraph.edgeCollection("defaultRG");
-			module.exports.membershipEdges = relationGraph.edgeCollection("memberOf");
+			module.exports.membershipEdges = relationGraph.edgeCollection("memberOf"); // user memberOf userGroups
 			module.exports.permissionEdges = relationGraph.edgeCollection("permissions");
-			module.exports.resourceBelongsTo = relationGraph.edgeCollection("belongsTo");
+			module.exports.resourceBelongsTo = relationGraph.edgeCollection("belongsTo"); // resource belongs to resourceGroup
+			module.exports.typedefInterfaces = relationGraph.edgeCollection("supportedInterfaces");
 
 			return ensureCustomIndices();
 		}).then(ensureBuiltinRecords);
@@ -204,7 +232,8 @@ module.exports.ensureRecord = ensureRecord;
 
 module.exports.builtIn = {
 	userGroups: {},
-	resourceGroups: {}
+	resourceGroups: {},
+	interfaces: {}
 };
 
 module.exports.defaults = {

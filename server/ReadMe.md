@@ -30,13 +30,23 @@ A `user` may belong to multiple `userGroup`s. When a user signs-up,
  1. a built-in `default` resourceGroup is created for him for the current `appCtx`.
 
 
- User can later create additional `resourceGroup`s as required. When a resource is assigned to the user, he has to assign that resource to one his resourceGroups.
+ User can later create additional `resourceGroup`s as required. When a resource is assigned to the user, he has to assign that resource to one of his resourceGroups.
 
- User can create additional `userGroup`s. Each `userGroup` may have different access permissions for each of his `resourceGroup`s.
+ User can create additional `userGroup`s. Each `userGroup` may have different set of access permissions for each of his `resourceGroup`s. 
+ 
+ Each `userGroup` also has a profile extension-type that adds additional attributes to the user, specific to that group context. The values for that profile extension-type for each user are stored on the `membership` edge (between `user` and the corresponding `userGroup`).
 
  When a new `appCtx` is created:
   1. for each user, create a new default `resourceGroup` and assign it,
   2. make sure the `ugCtx`, `rgCtx`, `permCtx` are derived uniquely from the name of `appCtx`.
+
+
+A type definition is just a group of data items. A `typeDef` can support multiple `interface`s. An `interface` specifies a list of `method`s available that can be performed on the underlying typed data object. A `userGroup` should have `permission` to an `interface`'s method to be able invoke it. 
+
+`permission`s are defined either as `allow` or `deny` for a `method`. A user may have different permissions to the method based on the the `userGroup` that he belongs to, and the `permCtx` (along with the `rgCtx`, and the `appCtx` in general). A `deny` permission takes precedence over all other `allow` permissions to a method. That is, if a user is a member of many `userGroup`s that each has `allow` permission to a given method, and yet adding him to a single `userGroup` which has `deny` permission to that same method, would effectively make that method inaccessible for that user. In other words, to be able to invoke a method, a user 
+  1. should not have an explicit `deny` permission for **any** of the `userGroup`s that he is a member of, and
+  2. should have an explicit `allow` permission for at least one of the `userGroup`s that he is a member of.
+
 
 ## Queries
 
