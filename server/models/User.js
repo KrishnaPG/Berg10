@@ -38,6 +38,40 @@ class User {
 	save(cb) {
 		return saveUser(this, cb);
 	}
+
+	static find(currentUserId, { filter, limit = 20, offset = 0, sort = {} }) {
+		const ugAdminId = `${}`
+		const filterExpr = AQL.literal("");//Typedef.convertFilter(filter));
+		//const sortExpr = AQL.literal(`SORT r.${sort} ${desc ? "DESC" : "ASC"}`);
+		return db.query(AQL`
+				// check if user is member of ug-Admin group
+				LET ug = (
+						FOR mem IN \`${db.collName.memberOf}\`
+						FILTER mem._from == \'${currentUserId}\' && mem._to == \'${builtIn.userGroups.Admin}\' && mem.ugCtx in [null, @ugCtx]
+						LIMIT 1
+						RETURN mem._to
+				)
+				
+				LET isAdmin = LENGTH(ug) > 0
+				
+				LET u = (
+						FOR u IN `users`
+						FILTER isAdmin || u._id == @userId
+						LIMIT 0, 10
+						RETURN u
+				)
+				
+				RETURN { users: u,  isAdmin }
+		`).then(cursor => cursor.all());
+
+		/* Ref: https://www.arangodb.com/docs/stable/drivers/js-reference-aql.html
+				FOR u IN `users`
+				FILTER u.active == true AND u.gender == "f"
+				SORT u["age"] ASC
+				LIMIT 5
+				RETURN u
+		*/
+	}	
 };
 
 function createUser(user, { appCtx = db.defaults.appCtx } = {}) {

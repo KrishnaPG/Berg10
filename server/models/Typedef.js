@@ -32,8 +32,7 @@ class Typedef {
 		const filterExpr = AQL.literal("");//Typedef.convertFilter(filter));
 		//const sortExpr = AQL.literal(`SORT r.${sort} ${desc ? "DESC" : "ASC"}`);
 		return db.query(AQL`
-				FOR r IN \`${db.typeDefColl}\`
-				${filterExpr}
+				FOR r IN \`typeDefs\`				
 				LIMIT ${offset}, ${limit}
 				RETURN r
 		`).then(cursor => cursor.all());

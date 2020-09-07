@@ -22,7 +22,7 @@ const apiController = require('./controllers/api');
 const contactController = require('./controllers/contact');
 const userController = require('./controllers/user');
 const typedefController = require('./controllers/typedef');
-const invokeProviderMethod = require('./providers');
+//const invokeProviderMethod = require('./providers');
 
 const express = require('express');
 const passportConfig = require('./auth/passport');
@@ -48,13 +48,19 @@ app.post('/api/user/login', userController.postLogin);
 app.post('/api/user/signup', userController.postSignup);
 
 // these use JWT
-app.get('/api/typedef', typedefController.find);
-app.post('/api/typedef', typedefController.create);
-app.get('/api/typedef/:_key', typedefController.get);
-app.put('/api/typedef/:_key', typedefController.update);
-app.delete('/api/typedef/:_key', typedefController.remove);
+app.get('/api/typedefs', typedefController.find);
+app.post('/api/typedefs', typedefController.create);
+app.get('/api/typedefs/:_key', typedefController.get);
+app.put('/api/typedefs/:_key', typedefController.update);
+app.delete('/api/typedefs/:_key', typedefController.remove);
 
-app.post('/api/invoke', invokeProviderMethod);
+app.get('/api/users', userController.find);
+app.post('/api/users', userController.create);
+app.get('/api/users/:_key', userController.get);
+app.put('/api/users/:_key', userController.update);
+app.delete('/api/users/:_key', userController.remove);
+
+//app.post('/api/invoke', invokeProviderMethod);
 
 
 // For oAuth based routes we use Sessions

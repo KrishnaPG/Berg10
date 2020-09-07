@@ -15,7 +15,10 @@ console.log("jwt secret: ", key);
 
 exports.sendJWT = (user, req, res) => {
 	delete user.password; // do not leak it to the client
-	const jwt = jwtSigner({ email: user.email }); //TODO: customize the token expiration based on user's preference
+	const jwt = jwtSigner({
+		// email: user.email,
+		id: user[config.db.idField]
+	}); //TODO: customize the token expiration based on user's preference
 	res.send(RPCResponse({ jwt, user }));
 };
 

@@ -20,7 +20,7 @@ function init() {
 		Axios.defaults.adapter = cacheAdapterEnhancer(Axios.defaults.adapter);
 
 		// setup an interceptor to handle any 401 or 403 errors.
-		Axios.interceptors.response.use(response => response.data.result, error => {
+		Axios.interceptors.response.use(null, error => {
 			if (Axios.isCancel(error))
 				return Promise.reject(error);
 			
@@ -57,13 +57,19 @@ const _loadAxios_PostInit = () => _axiosLoadPromise;
 let loadAxios = _loadAxios_PreInit;
 
 export function doLogin(formData) {
-	return loadAxios().then(Axios => Axios.post(`user/${formData.mode.toLowerCase()}`, formData));
+	return loadAxios()
+		.then(Axios => Axios.post(`user/${formData.mode.toLowerCase()}`, formData))
+		.then(response => response.data.result);
 }
 export function fetchUserDetails(jwt) {
-	return loadAxios().then(Axios => Axios.get('user', { headers: { Authorization: "Bearer " + jwt }, cache: false }));
+	return loadAxios()
+		.then(Axios => Axios.get('user', { headers: { Authorization: "Bearer " + jwt }, cache: false }))
+		.then(response => response.data.result);
 }
 export function doLogout(jwt) {
-	return loadAxios().then(Axios => Axios.post('user/logout', { headers: { Authorization: "Bearer " + jwt } }));
+	return loadAxios()
+		.then(Axios => Axios.post('user/logout', { headers: { Authorization: "Bearer " + jwt } }))
+		.then(response => response.data.result);
 }
 
 export function getAxiosCommonHeaders() {
@@ -112,8 +118,8 @@ export class AxiosBaseComponent extends React.PureComponent {
 			const tracker = Axios.CancelToken.source();
 			this._callTrackers["getTypeDef"] = tracker;
 			// make the actual call
-			return Axios.get("typedef?name=schepe", { cancelToken: tracker.token })
-				.then(response => response.data)
+			return Axios.get("typedefs?name=schepe", { cancelToken: tracker.token })
+				.then(response => response.data.result)
 				.finally(() => {
 					--this._pendingCalls["getTypeDef"];
 					// trigger ui update to hide any spinners

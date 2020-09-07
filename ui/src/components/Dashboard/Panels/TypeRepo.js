@@ -32,16 +32,16 @@ const remoteDataSource = {
 			//$sort: "",
 		};
 	},
-	converter({ data }) {
+	converter(axiosResponse) {
 		return {
-			list: data.map((item, index) => {
+			list: axiosResponse.data.result/*.map((item, index) => {
 				return {
 					...item,
 					id: `${index}`,
 					//name: `${item.name.first} ${item.name.last}`,
 					index,
 				};
-			}),
+			})*/,
 			total: 100,
 		};
 	},

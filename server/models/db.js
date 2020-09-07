@@ -158,7 +158,7 @@ function ensureBuiltinRecords() {
 		[dbConfig.keyField]: "ug-Admin",
 		name: "Admin",
 		description: "Users that have Administrative Powers"
-	}));
+	}).then(group => module.exports.builtIn.userGroups.Admin = group[dbConfig.idField]));
 
 	p.push(ensureRecord(module.exports.userGroupColl, {
 		[dbConfig.keyField]: "ug-Inactive",
@@ -179,20 +179,22 @@ function ensureBuiltinRecords() {
 		description: "Built-in system resources. These are editable only by Admin users, and cannot be deleted."
 	}).then(group => module.exports.builtIn.resourceGroups.System = group[dbConfig.idField]));
 
-	p.push(registerInterfaces(module.exports, dbConfig));
+	// ensure the interfaces are registered, and built-in types (e.g. users etc) are setup
+	p.push(registerInterfaces(module.exports, dbConfig).then(ensureBuiltinTypeRecords));
 
 	// TODO: ensure the built-in types (e.g. users etc.)
 	// TODO: setup the interfaces for each built-in types
 
-	// ensure the typeDef record
-	// p.push(ensureRecord(module.exports.typeDefColl, {
-	// 	[dbConfig.keyField]: "schepe",
-	// 	name: "schepe",
-	// 	schema: JSON.stringify(builtinTables["typeDefs"]),
-	// 	private: false
-	// }));
-
 	return Promise.all(p);
+}
+
+function ensureBuiltinTypeRecords() {
+	const p = [];
+	p.push(ensureRecord(module.exports.typeDefColl, {
+		[dbConfig.keyField]: "schepe",
+		name: "schepe",
+		schema: {}//JSON.stringify(builtinTables["typeDefs"])
+	}));
 }
 
 module.exports = db;
@@ -206,23 +208,23 @@ module.exports.init = function () {
 		.then(() => ensureGraphExists(relationGraph))
 		.then(() => ensureEdgeRelations(relationGraph, builtinTables))
 		.then(() => {
-			module.exports.userColl = db.collection("users");
-			module.exports.typeDefColl = db.collection("typeDefs");
-			module.exports.resourceColl = db.collection("resources");
-			module.exports.resGroupColl = db.collection("resourceGroups");
-			module.exports.rgMethodsColl = db.collection("resGroupMethods");
-			module.exports.userGroupColl = db.collection("userGroups");
-			module.exports.interfaceColl = db.collection("interfaces");
-			module.exports.iMethodsColl = db.collection("interfaceMethods");
+			module.exports.userColl = db.collection(exports.builtIn.collName.users);
+			module.exports.typeDefColl = db.collection(exports.builtIn.collName.typeDefs);
+			module.exports.resourceColl = db.collection(exports.builtIn.collName.resources);
+			module.exports.resGroupColl = db.collection(exports.builtIn.collName.resourceGroups);
+			module.exports.rgMethodsColl = db.collection(exports.builtIn.collName.resGroupMethods);
+			module.exports.userGroupColl = db.collection(exports.builtIn.collName.userGroups);
+			module.exports.interfaceColl = db.collection(exports.builtIn.collName.interfaces);
+			module.exports.iMethodsColl = db.collection(exports.builtIn.collName.interfaceMethods);
 
 			module.exports.relationGraph = relationGraph;
-			module.exports.userOwnedUG = relationGraph.edgeCollection("createdUG");
-			module.exports.userOwnedRG = relationGraph.edgeCollection("createdRG");
-			module.exports.userDefaultRG = relationGraph.edgeCollection("defaultRG");
-			module.exports.membershipEdges = relationGraph.edgeCollection("memberOf"); // user memberOf userGroups
-			module.exports.permissionEdges = relationGraph.edgeCollection("permissions");
-			module.exports.resourceBelongsTo = relationGraph.edgeCollection("belongsTo"); // resource belongs to resourceGroup
-			module.exports.typedefInterfaces = relationGraph.edgeCollection("supportedInterfaces");
+			module.exports.userOwnedUG = relationGraph.edgeCollection(exports.builtIn.collName.createdUG);
+			module.exports.userOwnedRG = relationGraph.edgeCollection(exports.builtIn.collName.createdRG);
+			module.exports.userDefaultRG = relationGraph.edgeCollection(exports.builtIn.collName.defaultRG);
+			module.exports.membershipEdges = relationGraph.edgeCollection(exports.builtIn.collName.memberOf); // user memberOf userGroups
+			module.exports.permissionEdges = relationGraph.edgeCollection(exports.builtIn.collName.permissions);
+			module.exports.resourceBelongsTo = relationGraph.edgeCollection(exports.builtIn.collName.belongsTo); // resource belongs to resourceGroup
+			module.exports.typedefInterfaces = relationGraph.edgeCollection(exports.builtIn.collName.supportedInterfaces);
 
 			return ensureCustomIndices();
 		}).then(ensureBuiltinRecords);
@@ -233,7 +235,24 @@ module.exports.ensureRecord = ensureRecord;
 module.exports.builtIn = {
 	userGroups: {},
 	resourceGroups: {},
-	interfaces: {}
+	interfaces: {},
+	collName: {
+		interfaces: "interfaces",
+		interfaceMethods: "interfaceMethods",
+		resources: "resources",
+		resourceGroups: "resourceGroups",
+		resGroupMethods: "resGroupMethods",
+		typeDefs: "typeDefs",
+		users: "users",
+		userGroups: "userGroups",
+
+		belongsTo: "belongsTo",
+		createdUG: "createdUG",
+		createdRG: "createdRG",
+		memberOf: "memberOf",
+		permissions: "permissions",
+		supportedInterfaces: "supportedInterfaces"
+	}
 };
 
 module.exports.defaults = {
