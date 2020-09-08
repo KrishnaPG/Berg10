@@ -16,25 +16,6 @@ const { sendJWT, verifyJWT } = require('./jwt');
 const { promisify } = require('util');
 const randomBytesAsync = promisify(crypto.randomBytes);
 
-exports.find = (req, res, next) => {
-	verifyJWT(req, res, jwtPayload => {
-		new User()
-	})
-}
-exports.create = (req, res, next) => {
-
-}
-exports.get = (req, res, next) => {
-
-}
-exports.update = (req, res, next) => {
-
-}
-exports.remove = (req, res, next) => {
-
-}
-
-
 /**
  * POST /login
  * Sign in using email and password.
@@ -54,7 +35,7 @@ exports.postLogin = (req, res, next) => {
 		if (!user) {
 			return res.status(401).send(RPCError.invalidRequest(info.msg));
 		}
-		sendJWT(user, req, res);
+		sendJWT(user, req.body.appCtx, req, res);
 	})(req, res, next);
 };
 
@@ -85,7 +66,7 @@ exports.postSignup = (req, res, next) => {
 		}
 		user.save((err, userRecord) => {
 			if (err) { return next(err); }
-			sendJWT(userRecord, req, res);
+			sendJWT(userRecord, req.body.appCtx, req, res);
 		});
 	});
 };
@@ -99,7 +80,7 @@ exports.getUserDetails = (req, res, next) => {
 		User.findById(jwtPayload.id, (err, existingUser) => {
 			if (err) { return next(err); }
 			existingUser ?
-				sendJWT(existingUser, req, res) :
+				sendJWT(existingUser, jwtPayload.appCtx, req, res) :
 				res.status(404).send(RPCError.notFound(`No user exists with id: ${jwtPayload.id}`));
 		});
 	});

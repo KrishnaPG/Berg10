@@ -113,9 +113,9 @@ function ensureCustomIndices() {
 	p.push(module.exports.userOwnedRG.ensureIndex({ type: "persistent", fields: ["appCtx"] })
 		.catch(ex => err(`ensureIndex('userOwnedRG.appCtx')`, ex)));
 	p.push(module.exports.userDefaultRG.ensureIndex({ type: "persistent", fields: ["_from", "appCtx"], unique: true })
-		.catch(ex => err(`ensureIndex('userDefaultRG.appCtx')`, ex)));
+		.catch(ex => err(`ensureIndex('userDefaultRG.appCtx::_from')`, ex)));
 	p.push(module.exports.userDefaultRG.ensureIndex({ type: "persistent", fields: ["_to"], unique: true }) // no one else shares the same resource-group
-		.catch(ex => err(`ensureIndex('userDefaultRG.appCtx')`, ex)));
+		.catch(ex => err(`ensureIndex('userDefaultRG.appCtx::_to')`, ex)));
 	
 	// make the combination unique
 	p.push(module.exports.resourceBelongsTo.ensureIndex({ type: "persistent", fields: ["_from", "rgCtx"], unique: true })
@@ -208,23 +208,23 @@ module.exports.init = function () {
 		.then(() => ensureGraphExists(relationGraph))
 		.then(() => ensureEdgeRelations(relationGraph, builtinTables))
 		.then(() => {
-			module.exports.userColl = db.collection(exports.builtIn.collName.users);
-			module.exports.typeDefColl = db.collection(exports.builtIn.collName.typeDefs);
-			module.exports.resourceColl = db.collection(exports.builtIn.collName.resources);
-			module.exports.resGroupColl = db.collection(exports.builtIn.collName.resourceGroups);
-			module.exports.rgMethodsColl = db.collection(exports.builtIn.collName.resGroupMethods);
-			module.exports.userGroupColl = db.collection(exports.builtIn.collName.userGroups);
-			module.exports.interfaceColl = db.collection(exports.builtIn.collName.interfaces);
-			module.exports.iMethodsColl = db.collection(exports.builtIn.collName.interfaceMethods);
+			module.exports.userColl = db.collection(module.exports.builtIn.collName.users);
+			module.exports.typeDefColl = db.collection(module.exports.builtIn.collName.typeDefs);
+			module.exports.resourceColl = db.collection(module.exports.builtIn.collName.resources);
+			module.exports.resGroupColl = db.collection(module.exports.builtIn.collName.resourceGroups);
+			module.exports.rgMethodsColl = db.collection(module.exports.builtIn.collName.resGroupMethods);
+			module.exports.userGroupColl = db.collection(module.exports.builtIn.collName.userGroups);
+			module.exports.interfaceColl = db.collection(module.exports.builtIn.collName.interfaces);
+			module.exports.iMethodsColl = db.collection(module.exports.builtIn.collName.interfaceMethods);
 
 			module.exports.relationGraph = relationGraph;
-			module.exports.userOwnedUG = relationGraph.edgeCollection(exports.builtIn.collName.createdUG);
-			module.exports.userOwnedRG = relationGraph.edgeCollection(exports.builtIn.collName.createdRG);
-			module.exports.userDefaultRG = relationGraph.edgeCollection(exports.builtIn.collName.defaultRG);
-			module.exports.membershipEdges = relationGraph.edgeCollection(exports.builtIn.collName.memberOf); // user memberOf userGroups
-			module.exports.permissionEdges = relationGraph.edgeCollection(exports.builtIn.collName.permissions);
-			module.exports.resourceBelongsTo = relationGraph.edgeCollection(exports.builtIn.collName.belongsTo); // resource belongs to resourceGroup
-			module.exports.typedefInterfaces = relationGraph.edgeCollection(exports.builtIn.collName.supportedInterfaces);
+			module.exports.userOwnedUG = relationGraph.edgeCollection(module.exports.builtIn.collName.createdUG);
+			module.exports.userOwnedRG = relationGraph.edgeCollection(module.exports.builtIn.collName.createdRG);
+			module.exports.userDefaultRG = relationGraph.edgeCollection(module.exports.builtIn.collName.defaultRG);
+			module.exports.membershipEdges = relationGraph.edgeCollection(module.exports.builtIn.collName.memberOf); // user memberOf userGroups
+			module.exports.permissionEdges = relationGraph.edgeCollection(module.exports.builtIn.collName.permissions);
+			module.exports.resourceBelongsTo = relationGraph.edgeCollection(module.exports.builtIn.collName.belongsTo); // resource belongs to resourceGroup
+			module.exports.typedefInterfaces = relationGraph.edgeCollection(module.exports.builtIn.collName.supportedInterfaces);
 
 			return ensureCustomIndices();
 		}).then(ensureBuiltinRecords);
@@ -249,14 +249,11 @@ module.exports.builtIn = {
 		belongsTo: "belongsTo",
 		createdUG: "createdUG",
 		createdRG: "createdRG",
+		defaultRG: "defaultRG",
 		memberOf: "memberOf",
 		permissions: "permissions",
 		supportedInterfaces: "supportedInterfaces"
 	}
-};
-
-module.exports.defaults = {
-	appCtx: "defApp"
 };
 
 module.exports.idField = dbConfig.idField;

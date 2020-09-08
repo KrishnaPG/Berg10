@@ -13,11 +13,11 @@ const jwtVerifier = createVerifier(Object.assign({ key, algorithm: 'HS256' }, co
 console.log("jwt secret: ", key);
 
 
-exports.sendJWT = (user, req, res) => {
+exports.sendJWT = (user, appCtx, req, res) => {
 	delete user.password; // do not leak it to the client
 	const jwt = jwtSigner({
-		// email: user.email,
-		id: user[config.db.idField]
+		id: user[config.db.idField],
+		appCtx
 	}); //TODO: customize the token expiration based on user's preference
 	res.send(RPCResponse({ jwt, user }));
 };

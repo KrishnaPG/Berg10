@@ -6,12 +6,12 @@
 		
 const RPCError = (err, id = null) => ({ "jsonrpc": "2.0", "error": { code: err.code, message: err.message, title: err.name || "Error" }, id });
 
-RPCError.duplicate = (message, code = -32409, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "Already Exists" }, id });
-RPCError.invalidRequest = (message, code = -32600, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "Invalid Request" }, id });
-RPCError.notFound = (message, code = -32601, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "NotFound" }, id });
-RPCError.unAuthenticated = (message, code = -32401, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "UnAuthenticated" }, id });
-RPCError.unAuthorized = (message, code = -32403, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title: "UnAuthorized" }, id });
-RPCError.generic = (message, title = "Error", code = -32000, id = null) => ({ "jsonrpc": "2.0", "error": { code, message, title }, id });
+RPCError.duplicate = (message, id = null, code = -32409) => ({ "jsonrpc": "2.0", "error": { code, message, title: "Already Exists" }, id });
+RPCError.invalidRequest = (message, id = null, code = -32600) => ({ "jsonrpc": "2.0", "error": { code, message, title: "Invalid Request" }, id });
+RPCError.notFound = (message, id = null, code = -32601) => ({ "jsonrpc": "2.0", "error": { code, message, title: "NotFound" }, id });
+RPCError.unAuthenticated = (message, id = null, code = -32401) => ({ "jsonrpc": "2.0", "error": { code, message, title: "UnAuthenticated" }, id });
+RPCError.unAuthorized = (message, id = null, code = -32403) => ({ "jsonrpc": "2.0", "error": { code, message, title: "UnAuthorized" }, id });
+RPCError.generic = (message, id = null, title = "Error", code = -32000) => ({ "jsonrpc": "2.0", "error": { code, message, title }, id });
 
 module.exports = {
 	RPCResponse: (result, id = null) => ({ "jsonrpc": "2.0", result, id }),

@@ -5,30 +5,32 @@
 const config = require('config');
 const Utils = require('../utils/auth');
 const { RPCResponse, RPCError } = require('../utils/rpc');
+const { verifyJWT } = require('./jwt');
+const { rpcMethods: ProviderMethods } = require('../interfaces/');
 
 const AllowedOrigins = config.cors.allowedOrigins.map(el => Utils.wildcardToRegExp(el)); // pre-bake to regExps
 
 exports.getUser = (req, res, next) => {
-  const allowed = AllowedOrigins.some(regEx => req.headers.origin.match(regEx));
-  if (!allowed) return res.sendStatus(403);
-  res.header('Access-Control-Allow-Origin', req.headers.origin);
-  res.header('Access-Control-Allow-Credentials', true);
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  req.isAuthenticated() ? res.send(RPCResponse({ sessionID: req.sessionID, user: req.user })) : res.sendStatus(401);
+	const allowed = AllowedOrigins.some(regEx => req.headers.origin.match(regEx));
+	if (!allowed) return res.sendStatus(403);
+	res.header('Access-Control-Allow-Origin', req.headers.origin);
+	res.header('Access-Control-Allow-Credentials', true);
+	res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+	req.isAuthenticated() ? res.send(RPCResponse({ sessionID: req.sessionID, user: req.user })) : res.sendStatus(401);
 };
 
 exports.logout = (req, res, next) => {
-  const allowed = AllowedOrigins.some(regEx => req.headers.origin.match(regEx));
-  if (!allowed) return res.sendStatus(403);
-  res.header('Access-Control-Allow-Origin', req.headers.origin);
-  res.header('Access-Control-Allow-Credentials', true);
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  req.logout();
-  res.clearCookie(config.session.name);
-  req.session ? req.session.destroy(err => {
-    req.user = null;
-    err ? res.send(RPCError(err)) : res.send(RPCResponse("success"));
-  }) : res.send(RPCResponse("success"));
+	const allowed = AllowedOrigins.some(regEx => req.headers.origin.match(regEx));
+	if (!allowed) return res.sendStatus(403);
+	res.header('Access-Control-Allow-Origin', req.headers.origin);
+	res.header('Access-Control-Allow-Credentials', true);
+	res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+	req.logout();
+	res.clearCookie(config.session.name);
+	req.session ? req.session.destroy(err => {
+		req.user = null;
+		err ? res.send(RPCError(err)) : res.send(RPCResponse("success"));
+	}) : res.send(RPCResponse("success"));
 };
 
 
@@ -38,9 +40,9 @@ exports.logout = (req, res, next) => {
  * List of API examples.
  */
 exports.getApi = (req, res) => {
-  res.render('api/index', {
-    title: 'API Examples'
-  });
+	res.render('api/index', {
+		title: 'API Examples'
+	});
 };
 
 /**
@@ -49,12 +51,58 @@ exports.getApi = (req, res) => {
  */
 
 exports.getFileUpload = (req, res) => {
-  res.render('api/upload', {
-    title: 'File Upload'
-  });
+	res.render('api/upload', {
+		title: 'File Upload'
+	});
 };
 
 exports.postFileUpload = (req, res) => {
-  req.flash('success', { msg: 'File was uploaded successfully.' });
-  res.redirect('/api/upload');
+	req.flash('success', { msg: 'File was uploaded successfully.' });
+	res.redirect('/api/upload');
 };
+
+exports.invokeProviderMethod = (req, res, next) => {
+	verifyJWT(req, res, jwtPayload => {
+		const rpcRequest = req.body;
+		if (rpcRequest.jsonrpc !== "2.0")
+			return res.status(501).send(RPCError.invalidRequest(`Only {jsonrpc: "2.0"} methods are supported`, rpcRequest.id));
+		
+		const acl = {
+			userId: jwtPayload.id,
+			appCtx: jwtPayload.appCtx,
+			rgCtx: rpcRequest.params.rgCtx,
+			ugCtx: rpcRequest.params.ugCtx,
+			permCtx: rpcRequest.params.permCtx,
+		};
+		
+		const fn = ProviderMethods[rpcRequest.method];
+		if (!fn) return res.status(404).send(RPCError.notFound(`Unknown method: ${rpcRequest.method}`, rpcRequest.id));
+
+		return fn(rpcRequest.params, acl)
+			.then(result => res.send(RPCResponse(result, rpcRequest.id)))
+			.catch(ex => res.status(ex.code || 500).send(RPCError(ex, rpcRequest.id)));
+	});
+
+	// const rpcRequest = req.body;
+
+	// switch (rpcRequest.method) {
+	// 	case "Resource.createNew": {
+	// 		return Resource.createNew(rpcRequest.params.resource, acl)
+	// 			.then(resource => res.send(RPCResponse(resource)))
+	// 			.catch(ex => res.status(ex.code || 500).send(RPCError(ex)));
+	// 	}
+	// 	case "UserGroup.createNew": {
+	// 		return UserGroup.createNew(rpcRequest.params.group, rpcRequest.params.memberIds, acl)
+	// 			.then(result => res.send(RPCResponse(result)))
+	// 			.catch(ex => res.status(ex.code || 500).send(RPCError(ex)));
+	// 	}
+	// 	case "Typedef.createNew": {
+	// 		return Typedef.createNew(rpcRequest.params.typedef, acl)
+	// 			.then(result => res.send(RPCResponse(result)))
+	// 			.catch(ex => res.status(ex.code || 500).send(RPCError(ex)));
+	// 	}
+	// 	default: {
+	// 		return res.status(404).send(RPCError.notFound(`Unknown Method: ${rpcRequest.method}`));
+	// 	}
+	// }
+}
