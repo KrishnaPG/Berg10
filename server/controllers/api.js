@@ -3,12 +3,14 @@
  * All Rights Reserved.
  */
 const config = require('config');
-const Utils = require('../utils/auth');
 const { RPCResponse, RPCError } = require('../utils/rpc');
+const { wildcardToRegExp } = require('../utils/auth');
 const { verifyJWT } = require('./jwt');
-const { rpcMethods: ProviderMethods } = require('../interfaces/');
 
-const AllowedOrigins = config.cors.allowedOrigins.map(el => Utils.wildcardToRegExp(el)); // pre-bake to regExps
+const db = require('../models/db'); // should be loaded before the below line
+const { rpcMethods: ProviderMethods } = require('../interfaces/'); // db.init() populates these rpcMethods (server/index.js invokes the init())
+
+const AllowedOrigins = config.cors.allowedOrigins.map(el => wildcardToRegExp(el)); // pre-bake to regExps
 
 exports.getUser = (req, res, next) => {
 	const allowed = AllowedOrigins.some(regEx => req.headers.origin.match(regEx));
@@ -65,7 +67,7 @@ exports.invokeProviderMethod = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
 		const rpcRequest = req.body;
 		if (rpcRequest.jsonrpc !== "2.0")
-			return res.status(501).send(RPCError.invalidRequest(`Only {jsonrpc: "2.0"} methods are supported`, rpcRequest.id));
+			return res.status(501).json(RPCError.invalidRequest(`Only {jsonrpc: "2.0"} methods are supported`, rpcRequest.id));
 		
 		const acl = {
 			userId: jwtPayload.id,
@@ -76,33 +78,18 @@ exports.invokeProviderMethod = (req, res, next) => {
 		};
 		
 		const fn = ProviderMethods[rpcRequest.method];
-		if (!fn) return res.status(404).send(RPCError.notFound(`Unknown method: ${rpcRequest.method}`, rpcRequest.id));
+		if (!fn) return res.status(404).json(RPCError.notFound(`Unknown method: ${rpcRequest.method}`, rpcRequest.id));
 
-		return fn(rpcRequest.params, acl)
-			.then(result => res.send(RPCResponse(result, rpcRequest.id)))
-			.catch(ex => res.status(ex.code || 500).send(RPCError(ex, rpcRequest.id)));
+		return fn(db, rpcRequest.params, acl)
+			.then(result => res.json(RPCResponse(result, rpcRequest.id)))
+			.catch(ex => res.status(ex.code || 500).json(RPCError(ex, rpcRequest.id)));
 	});
+}
 
-	// const rpcRequest = req.body;
 
-	// switch (rpcRequest.method) {
-	// 	case "Resource.createNew": {
-	// 		return Resource.createNew(rpcRequest.params.resource, acl)
-	// 			.then(resource => res.send(RPCResponse(resource)))
-	// 			.catch(ex => res.status(ex.code || 500).send(RPCError(ex)));
-	// 	}
-	// 	case "UserGroup.createNew": {
-	// 		return UserGroup.createNew(rpcRequest.params.group, rpcRequest.params.memberIds, acl)
-	// 			.then(result => res.send(RPCResponse(result)))
-	// 			.catch(ex => res.status(ex.code || 500).send(RPCError(ex)));
-	// 	}
-	// 	case "Typedef.createNew": {
-	// 		return Typedef.createNew(rpcRequest.params.typedef, acl)
-	// 			.then(result => res.send(RPCResponse(result)))
-	// 			.catch(ex => res.status(ex.code || 500).send(RPCError(ex)));
-	// 	}
-	// 	default: {
-	// 		return res.status(404).send(RPCError.notFound(`Unknown Method: ${rpcRequest.method}`));
-	// 	}
-	// }
+let gCachedResponse_lPMethods = null;
+exports.listProviderMethods = (req, res, next) => {
+	if (gCachedResponse_lPMethods) return res.send(gCachedResponse_lPMethods);
+	gCachedResponse_lPMethods = JSON.stringify(RPCResponse(Object.keys(ProviderMethods)));
+	return res.send(gCachedResponse_lPMethods);
 }

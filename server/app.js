@@ -61,7 +61,7 @@ app.delete('/api/typedefs/:_key', typedefController.remove);
 // app.delete('/api/users/:_key', userController.remove);
 
 app.post('/api/invoke', apiController.invokeProviderMethod);
-
+app.get('/api/invoke', apiController.listProviderMethods);
 
 // For oAuth based routes we use Sessions
 app.use(session(Object.assign({}, {

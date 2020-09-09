@@ -2,10 +2,8 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
-const db = require('../models/db');
-const { RPCResponse, RPCError } = require('../utils/rpc');
 
-function find({ filter, limit = 20, offset = 0, sort = {} }, acl) {
+function find(db, { filter, limit = 2, offset = 0, sort = {} }, acl) {
 	const ugCtxList = acl.ugCtx ? `[null, "${acl.ugCtx}"]` : "[null]";
 	const filterExpr = AQL.literal("");//Typedef.convertFilter(filter));
 	//const sortExpr = AQL.literal(`SORT r.${sort} ${desc ? "DESC" : "ASC"}`);
@@ -20,12 +18,12 @@ function find({ filter, limit = 20, offset = 0, sort = {} }, acl) {
 			LET isAdmin = LENGTH(ug) > 0
 			LET u = (
 					FOR u IN \`${db.collName.users}\`
-					FILTER isAdmin || u._id == @userId
+					FILTER isAdmin || u._id == \`${acl.userId}\`
 					LIMIT ${offset}, ${limit}
 					RETURN u
 			)
 			RETURN { users: u,  isAdmin }
-	`).then(cursor => cursor.all());
+	`, { count: true, options: { fullCount: true } }).then(res => console.log("query result: ", res));//.then(cursor => cursor.all());
 
 	/* Ref: https://www.arangodb.com/docs/stable/drivers/js-reference-aql.html
 			FOR u IN `users`

@@ -6,8 +6,8 @@ const { Database } = require('arangojs');
 
 const dbConfig = require('config').db;
 const { normalizeTables, isGeoType, isRelationTable } = require('./db_schemaNormalization');
-const { getValidators } = require('./db_schemaValidation');
-const registerInterfaces = require('../interfaces/');
+
+const { init: ensureInterfaceRecords } = require('../interfaces/');
 
 const RelationGraphName = "system_relations";
 
@@ -180,7 +180,7 @@ function ensureBuiltinRecords() {
 	}).then(group => module.exports.builtIn.resourceGroups.System = group[dbConfig.idField]));
 
 	// ensure the interfaces are registered, and built-in types (e.g. users etc) are setup
-	p.push(registerInterfaces(module.exports, dbConfig).then(ensureBuiltinTypeRecords));
+	p.push(ensureInterfaceRecords(module.exports, dbConfig).then(ensureBuiltinTypeRecords));
 
 	// TODO: ensure the built-in types (e.g. users etc.)
 	// TODO: setup the interfaces for each built-in types

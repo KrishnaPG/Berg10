@@ -3,11 +3,6 @@
  * All Rights Reserved.
  */
 
-const interfaces = [
-	require('./typedef'),
-	require('./tableEntry')
-];
-
 function ensureInterfaceMethod(db, dbConfig, interfaceRecord, methodName, methodDetails) {
 	const iMethodName = `${interfaceRecord[dbConfig.keyField]}.${methodName}`;
 	return db.ensureRecord(db.iMethodsColl, {
@@ -32,8 +27,14 @@ function ensureInterface(db, dbConfig, {name, methods, description}) {
 	).then(methodFnArray => Object.assign({}, ...methodFnArray));
 }
 
-module.exports = (db, dbConfig) =>
-	Promise.all(interfaces.map(interface => ensureInterface(db, dbConfig, interface)))
+module.exports.init = function(db, dbConfig) {
+	const interfaces = [
+		require('./iTypedef'),
+		require('./iTableEntry'),
+		require('./iUsers')
+	];	
+	return Promise.all(interfaces.map(interface => ensureInterface(db, dbConfig, interface)))
 		.then(interfaceMethodsFnArray => Object.assign(module.exports.rpcMethods, ...interfaceMethodsFnArray));
+}
 	
-module.exports.rpcMethods = {};
+module.exports.rpcMethods = {}; // init() should be called to populate these values
