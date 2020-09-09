@@ -33,7 +33,7 @@ module.exports.init = function(db, dbConfig) {
 		require('./iTableEntry'),
 		require('./iUsers')
 	];	
-	return Promise.all(interfaces.map(interface => ensureInterface(db, dbConfig, interface)))
+	return Promise.all(interfaces.map(interfaceObj => ensureInterface(db, dbConfig, interfaceObj)))
 		.then(interfaceMethodsFnArray => Object.assign(module.exports.rpcMethods, ...interfaceMethodsFnArray));
 }
 	

@@ -40,7 +40,7 @@ class User {
 	}
 };
 
-function createUser(user, { appCtx = db.defaults.appCtx } = {}) {
+function createUser(user, appCtx = null) {
 	return db.userColl.save(user)
 		.then(userRecord => {
 			const t = new Date();

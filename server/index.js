@@ -11,7 +11,7 @@ const db = require('./models/db');
 
 // initialize the user collection and start the server
 let server = null;
-db.init().then(() => {
+const serverReady = db.init().then(() => {
 	server = app.listen(app.get('port'), app.get('host'));
 	server.on('listening', () => app.logger.info(`Berg10 is listening on ${app.get('host')}:${app.get('port')}`));
 	server.on('error', (e) => {
@@ -30,8 +30,18 @@ process.on('unhandledRejection', (reason, p) =>
 	app.logger.error(`Unhandled Rejection ${reason.stack}`)
 );
 
+function shutdown() {
+	console.log("server existing");
+	if (server) server.close();
+	if (db) db.close();
+}
+
 //Graceful shutdown on termination
-atExit(() => {
-	if(server) server.close();
-	if(db) db.close();
-});
+atExit(shutdown);
+
+module.exports = {
+	app,
+	db,
+	serverReady,
+	shutdown
+};

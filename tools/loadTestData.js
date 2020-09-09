@@ -5,7 +5,6 @@
 const config = require('config');
 const chalk = require('chalk');
 const { db, Axios, getAxiosErrorMsg } = require('./utils');
-debugger;
 
 // gets applied as prefix to all created data items
 let gDataPrefix = "";

@@ -4,10 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "cross-env NODE_ENV=test npm run jest",
     "dev": "cross-env NODE_ENV=development nodemon --inspect=9257 ./index.js",
     "debug": "cross-env NODE_ENV=development nodemon --inspect-brk=9257 ./index.js",
-    "serve": "NODE_ENV=production node ./index.js"
+    "serve": "NODE_ENV=production node ./index.js",
+    "jest": "jest --detectOpenHandles --forceExit"
   },
   "author": "",
   "license": "ISC",
@@ -57,6 +58,7 @@
   },
   "devDependencies": {
     "cross-env": "^7.0.2",
+    "jest": "26.4.2",
     "pino-pretty": "^4.0.0"
   },
   "nodemonConfig": {
