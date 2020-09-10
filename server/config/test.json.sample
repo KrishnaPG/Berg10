@@ -8,11 +8,11 @@
 		]
 	},
 	"db": {
-		"url": "http://13.235.161.29:8529",
+		"url": "http://<ArangoDB-IP>:<port>",
 		"dbName": "default",
 		"auth": {
-			"username": "dev",
-			"password": "devPass"
+			"username": "<ArangoDB-Username>",
+			"password": "<ArangoDB-Password>"
 		},
 		"idField": "_id",
 		"keyField": "_key"
@@ -28,8 +28,8 @@
 	},	
 	"passport": {
 		"github": {
-			"clientID": "512b910f75a7693425a0",
-			"clientSecret": "2b3acdb7efc1fdda598adc6cea98dfdff5bd8b70",
+			"clientID": "-----redacted-----",
+			"clientSecret": "-----redacted-----",
 			"callbackURL": "http://localhost:8080/auth/github/callback",
 			"passReqToCallback": true,
 			"scope": [
@@ -37,14 +37,14 @@
 			]
 		},
 		"google": {
-			"clientID": "975446056155-u44va7d4gup2mqreujfl7r69u5rb2h98.apps.googleusercontent.com",
-			"clientSecret": "Ll3zJG789GA1r0zwzUtNDC_Z",
+			"clientID": "-----redacted-----.apps.googleusercontent.com",
+			"clientSecret": "-----redacted------Rsyf",
 			"callbackURL": "http://localhost:8080/auth/google/callback",
 			"passReqToCallback": true
 		},
 		"linkedIn": {
-			"clientID": "78ighjqkvbcq8s",
-			"clientSecret": "rMc0OeHX00PIESqs",
+			"clientID": "-----redacted-----",
+			"clientSecret": "-----redacted-----",
 			"callbackURL": "http://localhost:8080/auth/linkedin/callback",
 			"scope": [
 				"r_liteprofile",
@@ -53,8 +53,8 @@
 			"passReqToCallback": true
 		},
 		"twitter": {
-			"consumerKey": "process.env.TWITTER_KEY",
-			"consumerSecret": "process.env.TWITTER_SECRET",
+			"consumerKey": "-----redacted-----",
+			"consumerSecret": "-----redacted-----",
 			"callbackURL": "http://localhost:8080/auth/twitter/callback",
 			"passReqToCallback": true
 		}

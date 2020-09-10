@@ -22,3 +22,8 @@ build/s
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# config files
+/tools/config/default.json
+/server/config/development.json
+/server/config/test.json

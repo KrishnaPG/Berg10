@@ -1,10 +1,10 @@
 {
 	"db": {
-		"url": "http://13.235.161.29:8529",
+		"url": "http://<ArangoDB-IPAddress>:<port>",
 		"dbName": "default",
 		"auth": {
-			"username": "dev",
-			"password": "devPass"
+			"username": "<ArangoDB-User>",
+			"password": "<ArangoDB-Password>"
 		},
 		"idField": "_id",
 		"keyField": "_key"

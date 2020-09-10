@@ -51,5 +51,5 @@ describe('iUsers functionality', () => {
 		}).then(response => gAxios.get('typedefs?name=schepe'))
 			.then(response => console.log(response.data)).then(() => done());
 	});
-
+	// TODO: add user-deletion as invoke method
 });
