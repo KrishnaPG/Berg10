@@ -31,3 +31,13 @@ export const triggerPanelTypeRepo = () => {
 		config: { text: "i was added" }
 	});
 }
+
+export const triggerPanelUsers = () => {
+	triggerPanelAdd({
+		bringToFocus: true,
+		id: "Users",
+		component: "Users",
+		name: "Users",
+		config: {}
+	});
+}

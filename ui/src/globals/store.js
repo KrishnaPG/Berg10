@@ -22,7 +22,7 @@ export const lastSession = init().then(() => idbP.get("lastSession"));
 
 export function saveSession(sessionData) {
 	// save the session details to local storage
-	idbP.set(sessionData, "lastSession");
+	idbP.set("lastSession", sessionData);
 }
 
 export function clearSession() {

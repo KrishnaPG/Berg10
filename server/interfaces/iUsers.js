@@ -2,6 +2,7 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
+const AQL = require('arangojs').aql;
 
 function find(db, { filter, limit = 2, offset = 0, sort = {} }, acl) {
 	const ugCtxList = acl.ugCtx ? `[null, "${acl.ugCtx}"]` : "[null]";
@@ -41,7 +42,7 @@ module.exports = {
 			description: "Returns the list of users that meet the given search criteria",
 			inputSchema: {},
 			outputSchema: {},
-			fn: () => Promise.reject(new Error('Not Implemented: iUsers.find()'))
+			fn: find
 		},
 		"create": {
 			description: "Creates a new user",

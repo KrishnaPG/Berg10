@@ -3,7 +3,14 @@
  * All Rights Reserved.
  */
 import React from 'react';
-import { triggerLogout, triggerPanelAdd, triggerPanelTypeRepo, triggerNotifyWarning, triggerNotifyError } from '../../globals/triggers';
+import {
+	triggerLogout,
+	triggerNotifyWarning,
+	triggerNotifyError,
+	triggerPanelAdd,
+	triggerPanelTypeRepo,
+	triggerPanelUsers,
+} from '../../globals/triggers';
 
 import "./xplore.scss";
 
@@ -56,8 +63,8 @@ class Xplore extends React.PureComponent {
 					<MenuItem key="1" onClick={triggerPanelTypeRepo}>
 						Type Repo
           </MenuItem>
-					<MenuItem key="2" onClick={triggerPanelAdd}>
-						Option 2
+					<MenuItem key="2" onClick={triggerPanelUsers}>
+						Users
           </MenuItem>
 					<MenuItem key="3" onClick={triggerPanelAdd}>
 						Option 3
