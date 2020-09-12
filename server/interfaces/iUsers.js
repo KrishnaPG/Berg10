@@ -4,27 +4,33 @@
  */
 const AQL = require('arangojs').aql;
 
-function find(db, { filter, limit = 2, offset = 0, sort = {} }, acl) {
+function find(db, { filter, limit = 10, skip = 0, sort = {} }, acl) {
 	const ugCtxList = acl.ugCtx ? `[null, "${acl.ugCtx}"]` : "[null]";
 	const filterExpr = AQL.literal("");//Typedef.convertFilter(filter));
 	//const sortExpr = AQL.literal(`SORT r.${sort} ${desc ? "DESC" : "ASC"}`);
 	return db.query(AQL`
 			// check if user is member of ug-Admin group
 			LET ug = (
-					FOR mem IN \`${db.collName.memberOf}\`
-					FILTER mem._from == \'${acl.userId}\' && mem._to == \'${builtIn.userGroups.Admin}\' && mem.ugCtx in ${ugCtxList}
+					FOR mem IN ${db.membershipEdges}
+					FILTER mem._from == ${acl.userId} && mem._to == ${db.builtIn.userGroups.Admin} && mem.ugCtx in ${ugCtxList}
 					LIMIT 1
 					RETURN mem._to
 			)
 			LET isAdmin = LENGTH(ug) > 0
-			LET u = (
-					FOR u IN \`${db.collName.users}\`
-					FILTER isAdmin || u._id == \`${acl.userId}\`
-					LIMIT ${offset}, ${limit}
-					RETURN u
-			)
-			RETURN { users: u,  isAdmin }
-	`, { count: true, options: { fullCount: true } }).then(res => console.log("query result: ", res));//.then(cursor => cursor.all());
+			
+			FOR u IN ${db.userColl}
+			FILTER isAdmin || u._id == ${acl.userId}
+			LIMIT ${skip}, ${limit}
+			RETURN u
+	`, { count: true, options: { fullCount: true } })
+		.then(cursor =>
+			cursor.all().then(users => ({
+				total: (cursor.extra.stats.fullCount || cursor.count),
+				limit,
+				skip,
+				data: users
+			}))
+		);
 
 	/* Ref: https://www.arangodb.com/docs/stable/drivers/js-reference-aql.html
 			FOR u IN `users`

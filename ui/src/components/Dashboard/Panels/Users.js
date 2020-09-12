@@ -33,17 +33,12 @@ const remoteDataSource = {
 			}
 		};
 	},
-	converter(axiosResponse) {
+	converter({ data: jsonResponse }) {	/* data ==  bizDataAdapter(axiosResponse.data), which is the JSON rpc response */
+		if (jsonResponse.jsonrpc != "2.0") throw new Error(`Invalid JSON response received: ${JSON.stringify(jsonResponse, null, 2)}`);
+		const { limit, skip, total, data: list} = jsonResponse.result;
 		return {
-			list: axiosResponse.data.result/*.map((item, index) => {
-				return {
-					...item,
-					id: `${index}`,
-					//name: `${item.name.first} ${item.name.last}`,
-					index,
-				};
-			})*/,
-			total: 100,
+			list,
+			total,
 		};
 	},
 };
@@ -59,8 +54,8 @@ const columns = [
 		filterRender: 'search'
 	},
 	{
-		title: 'Schema',
-		key: 'schema',
+		title: 'EMail',
+		key: 'email',
 		copyable: true,
 		ellipsis: true,
 		width: 200,
