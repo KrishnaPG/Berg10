@@ -19,7 +19,7 @@ const Tooltip = React.lazy(() => import(/* webpackChunkName: "antPanels", webpac
 const { TabPane } = Tabs;
 
 const remoteDataSource = {
-	url: 'http://localhost:8080/api/invoke',
+	url: 'invoke',
 	method: 'POST',
 	convertParams({ params }) {
 		console.log("params: ", params);
@@ -30,7 +30,8 @@ const remoteDataSource = {
 				$limit: params.pageSize,
 				$skip: (params.current - 1) * params.pageSize,
 			//$sort: "",
-			}
+			},
+			id: performance.now()
 		};
 	},
 	converter({ data: jsonResponse }) {	/* data ==  bizDataAdapter(axiosResponse.data), which is the JSON rpc response */

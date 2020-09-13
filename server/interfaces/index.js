@@ -12,7 +12,7 @@ function ensureInterfaceMethod(db, dbConfig, interfaceRecord, methodName, method
 		inputSchema: methodDetails.inputSchema,
 		outputSchema: methodDetails.outputSchema,
 		description: methodDetails.description
-	}).then(() => ({ [iMethodName]: methodDetails.fn }));
+	}).then(() => ({ [iMethodName]: methodDetails }));
 }
 
 function ensureInterface(db, dbConfig, {name, methods, description}) {
@@ -31,7 +31,8 @@ module.exports.init = function(db, dbConfig) {
 	const interfaces = [
 		require('./iTypedef'),
 		require('./iTableEntry'),
-		require('./iUsers')
+		require('./iUsers'),
+		require('./iUser')
 	];	
 	return Promise.all(interfaces.map(interfaceObj => ensureInterface(db, dbConfig, interfaceObj)))
 		.then(interfaceMethodsFnArray => Object.assign(module.exports.rpcMethods, ...interfaceMethodsFnArray));

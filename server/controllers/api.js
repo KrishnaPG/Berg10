@@ -6,6 +6,7 @@ const config = require('config');
 const { RPCResponse, RPCError } = require('../utils/rpc');
 const { wildcardToRegExp } = require('../utils/auth');
 const { verifyJWT } = require('./jwt');
+const { rpcRequest: JSONRPCRequest } = require('../interfaces/validators');
 
 const db = require('../models/db'); // should be loaded before the below line
 const { rpcMethods: ProviderMethods } = require('../interfaces/'); // db.init() populates these rpcMethods (server/index.js invokes the init())
@@ -63,24 +64,28 @@ exports.postFileUpload = (req, res) => {
 	res.redirect('/api/upload');
 };
 
+// JSON-RPC method
 exports.invokeProviderMethod = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
-		const rpcRequest = req.body;
-		if (rpcRequest.jsonrpc !== "2.0")
-			return res.status(501).json(RPCError.invalidRequest(`Only {jsonrpc: "2.0"} methods are supported`, rpcRequest.id));
+		// validate the request
+		const { error: requestError, value: rpcRequest } = JSONRPCRequest.validate(req.body);
+		if (requestError) return res.status(406).json(RPCError.invalidRequest(requestError.details[0].message, rpcRequest.id));
 		
 		const acl = {
 			userId: jwtPayload.id,
 			appCtx: jwtPayload.appCtx,
-			rgCtx: rpcRequest.params.rgCtx,
-			ugCtx: rpcRequest.params.ugCtx,
-			permCtx: rpcRequest.params.permCtx,
+			rgCtx: jwtPayload.appCtx + "-" + rpcRequest.params["@rgCtx"],
+			ugCtx: jwtPayload.appCtx + "-" + rpcRequest.params["@ugCtx"],
+			permCtx: jwtPayload.appCtx + "-" + rpcRequest.params["@permCtx"],
 		};
 		
-		const fn = ProviderMethods[rpcRequest.method];
-		if (!fn) return res.status(404).json(RPCError.notFound(`Unknown method: ${rpcRequest.method}`, rpcRequest.id));
+		const methodDetails = ProviderMethods[rpcRequest.method];
+		if (!methodDetails) return res.status(404).json(RPCError.notFound(`Unknown method: ${rpcRequest.method}`, rpcRequest.id));
 
-		return fn(db, rpcRequest.params, acl)
+		const { error: inputError, value: methodParams } = methodDetails.inputSchema.validate(rpcRequest.params);
+		if (inputError) return res.status(406).json(RPCError.invalidRequest(inputError.details[0].message, rpcRequest.id));
+
+		return methodDetails.fn(db, methodParams, acl)
 			.then(result => res.json(RPCResponse(result, rpcRequest.id)))
 			.catch(ex => res.status(ex.code || 500).json(RPCError(ex, rpcRequest.id)));
 	});

@@ -24,7 +24,8 @@ exports.postLogin = (req, res, next) => {
 	const validationErrors = [];
 	if (!validator.isEmail(req.body.email)) validationErrors.push('Please enter a valid email address.');
 	if (validator.isEmpty(req.body.password)) validationErrors.push('Password cannot be blank.');
-	
+	if (!req.body.appCtx || validator.isEmpty(req.body.appCtx)) validationErrors.push('Invalid AppCtx');
+
 	if (validationErrors.length) {
 		return res.status(401).send(RPCError.invalidRequest(validationErrors[0]));
 	}
@@ -48,6 +49,7 @@ exports.postSignup = (req, res, next) => {
 	if (!validator.isEmail(req.body.email)) validationErrors.push('Please enter a valid email address.');
 	if (!validator.isLength(req.body.password, { min: 8 })) validationErrors.push('Password must be at least 8 characters long');
 	if (req.body.password !== req.body.confirmPassword) validationErrors.push('Passwords do not match');
+	if (!req.body.appCtx || validator.isEmpty(req.body.appCtx)) validationErrors.push('Invalid AppCtx');
 
 	if (validationErrors.length) {
 		return res.status(401).send(RPCError.invalidRequest(validationErrors[0]));

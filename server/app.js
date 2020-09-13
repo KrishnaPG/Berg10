@@ -54,14 +54,10 @@ app.post('/api/typedefs', typedefController.create);
 app.put('/api/typedefs/:_key', typedefController.update);
 app.delete('/api/typedefs/:_key', typedefController.remove);
 
-// app.get('/api/users', userController.find);
-// app.post('/api/users', userController.create);
-// app.get('/api/users/:_key', userController.get);
-// app.put('/api/users/:_key', userController.update);
-// app.delete('/api/users/:_key', userController.remove);
-
+// JSON-RPC Methods
 app.post('/api/invoke', apiController.invokeProviderMethod);
 app.get('/api/invoke', apiController.listProviderMethods);
+
 
 // For oAuth based routes we use Sessions
 app.use(session(Object.assign({}, {

@@ -18,7 +18,7 @@ module.exports = {
 			inputSchema: {},
 			outputSchema: {},
 			fn: createInstance
-		}		
+		}
 	},
 	description: "The built-in typedef interface"
 };
