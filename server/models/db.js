@@ -2,7 +2,7 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
-const { Database } = require('arangojs');
+const { Database, CollectionType } = require('arangojs');
 
 const dbConfig = require('config').db;
 const { normalizeTables, isGeoType, isRelationTable } = require('./db_schemaNormalization');
@@ -24,10 +24,10 @@ const createColl = name => {
 };
 
 const createEdgeColl = (edgeName, fromName, toName, g) => {
-	const coll = db.edgeCollection(edgeName);
+	const coll = g.edgeCollection(edgeName).collection;
 	return coll.exists().then(exists => {
 		if (exists) return coll;
-		return coll.create({ waitForSync: true })
+		return coll.create({ waitForSync: true, type: CollectionType.EDGE_COLLECTION })
 			.then(() => g.addEdgeDefinition({ collection: edgeName, from: [fromName], to: [toName] }))
 			.then(() => coll)
 			.catch(ex => err(`createEdgeColl('${edgeName}': '${fromName}' -> '${toName}')`, ex));
@@ -54,7 +54,7 @@ function ensureEdgeRelations(g, builtinTables) {
 }
 
 function ensureGraphExists(g) {
-	return g.exists().then(exists => exists ? g : g.create({}));
+	return g.exists().then(exists => exists ? g : g.create([]));
 }
 
 function ensureIndices(c, tbl, tblDefn) {
@@ -98,35 +98,35 @@ function ensureCustomIndices() {
 	const p = [];
 
 	// user membership to groups vary based on ugCtx
-	p.push(module.exports.membershipEdges.ensureIndex({ type: "persistent", fields: ["ugCtx", "appCtx"] }) // TODO: can we remove the appCtx here?
+	p.push(module.exports.membershipEdges.collection.ensureIndex({ type: "persistent", fields: ["ugCtx", "appCtx"] }) // TODO: can we remove the appCtx here?
 		.catch(ex => err(`ensureIndex('membershipEdges.ugCtx')`, ex)));
 	// resource belongs to different resourceGroup vary based on rgCtx
-	p.push(module.exports.resourceBelongsTo.ensureIndex({ type: "persistent", fields: ["rgCtx", "appCtx"] })
+	p.push(module.exports.resourceBelongsTo.collection.ensureIndex({ type: "persistent", fields: ["rgCtx", "appCtx"] })
 		.catch(ex => err(`ensureIndex('resourceBelongsTo.rgCtx')`, ex)));
 	// permission differ based on permCtx
-	p.push(module.exports.permissionEdges.ensureIndex({ type: "persistent", fields: ["permCtx", "appCtx"] })
+	p.push(module.exports.permissionEdges.collection.ensureIndex({ type: "persistent", fields: ["permCtx", "appCtx"] })
 		.catch(ex => err(`ensureIndex('permissionEdges.permCtx')`, ex)));
 	
 	// The available list of userGroups and resourceGroups vary based on appCtx
-	p.push(module.exports.userOwnedUG.ensureIndex({ type: "persistent", fields: ["appCtx"] })
+	p.push(module.exports.userOwnedUG.collection.ensureIndex({ type: "persistent", fields: ["appCtx"] })
 		.catch(ex => err(`ensureIndex('userOwnedUG.appCtx')`, ex)));
-	p.push(module.exports.userOwnedRG.ensureIndex({ type: "persistent", fields: ["appCtx"] })
+	p.push(module.exports.userOwnedRG.collection.ensureIndex({ type: "persistent", fields: ["appCtx"] })
 		.catch(ex => err(`ensureIndex('userOwnedRG.appCtx')`, ex)));
-	p.push(module.exports.userDefaultRG.ensureIndex({ type: "persistent", fields: ["_from", "appCtx"], unique: true })
+	p.push(module.exports.userDefaultRG.collection.ensureIndex({ type: "persistent", fields: ["_from", "appCtx"], unique: true })
 		.catch(ex => err(`ensureIndex('userDefaultRG.appCtx::_from')`, ex)));
-	p.push(module.exports.userDefaultRG.ensureIndex({ type: "persistent", fields: ["_to"], unique: true }) // no one else shares the same resource-group
+	p.push(module.exports.userDefaultRG.collection.ensureIndex({ type: "persistent", fields: ["_to"], unique: true }) // no one else shares the same resource-group
 		.catch(ex => err(`ensureIndex('userDefaultRG.appCtx::_to')`, ex)));
 	
 	// make the combination unique
-	p.push(module.exports.resourceBelongsTo.ensureIndex({ type: "persistent", fields: ["_from", "rgCtx"], unique: true })
+	p.push(module.exports.resourceBelongsTo.collection.ensureIndex({ type: "persistent", fields: ["_from", "rgCtx"], unique: true })
 		.catch(ex => err(`ensureIndex('resourceBelongsTo.unique')`, ex)));
 	p.push(module.exports.rgMethodsColl.ensureIndex({ type: "persistent", fields: ["rg", "type", "method"], unique: true })
 		.catch(ex => err(`ensureIndex('rgMethodsColl.unique')`, ex)));
-	p.push(module.exports.permissionEdges.ensureIndex({ type: "persistent", fields: ["_from", "_to"], unique: true })
+	p.push(module.exports.permissionEdges.collection.ensureIndex({ type: "persistent", fields: ["_from", "_to"], unique: true })
 		.catch(ex => err(`ensureIndex('permissionEdges.unique')`, ex)));
 	p.push(module.exports.iMethodsColl.ensureIndex({ type: "persistent", fields: ["interface", "name"], unique: true })
 		.catch(ex => err(`ensureIndex('iMethodsColl.unique')`, ex)));
-	p.push(module.exports.typedefInterfaces.ensureIndex({ type: "persistent", fields: ["_from", "_to"], unique: true })
+	p.push(module.exports.typedefInterfaces.collection.ensureIndex({ type: "persistent", fields: ["_from", "_to"], unique: true })
 		.catch(ex => err(`ensureIndex('typedefInterfaces.unique')`, ex)));
 	
 	return Promise.all(p);

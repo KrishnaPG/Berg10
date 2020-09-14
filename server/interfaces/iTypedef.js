@@ -15,8 +15,8 @@ module.exports = {
 	methods: {
 		"createInstance": {
 			description: "Allows you to define a new type",
-			inputSchema: {},
-			outputSchema: {},
+			inputSchema: JOI.object({}),
+			outputSchema: JOI.object(),
 			fn: createInstance
 		}
 	},

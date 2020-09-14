@@ -2,6 +2,7 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
+const toJSONSchema = require('joi-to-swagger');
 
 function ensureInterfaceMethod(db, dbConfig, interfaceRecord, methodName, methodDetails) {
 	const iMethodName = `${interfaceRecord[dbConfig.keyField]}.${methodName}`;
@@ -9,8 +10,8 @@ function ensureInterfaceMethod(db, dbConfig, interfaceRecord, methodName, method
 		[dbConfig.keyField]: iMethodName,
 		interface: interfaceRecord[dbConfig.idField],
 		name: methodName,
-		inputSchema: methodDetails.inputSchema,
-		outputSchema: methodDetails.outputSchema,
+		inputSchema: toJSONSchema(methodDetails.inputSchema).swagger,
+		outputSchema: toJSONSchema(methodDetails.outputSchema).swagger,
 		description: methodDetails.description
 	}).then(() => ({ [iMethodName]: methodDetails }));
 }

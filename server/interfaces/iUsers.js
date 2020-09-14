@@ -3,6 +3,8 @@
  * All Rights Reserved.
  */
 const AQL = require('arangojs').aql;
+const JOI = require('joi');
+const Validators = require('./validators');
 
 function find(db, { filter, limit = 10, skip = 0, sort = {} }, acl) {
 	const ugCtxList = acl.ugCtx ? `[null, "${acl.ugCtx}"]` : "[null]";
@@ -46,32 +48,42 @@ module.exports = {
 	methods: {
 		"find": {
 			description: "Returns the list of users that meet the given search criteria",
-			inputSchema: {},
-			outputSchema: {},
+			inputSchema: JOI.object({
+				filter: JOI.any(),
+				limit: JOI.number().positive().default(10).min(1).max(125),
+				skip: JOI.number().integer().default(0).min(0),
+				sort: JOI.any()
+			}),
+			outputSchema: JOI.object({
+				total: JOI.number().integer(),
+				limit: JOI.number().integer(),
+				skip: JOI.number().integer(),
+				data: JOI.array().items(JOI.object())
+			}),
 			fn: find
 		},
 		"create": {
 			description: "Creates a new user",
-			inputSchema: {},
-			outputSchema: {},
+			inputSchema: JOI.object(),
+			outputSchema: JOI.object(),
 			fn: () => Promise.reject(new Error('Not Implemented: iUsers.create()'))
 		},
 		"get": {
 			description: "Returns full details of a user",
-			inputSchema: {},
-			outputSchema: {},
+			inputSchema: JOI.object(),
+			outputSchema: JOI.object(),
 			fn: () => Promise.reject(new Error('Not Implemented: iUsers.get()'))
 		},
 		"update": {
 			description: "Modifies the user details",
-			inputSchema: {},
-			outputSchema: {},
+			inputSchema: JOI.object(),
+			outputSchema: JOI.object(),
 			fn: () => Promise.reject(new Error('Not Implemented: iUsers.update()'))
 		},
 		"delete": {
 			description: "Deletes the user from the system",
-			inputSchema: {},
-			outputSchema: {},
+			inputSchema: JOI.object(),
+			outputSchema: JOI.object(),
 			fn: () => Promise.reject(new Error('Not Implemented: iUsers.delete()'))
 		},
 

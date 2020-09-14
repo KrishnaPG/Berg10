@@ -13,7 +13,7 @@ module.exports = {
 			"@rgCtx": JOI.string().min(1).max(64).empty('').default('rgCtx'),
 			"@ugCtx": JOI.string().min(1).max(64).empty('').default('ugCtx'),
 			"@permCtx": JOI.string().min(1).max(64).empty('').default('permCtx')
-		})
+		}).unknown(true)
 	}).unknown(false),
 
 	id: JOI.string().required().min(1).max(128)

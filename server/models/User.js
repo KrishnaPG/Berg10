@@ -45,7 +45,7 @@ function createUser(user, appCtx = null) {
 		.then(userRecord => {
 			const t = new Date();
 			// add user to "Everyone" user-group
-			const p1 = db.membershipEdges.save({ t }, userRecord[db.idField], db.builtIn.userGroups.Everyone);
+			const p1 = db.membershipEdges.save({ t, _from: userRecord[db.idField], _to: db.builtIn.userGroups.Everyone });
 			// create a default resource-group for the user 
 			const p2 = db.resGroupColl.save({
 				[db.keyField]: `rg-u${userRecord[db.keyField]}-${appCtx}`,
@@ -53,7 +53,7 @@ function createUser(user, appCtx = null) {
 				description: `Default Resource Group for the user [${userRecord[db.idField]}] under appCtx [${appCtx}]`
 			}).then(resGroup =>
 				// assign the defaultRG to the user under the current appCtx
-				db.userDefaultRG.save({ t, appCtx }, userRecord[db.idField], resGroup[db.idField])
+				db.userDefaultRG.save({ t, appCtx, _from: userRecord[db.idField], _to: resGroup[db.idField] })
 			);
 			return Promise.all([p1, p2]).then(() => userRecord);
 		});

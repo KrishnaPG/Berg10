@@ -7,6 +7,7 @@ import Barrier from '../../RenderBarrier';
 import { PlusCircleOutlined } from './icons';
 import { AxiosBaseComponent } from '../../../globals/axios';
 import { getServerDBIdField } from '../../../globals/settings';
+import { jsonRPCObj } from '../../../globals/utils';
 import { triggerPanelAdd, triggerNotifyError } from '../../../globals/triggers';
 import { QueryTable } from './sula';
 
@@ -18,21 +19,255 @@ const Tooltip = React.lazy(() => import(/* webpackChunkName: "antPanels", webpac
 
 const { TabPane } = Tabs;
 
+const fieldsConfig = [
+	{
+		"name": "sender",
+		"container": {
+			"type": "card",
+			"props": {
+				"title": "发送",
+				"type": "inner",
+				"bordered": true,
+				"style": {
+					"padding": 0,
+					"marginBottom": 16
+				},
+				"bodyStyle": {
+					"marginTop": 24
+				}
+			}
+		},
+		"fields": [
+			{
+				"name": "senderName",
+				"label": "发送人姓名",
+				"field": {
+					"type": "input",
+					"props": {
+						"placeholder": "请输入发送人姓名"
+					}
+				},
+				"rules": [
+					{
+						"required": true,
+						"message": "该项为必填项"
+					}
+				]
+			},
+			{
+				"name": "secrecy",
+				"label": "是否保密",
+				"field": {
+					"type": "switch",
+					"props": {
+						"checkedChildren": "on",
+						"unCheckedChildren": "off"
+					}
+				},
+				"valuePropName": "checked"
+			},
+			{
+				"name": "senderNumber",
+				"label": "发送人号码",
+				"field": {
+					"type": "inputnumber",
+					"props": {
+						"placeholder": "请输入发送人号码",
+						"style": {
+							"width": "80%"
+						}
+					}
+				},
+				"rules": [
+					{
+						"required": true,
+						"message": "该项为必填项"
+					}
+				]
+			},
+			{
+				"name": "senderAddress",
+				"label": "发送人地址",
+				"field": {
+					"type": "textarea",
+					"props": {
+						"placeholder": "发送人地址"
+					}
+				},
+				"rules": [
+					{
+						"required": true,
+						"message": "该项为必填项"
+					}
+				]
+			}
+		]
+	},
+	{
+		"name": "recipient",
+		"container": {
+			"type": "card",
+			"props": {
+				"title": "接收",
+				"type": "inner",
+				"bordered": true,
+				"style": {
+					"padding": 0,
+					"marginBottom": 16
+				},
+				"bodyStyle": {
+					"marginTop": 24
+				}
+			}
+		},
+		"fields": [
+			{
+				"name": "recipientName",
+				"label": "接收人姓名",
+				"field": {
+					"type": "select",
+					"props": {
+						"placeholder": "请选择接收人姓名"
+					}
+				},
+				"rules": [
+					{
+						"required": true,
+						"message": "该项为必填项"
+					}
+				]
+			},
+			{
+				"name": "recipientTime",
+				"label": "接收时间",
+				"field": {
+					"type": "checkboxgroup"
+				},
+				"initialSource": [
+					{
+						"text": "Morning",
+						"value": "morning"
+					},
+					{
+						"text": "Afternoon",
+						"value": "afternoon"
+					},
+					{
+						"text": "Night",
+						"value": "night"
+					}
+				]
+			},
+			{
+				"name": "recipientNumber",
+				"label": "接收人号码",
+				"field": {
+					"type": "inputnumber",
+					"props": {
+						"placeholder": "请输入接收人号码",
+						"style": {
+							"width": "80%"
+						}
+					}
+				},
+				"rules": [
+					{
+						"required": true,
+						"message": "该项为必填项"
+					}
+				]
+			},
+			{
+				"name": "recipientAddress",
+				"label": "接收人地址",
+				"field": {
+					"type": "textarea",
+					"props": {
+						"placeholder": "请输入接收人地址"
+					}
+				},
+				"rules": [
+					{
+						"required": true,
+						"message": "该项为必填项"
+					}
+				]
+			}
+		]
+	},
+	{
+		"name": "basic",
+		"container": {
+			"type": "card",
+			"props": {
+				"title": "基础",
+				"type": "inner",
+				"bordered": true,
+				"style": {
+					"padding": 0,
+					"marginBottom": 16
+				},
+				"bodyStyle": {
+					"marginTop": 24
+				}
+			}
+		},
+		"fields": [
+			{
+				"name": "time",
+				"label": "送货时间",
+				"field": {
+					"type": "rangepicker",
+					"props": {
+						"placeholder": [
+							"开始时间",
+							"结束时间"
+						]
+					}
+				},
+				"rules": [
+					{
+						"required": true,
+						"message": "该项为必填项"
+					}
+				]
+			},
+			{
+				"name": "priceProject",
+				"label": "价格保护",
+				"field": {
+					"type": "slider",
+					"props": {
+						"min": 0,
+						"max": 1000,
+						"step": 100,
+						"dots": true
+					}
+				}
+			},
+			{
+				"name": "description",
+				"label": "其他信息",
+				"field": {
+					"type": "textarea",
+					"props": {
+						"placeholder": "请输入其他信息"
+					}
+				}
+			}
+		]
+	}
+];
+
 const remoteDataSource = {
 	url: 'invoke',
 	method: 'POST',
 	convertParams({ params }) {
-		console.log("params: ", params);
-		return {
-			jsonrpc: "2.0",
-			method: "iUsers.find",
-			params: {
-				$limit: params.pageSize,
-				$skip: (params.current - 1) * params.pageSize,
-			//$sort: "",
-			},
-			id: performance.now()
-		};
+		return jsonRPCObj("iUsers.find", {
+			limit: params.pageSize,
+			skip: (params.current - 1) * params.pageSize,
+			//sort: "",
+		});
 	},
 	converter({ data: jsonResponse }) {	/* data ==  bizDataAdapter(axiosResponse.data), which is the JSON rpc response */
 		if (jsonResponse.jsonrpc != "2.0") throw new Error(`Invalid JSON response received: ${JSON.stringify(jsonResponse, null, 2)}`);
@@ -95,11 +330,11 @@ const columns = [
 						title: 'View',
 						mode: 'view',
 						remoteValues: {
-							url: 'typedef',
-							params: { id: '#{record._id}' },
-							method: 'get',
+							url: 'invoke',
+							params: jsonRPCObj("iUser.getFullDetails", { userId: `#{record['${getServerDBIdField()}']}`}),
+							method: 'post',
 						},
-						//fields: fieldsConfig('view', this.format),
+						fields: fieldsConfig
 					},
 				],
 			},

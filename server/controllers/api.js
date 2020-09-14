@@ -82,7 +82,7 @@ exports.invokeProviderMethod = (req, res, next) => {
 		const methodDetails = ProviderMethods[rpcRequest.method];
 		if (!methodDetails) return res.status(404).json(RPCError.notFound(`Unknown method: ${rpcRequest.method}`, rpcRequest.id));
 
-		const { error: inputError, value: methodParams } = methodDetails.inputSchema.validate(rpcRequest.params);
+		const { error: inputError, value: methodParams } = methodDetails.inputSchema.validate(rpcRequest.params, { allowUnknown: true, stripUnknown: true });
 		if (inputError) return res.status(406).json(RPCError.invalidRequest(inputError.details[0].message, rpcRequest.id));
 
 		return methodDetails.fn(db, methodParams, acl)

@@ -2,6 +2,7 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
+const JOI = require('joi');
 
 const iDBEntry = {
 	list: (params) => { },

@@ -6,8 +6,28 @@ const AQL = require('arangojs').aql;
 const JOI = require('joi');
 const Validators = require('./validators');
 
+function isAdmin(db, acl) {
+	
+}
+
 function getFullDetails(db, { userId }, acl) {
-	return { name: "getFullDetails" };
+	const needsAdminRole = acl.userId != userId; // if caller is not same as the record owner, needs admin permissions
+	return db.query(AQL`
+		// check if user is member of ug-Admin group
+		LET ug = (
+				FOR mem IN ${db.membershipEdges}
+				FILTER mem._from == ${acl.userId} && mem._to == ${db.builtIn.userGroups.Admin} && mem.ugCtx in [null, ${acl.ugCtx}]
+				LIMIT 1
+				RETURN mem._to
+		)
+		LET isAdmin = LENGTH(ug) > 0
+		LET userId = ${needsAdminRole} ? (isAdmin ? ${userId}: null): ${userId}
+
+		FOR u IN users
+		FILTER u._id == userId
+		LIMIT 1
+		RETURN u
+	`).then(cursor => cursor.all());
 }
 
 module.exports = {
@@ -18,7 +38,7 @@ module.exports = {
 			inputSchema: JOI.object({
 				userId: Validators.id
 			}),
-			outputSchema: {},
+			outputSchema: JOI.object(),
 			fn: getFullDetails
 		},
 	}

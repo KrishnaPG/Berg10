@@ -8,7 +8,7 @@ const { app, db, serverReady, shutdown} = require('../index'); // starts a serve
 describe('iUsers functionality', () => {
 	const gAxios = axios.create({
 		baseURL: `http://${app.get("host")}:${app.get("port")}/api/`,
-		timeout: 2500,
+		timeout: 1000,
 	});
 	let adminUser = null;
 	let jwt = null;
@@ -19,23 +19,23 @@ describe('iUsers functionality', () => {
 			email = `TestAdmin-${Date.now() * Math.random()}@admin.com`;
 			password = confirmPassword = `TestAdminUserPassword#`;
 			// create a temporary user
-			gAxios.post("user/signup", { email, password, confirmPassword })
+			gAxios.post("user/signup", { appCtx: "Jest.iUsers.AppCtx", email, password, confirmPassword })
 				.then(response => {
 					jwt = response.data.result.jwt;
 					adminUser = response.data.result.user;
 					// set the jwt
 					gAxios.defaults.headers.common['Authorization'] = `Bearer ${jwt}`;
 					// add the user to the Admin group, irrespective of contexts
-					db.membershipEdges.save({ t: new Date() }, adminUser[db.idField], db.builtIn.userGroups.Admin)
+					db.membershipEdges.save({ t: new Date(), _from: adminUser[db.idField], _to: db.builtIn.userGroups.Admin })
 						.then(membershipRecord => adminMembership = membershipRecord)
-						.then(() => done());
+						.finally(() => done());
 				});
 		});
 	});
 	afterAll(done => {
 		// TODO: delete the user properly (with all his resource groups, memberships removed correctly)
 		// delete the admin membership and the temporary admin user
-		db.membershipEdges.remove(adminMembership)
+		return db.membershipEdges.remove(adminMembership)
 			.then(() => db.userColl.remove(adminUser))
 			.then(() => {
 			// shutdown the servers
@@ -45,11 +45,11 @@ describe('iUsers functionality', () => {
 		});
 	});
 
-	test('test1', done => {
-		gAxios.post('typedefs', {
+	test('test1', () => {
+		return gAxios.post('typedefs', {
 			name: `test-${(new Date()).toString()}`
 		}).then(response => gAxios.get('typedefs?name=schepe'))
-			.then(response => console.log(response.data)).then(() => done());
+			.then(response => console.log);
 	});
 	// TODO: add user-deletion as invoke method
 });

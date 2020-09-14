@@ -64,12 +64,12 @@ async function createResources(userDocs) {
 function createUsers(n = 20) {
 	const p = [];
 	const nDigits = getNoOfDigits(n); // no. of digits in n
-	let email, password, confirmPassword;
+	let email, password, confirmPassword, appCtx = "TestDataApp";
 	for (let i = 1; i <= n; ++i)
 	{
 		email = `${gDataPrefix}user${i.toString().padStart(nDigits, "0")}@test.abc`;
 		password = confirmPassword = `${gDataPrefix}userPassword#`;
-		p.push(Axios.post("user/signup", { email, password, confirmPassword }).then(response => response.data.result.user));
+		p.push(Axios.post("user/signup", { appCtx, email, password, confirmPassword }).then(response => response.data.result.user));
 	}
 	return Promise.all(p);
 }
@@ -136,4 +136,4 @@ Usage: ${process.argv[0]} ${process.argv[1]} -y [gDataPrefix]
 	console.log(chalk.green('[✓]'), "Done");
 }
 
-main().catch(ex => console.warn(getAxiosErrorMsg(ex)));
+main().catch(ex => console.warn("\nError: ", getAxiosErrorMsg(ex)));

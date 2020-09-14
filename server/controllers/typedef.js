@@ -17,7 +17,7 @@ exports.find = (req, res, next) => {
 			results ?
 				res.send(RPCResponse(results)) :
 				res.status(404).send(RPCError.notFound(`No typeDef record exists for the query:\n ${JSON.stringify(req.query, null, " ")}`));
-		});
+		}).catch(err => res.status(err.statusCode).send(RPCError(err)));
 	});
 };
 
@@ -27,20 +27,21 @@ exports.find = (req, res, next) => {
 */
 exports.create = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
-		Typedef.create(req.body, (err, typeDef) => {
-			if (err) { return res.status(err.statusCode).send(RPCError(err)); }
-			res.send(RPCResponse(typeDef));
-		});
+		return Typedef.create(req.body)
+			.then(typeDef =>
+				res.send(RPCResponse(typeDef)))
+			.catch(err => res.status(err.statusCode).send(RPCError(err)));
 	});
 };
 
 exports.get = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
-		Typedef.findByKey(req.body, (err, typeDef) => {
-			if (err) { return res.status(err.statusCode).send(RPCError(err)); }
-			res.send(RPCResponse(typeDef));
-		});
-	});	
+		Typedef.findByKey(req.body)
+			.then(typeDef =>
+				res.send(RPCResponse(typeDef)))
+			.catch(err =>
+				res.status(err.statusCode).send(RPCError(err)));
+	});
 }
 
 exports.update = exports.remove = (req, res, next) => {
