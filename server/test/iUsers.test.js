@@ -51,5 +51,13 @@ describe('iUsers functionality', () => {
 		}).then(response => gAxios.get('typedefs?name=schepe'))
 			.then(response => console.log);
 	});
+	test('isAdmin', () => {
+		return gAxios.post('invoke', {
+			jsonrpc: '2.0',
+			method: 'iUser.isAdmin',
+			params: {},
+			id: Math.random()
+		}).then(result => console.log("is admin: ", result));
+	})
 	// TODO: add user-deletion as invoke method
 });

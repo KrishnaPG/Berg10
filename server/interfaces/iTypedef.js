@@ -23,7 +23,7 @@ module.exports = {
 	description: "The built-in typedef interface"
 };
 
-function createInstance({ type, ...other}) {
+function createInstance(db, acl, { type, ...other}) {
 	providers["table"].createNewEntry("resources", { type, ...others }).then(resource => {
 		createUserGroup(resource.name + ".owner").then(grp => {
 			addUserToGroup(currentUser, grp); // add user as owner of the resource

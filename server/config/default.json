@@ -3,7 +3,7 @@
 	"port": 8080,
 	"cors": {
 		"allowedOrigins": []
-	},  
+	},
 	"db": {
 		"url": "http://localhost:8529",
 		"dbName": "default",

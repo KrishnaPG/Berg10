@@ -5,12 +5,30 @@
 const AQL = require('arangojs').aql;
 const JOI = require('joi');
 const Validators = require('./validators');
+const localCache = require('./cache');
 
+// check if the caller is member of ug-Admin group
 function isAdmin(db, acl) {
-	
+	const cacheKey = `isAdmin_${acl.userId}-${acl.ugCtx}`;
+	const cachedValue = localCache.get(cacheKey);
+	if (typeof cachedValue == 'undefined') {
+		return db.query(AQL`
+			FOR mem IN ${db.membershipEdges}
+			FILTER mem._from == ${acl.userId} && mem._to == ${db.builtIn.userGroups.Admin} && mem.ugCtx in [null, ${acl.ugCtx}]
+			LIMIT 1
+			RETURN mem._to
+		`).then(cursor => {
+			const retVal = cursor.hasNext;
+			cursor.kill();
+			localCache.set(cacheKey, retVal);
+			return retVal;
+		}).catch(ex => console.error(ex));
+	}
+	else
+		return Promise.resolve(cachedValue);
 }
 
-function getFullDetails(db, { userId }, acl) {
+function getFullDetails(db, acl, { userId }) {
 	const needsAdminRole = acl.userId != userId; // if caller is not same as the record owner, needs admin permissions
 	return db.query(AQL`
 		// check if user is member of ug-Admin group
@@ -40,6 +58,12 @@ module.exports = {
 			}),
 			outputSchema: JOI.object(),
 			fn: getFullDetails
+		},
+		"isAdmin": {
+			description: "Checks if the caller is a member of a Admin group",
+			inputSchema: JOI.object(),
+			outputSchema: JOI.boolean(),
+			fn: isAdmin
 		},
 	}
 }

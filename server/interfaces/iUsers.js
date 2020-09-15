@@ -6,7 +6,7 @@ const AQL = require('arangojs').aql;
 const JOI = require('joi');
 const Validators = require('./validators');
 
-function find(db, { filter, limit = 10, skip = 0, sort = {} }, acl) {
+function find(db, acl, { filter, limit = 10, skip = 0, sort = {} }) {
 	const ugCtxList = acl.ugCtx ? `[null, "${acl.ugCtx}"]` : "[null]";
 	const filterExpr = AQL.literal("");//Typedef.convertFilter(filter));
 	//const sortExpr = AQL.literal(`SORT r.${sort} ${desc ? "DESC" : "ASC"}`);
