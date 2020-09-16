@@ -164,7 +164,7 @@ function ensureBuiltinRecords() {
 		[dbConfig.keyField]: "ug-Inactive",
 		name: "Inactive",
 		description: "Users that are marked as inactive gets denied all permissions"
-	}));
+	}).then(group => module.exports.builtIn.userGroups.Inactive = group[dbConfig.idField]));
 	
 	// create resource groups
 	p.push(ensureRecord(module.exports.resGroupColl, {

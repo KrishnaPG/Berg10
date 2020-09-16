@@ -16,5 +16,5 @@ module.exports = {
 		}).unknown(true).required()
 	}).unknown(false),
 
-	id: JOI.string().required().min(1).max(128)
+	id: JOI.string().min(1).max(128)
 };

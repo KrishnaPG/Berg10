@@ -3,13 +3,24 @@
  * All Rights Reserved.
  */
 const axios = require('axios');
-const { app, db, serverReady, shutdown} = require('../index'); // starts a server instance on the test port
+const { performance } = require('perf_hooks');
+const { app, db, serverReady, shutdown } = require('../index'); // starts a server instance on the test port
+
+const gAxios = axios.create({
+	baseURL: `http://${app.get("host")}:${app.get("port")}/api/`,
+	timeout: 1000,
+});
+
+function rpcInvoke(method, params = {}) {
+	return gAxios.post('invoke', {
+		jsonrpc: '2.0',
+		method,
+		params,
+		id: performance.now()
+	});
+}
 
 describe('iUsers functionality', () => {
-	const gAxios = axios.create({
-		baseURL: `http://${app.get("host")}:${app.get("port")}/api/`,
-		timeout: 1000,
-	});
 	let adminUser = null;
 	let jwt = null;
 	let adminMembership = null;
@@ -45,19 +56,34 @@ describe('iUsers functionality', () => {
 		});
 	});
 
-	test('test1', () => {
-		return gAxios.post('typedefs', {
-			name: `test-${(new Date()).toString()}`
-		}).then(response => gAxios.get('typedefs?name=schepe'))
-			.then(response => console.log);
-	});
 	test('isAdmin', () => {
-		return gAxios.post('invoke', {
-			jsonrpc: '2.0',
-			method: 'iUser.isAdmin',
-			params: {},
-			id: Math.random()
-		}).then(result => console.log("is admin: ", result));
-	})
+		return rpcInvoke('iUser.isAdmin').then(axiosResponse => {
+			expect(axiosResponse.status).toBe(200);
+			expect(axiosResponse.data.jsonrpc).toBe("2.0");
+			expect(axiosResponse.data.result).toBe(true);
+		});
+	});
+
+	test("memberOf", () => {
+		return rpcInvoke('iUser.memberOf').then(axiosResponse => {
+			expect(axiosResponse.status).toBe(200);
+			expect(axiosResponse.data.jsonrpc).toBe("2.0");
+			const userGroups = axiosResponse.data.result;
+			expect(userGroups).toContain(db.builtIn.userGroups.Everyone);
+			expect(userGroups).toContain(db.builtIn.userGroups.Admin);
+		});
+	});
+
+	test("getFullDetails", () => {
+		return rpcInvoke('iUser.getFullDetails').then(axiosResponse => {
+			expect(axiosResponse.status).toBe(200);
+			expect(axiosResponse.data.jsonrpc).toBe("2.0");
+			const userFullRecord = axiosResponse.data.result;
+			expect(userFullRecord[db.idField]).toBe(adminUser[db.idField]);
+			expect(userFullRecord.password).toBeUndefined();	
+			console.log(axiosResponse.data);
+		});
+	});	
+
 	// TODO: add user-deletion as invoke method
 });

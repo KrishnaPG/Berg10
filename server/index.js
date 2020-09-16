@@ -31,7 +31,6 @@ process.on('unhandledRejection', (reason, p) =>
 );
 
 function shutdown() {
-	console.log("server existing");
 	if (server) server.close();
 	if (db) db.close();
 }

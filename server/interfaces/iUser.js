@@ -7,45 +7,70 @@ const JOI = require('joi');
 const Validators = require('./validators');
 const localCache = require('./cache');
 
-// check if the caller is member of ug-Admin group
-function isAdmin(db, acl) {
-	const cacheKey = `isAdmin_${acl.userId}-${acl.ugCtx}`;
+const UnAuthorized = message => ({ code: 403, message, title: "UnAuthorized" });
+
+// returns the user-groups that the user is memberOf
+async function memberOf(db, acl, { userId } = {}) {
+	if (!userId)	// if no user is specified, treat the caller as the target
+		userId = acl.userId;
+	else if (acl.userId !== userId) {	// if caller is not same as the record owner, needs admin permissions
+		const isAdmin = await isAdmin(db, acl);
+		if (!isAdmin) return Promise.reject(UnAuthorized("iUser.memberOf: Requires Admin Privileges"));
+	}
+	// run the query and return results
+	const cacheKey = `memberOf_${userId}_${acl.ugCtx}`;
 	const cachedValue = localCache.get(cacheKey);
 	if (typeof cachedValue == 'undefined') {
 		return db.query(AQL`
 			FOR mem IN ${db.membershipEdges}
-			FILTER mem._from == ${acl.userId} && mem._to == ${db.builtIn.userGroups.Admin} && mem.ugCtx in [null, ${acl.ugCtx}]
-			LIMIT 1
+			FILTER mem._from == ${userId} && mem.ugCtx in [null, ${acl.ugCtx}]
 			RETURN mem._to
-		`).then(cursor => {
-			const retVal = cursor.hasNext;
-			cursor.kill();
-			localCache.set(cacheKey, retVal);
-			return retVal;
-		}).catch(ex => console.error(ex));
+		`).then(cursor => cursor.all())
+			.then(uGroups => {
+				localCache.set(cacheKey, uGroups);
+				return uGroups;
+			});
 	}
 	else
 		return Promise.resolve(cachedValue);
 }
 
-function getFullDetails(db, acl, { userId }) {
-	const needsAdminRole = acl.userId != userId; // if caller is not same as the record owner, needs admin permissions
-	return db.query(AQL`
-		// check if user is member of ug-Admin group
-		LET ug = (
-				FOR mem IN ${db.membershipEdges}
-				FILTER mem._from == ${acl.userId} && mem._to == ${db.builtIn.userGroups.Admin} && mem.ugCtx in [null, ${acl.ugCtx}]
-				LIMIT 1
-				RETURN mem._to
-		)
-		LET isAdmin = LENGTH(ug) > 0
-		LET userId = ${needsAdminRole} ? (isAdmin ? ${userId}: null): ${userId}
+// check if the caller is member of ug-Admin group
+function isAdmin(db, acl) {
+	const cacheKey = `isAdmin_${acl.userId}_${acl.ugCtx}`;
+	const cachedValue = localCache.get(cacheKey);
+	if (typeof cachedValue === 'undefined') {
+		return memberOf(db, acl).then(uGroups => {
+			const isInactive = uGroups.includes(db.builtIn.userGroups.Inactive);
+			const isAdmin = uGroups.includes(db.builtIn.userGroups.Admin);
+			const result = !isInactive && isAdmin;
+			localCache.set(cacheKey, result);
+			return result;
+		});
+	}
+	else return Promise.resolve(cachedValue);
+}
 
-		FOR u IN users
-		FILTER u._id == userId
-		LIMIT 1
-		RETURN u
-	`).then(cursor => cursor.all());
+async function getFullDetails(db, acl, { userId }) {
+	if (!userId)	// if no user is specified, treat the caller as the target
+		userId = acl.userId;
+	else if (acl.userId !== userId) { // if caller is not same as the record owner, needs admin permissions
+		const isAdmin = await isAdmin(db, acl);
+		if (!isAdmin) return Promise.reject(UnAuthorized("iUser.getFullDetails: Requires Admin Privileges"));
+	}
+	
+	const cacheKey = `getFullDetails_${userId}_${acl.ugCtx}`;
+	const cachedValue = localCache.get(cacheKey);
+	if (typeof cachedValue === 'undefined') {
+		return db.query(AQL`
+			FOR u IN ${db.userColl}
+			FILTER u._id == ${userId}
+			LIMIT 1
+			RETURN u
+		`).then(cursor => cursor.next())
+			.then(userRecord => { delete userRecord.password; return userRecord; });
+	}
+	else return Promise.resolve(cachedValue);
 }
 
 module.exports = {
@@ -54,16 +79,24 @@ module.exports = {
 		"getFullDetails": {
 			description: "Resolves all references and returns the complete user-record",
 			inputSchema: JOI.object({
-				userId: Validators.id
+				userId: Validators.id.optional()
 			}),
 			outputSchema: JOI.object(),
 			fn: getFullDetails
 		},
 		"isAdmin": {
-			description: "Checks if the caller is a member of a Admin group",
+			description: "Checks if the caller is a member of an Admin group",
 			inputSchema: JOI.object(),
 			outputSchema: JOI.boolean(),
 			fn: isAdmin
+		},
+		"memberOf": {
+			description: "Returns the userGroups that an user is a memberOf",
+			inputSchema: JOI.object({
+				userId: Validators.id.optional()
+			}),
+			outputSchema: JOI.array(),
+			fn: memberOf
 		},
 	}
 }
