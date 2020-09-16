@@ -80,10 +80,10 @@ describe('iUsers functionality', () => {
 			expect(axiosResponse.data.jsonrpc).toBe("2.0");
 			const userFullRecord = axiosResponse.data.result;
 			expect(userFullRecord[db.idField]).toBe(adminUser[db.idField]);
-			expect(userFullRecord.password).toBeUndefined();	
+			expect(userFullRecord.password).toBeUndefined();
 			console.log(axiosResponse.data);
 		});
-	});	
+	});
 
 	// TODO: add user-deletion as invoke method
 });
