@@ -59,6 +59,8 @@
     "validator": "^13.1.1"
   },
   "devDependencies": {
+    "command-line-args": "^5.1.1",
+    "command-line-usage": "^6.1.0",
     "cross-env": "^7.0.2",
     "jest": "26.4.2",
     "pino-pretty": "^4.2.1"

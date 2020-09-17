@@ -98,13 +98,13 @@ function ensureCustomIndices() {
 	const p = [];
 
 	// user membership to groups vary based on ugCtx
-	p.push(module.exports.membershipEdges.collection.ensureIndex({ type: "persistent", fields: ["ugCtx", "appCtx"] }) // TODO: can we remove the appCtx here?
+	p.push(module.exports.membershipEdges.collection.ensureIndex({ type: "persistent", fields: ["ugCtx"] })
 		.catch(ex => err(`ensureIndex('membershipEdges.ugCtx')`, ex)));
 	// resource belongs to different resourceGroup vary based on rgCtx
-	p.push(module.exports.resourceBelongsTo.collection.ensureIndex({ type: "persistent", fields: ["rgCtx", "appCtx"] })
+	p.push(module.exports.resourceBelongsTo.collection.ensureIndex({ type: "persistent", fields: ["rgCtx"] })
 		.catch(ex => err(`ensureIndex('resourceBelongsTo.rgCtx')`, ex)));
 	// permission differ based on permCtx
-	p.push(module.exports.permissionEdges.collection.ensureIndex({ type: "persistent", fields: ["permCtx", "appCtx"] })
+	p.push(module.exports.permissionEdges.collection.ensureIndex({ type: "persistent", fields: ["permCtx"] })
 		.catch(ex => err(`ensureIndex('permissionEdges.permCtx')`, ex)));
 	
 	// The available list of userGroups and resourceGroups vary based on appCtx
@@ -118,6 +118,8 @@ function ensureCustomIndices() {
 		.catch(ex => err(`ensureIndex('userDefaultRG.appCtx::_to')`, ex)));
 	
 	// make the combination unique
+	p.push(module.exports.membershipEdges.collection.ensureIndex({ type: "persistent", fields: ["_from", "ugCtx", "_to"], unique: true })
+		.catch(ex => err(`ensureIndex('membershipEdges.unique')`, ex)));
 	p.push(module.exports.resourceBelongsTo.collection.ensureIndex({ type: "persistent", fields: ["_from", "rgCtx"], unique: true })
 		.catch(ex => err(`ensureIndex('resourceBelongsTo.unique')`, ex)));
 	p.push(module.exports.rgMethodsColl.ensureIndex({ type: "persistent", fields: ["rg", "type", "method"], unique: true })
@@ -134,6 +136,12 @@ function ensureCustomIndices() {
 
 function ensureBuiltinRecords() {
 	const p = [];
+	// create system user
+	p.push(ensureRecord(module.exports.userColl, {
+		[dbConfig.keyField]: "u-system",
+		name: "System",
+		description: "Built-in System User"
+	}).then(user => module.exports.builtIn.users.System = user[dbConfig.idField]));
 	
 	// create user groups
 	p.push(ensureRecord(module.exports.userGroupColl, {
@@ -142,28 +150,28 @@ function ensureBuiltinRecords() {
 		description: "Everyone without any restriction. Includes logged-in, non-logged-in and every other user category without bounds."
 	}).then(group => module.exports.builtIn.userGroups.Everyone = group[dbConfig.idField]));
 
-	p.push(ensureRecord(module.exports.userGroupColl, {
-		[dbConfig.keyField]: "ug-LoginUsers",
-		name: "LoginUsers",
-		description: "All users with a login account. Excludes any guest users that have no login account."
-	}).then(group => module.exports.builtIn.userGroups.LoginUsers = group[dbConfig.idField]));
+	// p.push(ensureRecord(module.exports.userGroupColl, {
+	// 	[dbConfig.keyField]: "ug-LoginUsers",
+	// 	name: "LoginUsers",
+	// 	description: "All users with a login account. Excludes any guest users that have no login account."
+	// }).then(group => module.exports.builtIn.userGroups.LoginUsers = group[dbConfig.idField]));
 
-	p.push(ensureRecord(module.exports.userGroupColl, {
-		[dbConfig.keyField]: "ug-Guests",
-		name: "Guests",
-		description: "Users that have no login account"
-	}));
+	// p.push(ensureRecord(module.exports.userGroupColl, {
+	// 	[dbConfig.keyField]: "ug-Guests",
+	// 	name: "Guests",
+	// 	description: "Users that have no login account"
+	// }));
 
 	p.push(ensureRecord(module.exports.userGroupColl, {
 		[dbConfig.keyField]: "ug-Admin",
 		name: "Admin",
-		description: "Users that have Administrative Powers"
+		description: "Users that have Administrative Powers, System-wide"
 	}).then(group => module.exports.builtIn.userGroups.Admin = group[dbConfig.idField]));
 
 	p.push(ensureRecord(module.exports.userGroupColl, {
 		[dbConfig.keyField]: "ug-Inactive",
 		name: "Inactive",
-		description: "Users that are marked as inactive gets denied all permissions"
+		description: "Users that are marked as inactive gets denied all permissions, System-wide"
 	}).then(group => module.exports.builtIn.userGroups.Inactive = group[dbConfig.idField]));
 	
 	// create resource groups
@@ -173,14 +181,14 @@ function ensureBuiltinRecords() {
 		description: "A resource group that is accessible to Everyone"
 	}).then(group => module.exports.builtIn.resourceGroups.Public = group[dbConfig.idField]));
 	
-	p.push(ensureRecord(module.exports.resGroupColl, {
-		[dbConfig.keyField]: "rg-System",
-		name: "System",
-		description: "Built-in system resources. These are editable only by Admin users, and cannot be deleted."
-	}).then(group => module.exports.builtIn.resourceGroups.System = group[dbConfig.idField]));
+	// p.push(ensureRecord(module.exports.resGroupColl, {
+	// 	[dbConfig.keyField]: "rg-System",
+	// 	name: "System",
+	// 	description: "Built-in system resources. These are editable only by Admin users, and cannot be deleted."
+	// }).then(group => module.exports.builtIn.resourceGroups.System = group[dbConfig.idField]));
 
 	// ensure the interfaces are registered, and built-in types (e.g. users etc) are setup
-	p.push(ensureInterfaceRecords(module.exports, dbConfig).then(ensureBuiltinTypeRecords));
+	// p.push(ensureInterfaceRecords(module.exports, dbConfig).then(ensureBuiltinTypeRecords));
 
 	// TODO: ensure the built-in types (e.g. users etc.)
 	// TODO: setup the interfaces for each built-in types
@@ -207,8 +215,9 @@ module.exports.init = function () {
 	return ensureTables(builtinTables)
 		.then(() => ensureGraphExists(relationGraph))
 		.then(() => ensureEdgeRelations(relationGraph, builtinTables))
-		.then(() => {
+		.then(() => {			
 			module.exports.userColl = db.collection(module.exports.builtIn.collName.users);
+			module.exports.appCtxColl = db.collection(module.exports.builtIn.collName.appCtx);
 			module.exports.typeDefColl = db.collection(module.exports.builtIn.collName.typeDefs);
 			module.exports.resourceColl = db.collection(module.exports.builtIn.collName.resources);
 			module.exports.resGroupColl = db.collection(module.exports.builtIn.collName.resourceGroups);
@@ -233,10 +242,12 @@ module.exports.init = function () {
 module.exports.ensureRecord = ensureRecord;
 
 module.exports.builtIn = {
+	users: {},
 	userGroups: {},
 	resourceGroups: {},
 	interfaces: {},
 	collName: {
+		appCtx: "appCtx",
 		interfaces: "interfaces",
 		interfaceMethods: "interfaceMethods",
 		resources: "resources",

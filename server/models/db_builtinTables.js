@@ -50,5 +50,13 @@ module.exports = {
 		method:"regex",
 		permit: ["allow", "deny"]
 	},
+	appCtx: {
+		name: "string",	// any details such as the website, appName etc.
+		description: "string",
+		adminUG: { type: "fk", foreignKey: "userGroups", unique: true },	// the admin userGroup for this appCtx
+		loginUG: { type: "fk", foreignKey: "userGroups", unique: true },	// subset of Everyone group, accepted to be part of this appCtx
+		inactiveUG: { type: "fk", foreignKey: "userGroups", unique: true },// group for users that are marked as inactive in this appCtx
+		publicKey: "string",	// only the owner/creator of this appCtx will hold the privateKey for this
+	}
 	// whenever these are changed, also update the create methods in the db.js
 };
