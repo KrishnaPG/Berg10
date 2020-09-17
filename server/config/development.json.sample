@@ -2,6 +2,11 @@
 	"cors": {
 		"allowedOrigins": ["http*://localhost*", "http*://*.surge.sh"]
 	},
+	"adminUI": {
+		"allowedOrigins": [
+			"http*://localhost*",
+			"http*://*.surge.sh"]
+	},
 	"db": {
 		"url": "http://<ArangoDB-IPAddress>:<port>",
 		"dbName": "default",

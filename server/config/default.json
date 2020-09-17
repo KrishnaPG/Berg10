@@ -4,6 +4,10 @@
 	"cors": {
 		"allowedOrigins": []
 	},
+	"adminUI": {
+		"appCtx": "appCtxBerg10",
+		"allowedOrigins": []
+	},
 	"db": {
 		"url": "http://localhost:8529",
 		"dbName": "default",

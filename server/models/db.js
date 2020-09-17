@@ -4,7 +4,9 @@
  */
 const { Database, CollectionType } = require('arangojs');
 
-const dbConfig = require('config').db;
+const config = require('config');
+
+const dbConfig = config.db;
 const { normalizeTables, isGeoType, isRelationTable } = require('./db_schemaNormalization');
 
 const { init: ensureInterfaceRecords } = require('../interfaces/');
@@ -137,11 +139,11 @@ function ensureCustomIndices() {
 function ensureBuiltinRecords() {
 	const p = [];
 	// create system user
-	p.push(ensureRecord(module.exports.userColl, {
-		[dbConfig.keyField]: "u-system",
-		name: "System",
-		description: "Built-in System User"
-	}).then(user => module.exports.builtIn.users.System = user[dbConfig.idField]));
+	// p.push(ensureRecord(module.exports.userColl, {
+	// 	[dbConfig.keyField]: "u-system",
+	// 	name: "System",
+	// 	description: "Built-in System User"
+	// }).then(user => module.exports.builtIn.users.System = user[dbConfig.idField]));
 	
 	// create user groups
 	p.push(ensureRecord(module.exports.userGroupColl, {
@@ -150,17 +152,17 @@ function ensureBuiltinRecords() {
 		description: "Everyone without any restriction. Includes logged-in, non-logged-in and every other user category without bounds."
 	}).then(group => module.exports.builtIn.userGroups.Everyone = group[dbConfig.idField]));
 
-	// p.push(ensureRecord(module.exports.userGroupColl, {
-	// 	[dbConfig.keyField]: "ug-LoginUsers",
-	// 	name: "LoginUsers",
-	// 	description: "All users with a login account. Excludes any guest users that have no login account."
-	// }).then(group => module.exports.builtIn.userGroups.LoginUsers = group[dbConfig.idField]));
+	p.push(ensureRecord(module.exports.userGroupColl, {
+		[dbConfig.keyField]: "ug-LoginUsers",
+		name: "LoginUsers",
+		description: "Users that belong to the built-in appCtx"
+	}).then(group => module.exports.builtIn.userGroups.LoginUsers = group[dbConfig.idField]));
 
-	// p.push(ensureRecord(module.exports.userGroupColl, {
-	// 	[dbConfig.keyField]: "ug-Guests",
-	// 	name: "Guests",
-	// 	description: "Users that have no login account"
-	// }));
+	p.push(ensureRecord(module.exports.userGroupColl, {
+		[dbConfig.keyField]: "ug-Guests",
+		name: "Guests",
+		description: "Users that have no login account"
+	}));
 
 	p.push(ensureRecord(module.exports.userGroupColl, {
 		[dbConfig.keyField]: "ug-Admin",
@@ -193,7 +195,20 @@ function ensureBuiltinRecords() {
 	// TODO: ensure the built-in types (e.g. users etc.)
 	// TODO: setup the interfaces for each built-in types
 
-	return Promise.all(p);
+	return Promise.all(p).then(ensureBuiltinAppCtx);
+}
+
+function ensureBuiltinAppCtx() {
+	return ensureRecord(module.exports.appCtxColl, {
+		[dbConfig.keyField]: config.adminUI.appCtx,
+		name: "BuiltIn AppCtx",
+		description: "Built-in AppCtx",
+		adminUG: module.exports.builtIn.userGroups.Admin,
+		loginUG: module.exports.builtIn.userGroups.LoginUsers,
+		inactiveUG: module.exports.builtIn.userGroups.Inactive,
+		publicKey: null,
+		allowedOrigins: config.adminUI.allowedOrigins,
+	});
 }
 
 function ensureBuiltinTypeRecords() {

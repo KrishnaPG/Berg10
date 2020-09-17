@@ -57,6 +57,7 @@ module.exports = {
 		loginUG: { type: "fk", foreignKey: "userGroups", unique: true },	// subset of Everyone group, accepted to be part of this appCtx
 		inactiveUG: { type: "fk", foreignKey: "userGroups", unique: true },// group for users that are marked as inactive in this appCtx
 		publicKey: "string",	// only the owner/creator of this appCtx will hold the privateKey for this
+		allowedOrigins: ["string"]	// in case being called from web, the origins that this appCtx is allowed from
 	}
 	// whenever these are changed, also update the create methods in the db.js
 };

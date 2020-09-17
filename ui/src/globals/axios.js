@@ -58,7 +58,7 @@ let loadAxios = _loadAxios_PreInit;
 
 // handles both login and signup based on formData.mode
 export function doLogin(formData) {
-	formData.appCtx = "Berg10";
+	formData.appCtx = "appCtxBerg10";
 	return loadAxios()
 		.then(Axios => Axios.post(`user/${formData.mode.toLowerCase()}`, formData))
 		.then(response => response.data.result);

@@ -11,10 +11,24 @@ const passport = require('passport');
 
 const User = require('../models/User');
 const { RPCResponse, RPCError } = require('../utils/rpc');
+const { wildcardToRegExp } = require('../utils/auth');
 const { sendJWT, verifyJWT } = require('./jwt');
+const db = require('../models/db');
 
 const { promisify } = require('util');
 const randomBytesAsync = promisify(crypto.randomBytes);
+
+function isAppCtxValid(req) {
+	return db.appCtxColl.document(req.body.appCtx).then(appCtxRecord => {
+		// if none specified, approve the context, since we have nothing to compare to
+		if (!appCtxRecord.allowedOrigins || !appCtxRecord.allowedOrigins.length) return true;
+		// convert wildcard to regexp
+		const AllowedOrigins = appCtxRecord.allowedOrigins.map(el => wildcardToRegExp(el));
+
+		const allowed = AllowedOrigins.some(regEx => req.headers.origin.match(regEx));
+		return allowed;
+	}).catch(ex => false);
+}
 
 /**
  * POST /login
@@ -31,13 +45,19 @@ exports.postLogin = (req, res, next) => {
 	}
 	req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
 
-	passport.authenticate('local', (err, user, info) => {
-		if (err) { return next(err); }
-		if (!user) {
-			return res.status(401).send(RPCError.invalidRequest(info.msg));
-		}
-		sendJWT(user, req.body.appCtx, req, res);
-	})(req, res, next);
+	// verify the appCtx
+	isAppCtxValid(req).then(valid => {
+		if (!valid) return res.status(403).send(RPCError.unAuthorized(`Invalid appCtx: ${req.body.appCtx}`));
+		
+		passport.authenticate('local', (err, user, info) => {
+			if (err) { return next(err); }
+			if (!user) {
+				return res.status(401).send(RPCError.invalidRequest(info.msg));
+			}
+			sendJWT(user, req.body.appCtx, req, res);
+		})(req, res, next);
+
+	});
 };
 
 /**
@@ -56,20 +76,26 @@ exports.postSignup = (req, res, next) => {
 	}
 	req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
 
-	const user = new User({
-		email: req.body.email,
-		password: req.body.password
-	});
+	// verify the appCtx
+	isAppCtxValid(req).then(valid => {
+		if (!valid) return res.status(403).send(RPCError.unAuthorized(`Invalid appCtx: ${req.body.appCtx}`));
 
-	User.findOne({ email: req.body.email }, (err, existingUser) => {
-		if (err) { return next(err); }
-		if (existingUser) {
-			return res.status(409).send(RPCError.duplicate(`[${req.body.email}]: Account with that email address already exists`));
-		}
-		user.save((err, userRecord) => {
-			if (err) { return next(err); }
-			sendJWT(userRecord, req.body.appCtx, req, res);
+		const user = new User({
+			email: req.body.email,
+			password: req.body.password
 		});
+
+		User.findOne({ email: req.body.email }, (err, existingUser) => {
+			if (err) { return next(err); }
+			if (existingUser) {
+				return res.status(409).send(RPCError.duplicate(`[${req.body.email}]: Account with that email address already exists`));
+			}
+			user.save((err, userRecord) => {
+				if (err) { return next(err); }
+				sendJWT(userRecord, req.body.appCtx, req, res);
+			});
+		});	
+		
 	});
 };
 
