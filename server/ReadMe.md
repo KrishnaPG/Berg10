@@ -48,6 +48,20 @@ A type definition is just a group of data items. A `typeDef` can support multipl
   2. should have an explicit `allow` permission for at least one of the `userGroup`s that he is a member of.
 
 
+Constraints
+  1. Mutually Exclusive roles: 
+    - the same user can be assigned to at most one role in a mutually exclusive set (separation of duties)
+    - the same permission cannot be assigned to both roles (only one of them can be assigned the permission in the exclusive set)
+  2. Cardinality constraint:
+    - Maximum number of members for a role: For example, only one person in the role of a chairman
+    - Maximum number of roles to which a user can belong
+    - Maximum number of roles to which a permission can be assigned: controls the distribution of power
+  3. Prerequisite constraints: 
+    - user can be assigned role A, only if the user is already a member of role B
+    - a permission p can be assigned to a role only if that role already has permission q
+
+Ref: https://profsandhu.com/articles/advcom/adv_comp_rbac.pdf
+
 ## Queries
 
 #### Query: default resource-group of an user
