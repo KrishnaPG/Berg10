@@ -22,6 +22,16 @@ export const triggerPanelAdd = panelSpec => {
 	gEventBus.dispatchEvent(new CustomEvent("ev.panel.add", { bubbles: false, detail: panelSpec }));
 }
 
+export const triggerPanelDMN = () => {
+	triggerPanelAdd({
+		bringToFocus: true,
+		id: "DMNEditor",
+		component: "DMN.AddNew",
+		name: "DMN",
+		config: {}
+	});
+}
+
 export const triggerPanelTypeRepo = () => {
 	triggerPanelAdd({
 		bringToFocus: true,

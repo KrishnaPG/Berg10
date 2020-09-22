@@ -7,7 +7,7 @@ import {
 	triggerLogout,
 	triggerNotifyWarning,
 	triggerNotifyError,
-	triggerPanelAdd,
+	triggerPanelDMN,
 	triggerPanelTypeRepo,
 	triggerPanelUsers,
 } from '../../globals/triggers';
@@ -66,7 +66,7 @@ class Xplore extends React.PureComponent {
 					<MenuItem key="2" onClick={triggerPanelUsers}>
 						Users
           </MenuItem>
-					<MenuItem key="3" onClick={triggerPanelAdd}>
+					<MenuItem key="3" onClick={triggerPanelDMN}>
 						Option 3
           </MenuItem>
 					<SubMenu key="sub1" icon={<MailOutlined />} title="Navigation One">

@@ -35,7 +35,7 @@
     "express-ws": "^4.0.0",
     "fast-jwt": "^0.4.1",
     "helmet": "^3.23.0",
-    "joi": "17.2.0",
+    "joi": "17.2.1",
     "joi-to-swagger": "^5.0.1",
     "lodash.merge": "^4.6.2",
     "mailchecker": "^3.3.14",
