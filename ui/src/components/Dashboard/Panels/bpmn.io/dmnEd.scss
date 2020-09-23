@@ -4,14 +4,30 @@
 	height: 100%;
 
 	background-color: $col-bluePrint-BaseBlue;
+}
 
-	// grid pattern background
-	//background-image: url(https://www.transparenttextures.com/patterns/otis-redding.png);
+.dmnEditorHost:before {
+	content: ' ';
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 1;
+	opacity: 0.25;
+	background-image: url('./tower.png');
+	background-repeat: no-repeat;
+	background-position: bottom 50px right 25px;
+	background-size: 500px 326px;
 }
 
 .dmn-js-parent {
-	// border: solid 1px #ccc;
 	--input-color:rgba(255, 255, 255, 0.8);
+
+	// let background image on the dmnEditorHost not interfere
+	position: relative;
+	z-index: 2;
 }
 
 $col-bluePrint-secondaryBlue: rgb(74,109,229);
@@ -21,6 +37,10 @@ $col-bluePrint-secondaryBlue: rgb(74,109,229);
 }	
 
 .dmn-decision-table-container {
+
+	font-family: inherit;
+	font-size: 1rem;
+
 	--table-row-alternative-background-color: rgba(74,109,229, 0.4);
 	--table-color:  var(--input-color);
 	--table-cell-border-color: rgba(204, 204, 204, 0.5);
@@ -59,8 +79,6 @@ $col-bluePrint-secondaryBlue: rgb(74,109,229);
 		}
 	}
 
-	font-family: inherit;
-
 	& .decision-table-properties {
 		border: 1px solid var(--table-cell-border-color);
 		background-color: $col-bluePrint-BaseBlue;
@@ -81,7 +99,7 @@ $col-bluePrint-secondaryBlue: rgb(74,109,229);
 	}
 
 	& .tjs-table {
-		background-color: $col-bluePrint-BaseBlue;
+		background-color: change-color($col-bluePrint-BaseBlue, $alpha: 0.75);
 	}
 }
 
@@ -103,6 +121,21 @@ $col-bluePrint-secondaryBlue: rgb(74,109,229);
 	 
 	--popup-body-background-color: rgb(17, 27, 38);	
 	--popup-header-entry-selected-background-color: var(--col-menu-background);
+}
+
+.dmn-drd-container {
+	& .djs-overlay-context-pad {
+		z-index: 99;
+	}
+
+	& .djs-context-pad.open {
+		background-color: hsl(0deg, 60%, 35%);
+		padding: 8px;
+	}
+
+	& .djs-direct-editing-content {
+		color: black;
+	}
 }
 
 // modeler single expression editor
@@ -129,22 +162,6 @@ $col-bluePrint-secondaryBlue: rgb(74,109,229);
 
 	& .textarea.editor {
 		background: var(--color-f6f6f6);
-	}
-	
-
-}
-
-.dmn-drd-container {
-	& .djs-overlay-context-pad {
-		z-index: 99;
-	}
-
-	& .djs-context-pad.open {
-		background-color: hsl(0deg, 60%, 35%);
-		padding: 8px;
-	}
-
-	& .djs-direct-editing-content {
-		color: black;
+		font-size: 1rem;
 	}
 }
