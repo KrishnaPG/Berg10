@@ -26,7 +26,7 @@ function init() {
 			
 			if (error.response) {
 				// Auth Failure (Note: Vault gives incorrect error code 400, when the client-token is missing)
-				if (error.response.status == 401) {
+				if (error.response.status === 401) {
 					// TODO: save layout (we may need to show it exactly so that user can resume after login)
 					// unAuthenticated user, trigger the logout, which will display the loginUI
 					triggerLogout();

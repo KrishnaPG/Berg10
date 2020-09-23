@@ -4,85 +4,14 @@
  */
 import React, { Suspense } from 'react';
 
-import DmnViewer from 'dmn-js';
-import "./dmn.css"
-
-const CLASS_NAMES = {
-	drd: 'dmn-icon-lasso-tool',
-	decisionTable: 'dmn-icon-decision-table',
-	literalExpression: 'dmn-icon-literal-expression'
-};
+const DMNEditor = React.lazy(() => import(/* webpackChunkName: "bpmn", webpackPrefetch: true */ './bpmn.io/dmnEd'));
 
 class DMNAddNew extends React.PureComponent {
-
-	componentDidMount() {
-		const dmnModeler = new DmnViewer({
-			container: this.container,
-			height: 500,
-			width: '100%',
-			keyboard: {
-				bindTo: window
-			}			
-		});
-
-		var $tabs = this.tabs;
-
-		// $tabs.delegate('.tab', 'click', function (e) {
-		// 	var viewIdx = parseInt(this.getAttribute('data-id'), 10);
-
-		// 	var view = dmnModeler.getViews()[viewIdx];
-
-		// 	dmnModeler.open(view);
-		// });		
-
-
-		// import diagram
-		dmnModeler.importXML(dmnXML, function (err) {
-
-			if (err) {
-				return console.error('could not import DMN 1.1 diagram', err);
-			}
-
-			var activeEditor = dmnModeler.getActiveViewer();
-
-			// access active editor components
-			var canvas = activeEditor.get('canvas');
-
-			// zoom to fit full viewport
-			canvas.zoom('fit-viewport');
-		});		
-
-		dmnModeler.on('views.changed', function (event) {
-
-			var { views, activeView } = event;
-
-			// clear tabs
-			//$tabs.empty();
-
-			views.forEach(function (v, idx) {
-
-				const className = CLASS_NAMES[v.type];
-
-				// var tab = $(`
-        //     <div class="tab ${v === activeView ? 'active' : ''}" data-id="${idx}">
-        //       <span class="${className}"></span>
-        //       ${v.element.name || v.element.id}
-        //     </div>
-        //   `);
-
-				//$tabs.append(tab);
-			});
-		});		
-	}	
-
 	render() {
 		return (
-			<div className="test-container">
-				<div className="editor-parent">
-					<div className="editor-container" ref={el => this.container = el} ></div>
-					<div className="editor-tabs" ref={el => this.tabs = el}></div>
-				</div>
-			</div>
+			<Suspense fallback={<div className="LoadingMsg">Loading the DMNEditor...</div>}>
+				<DMNEditor dmnXML={dmnXML} />
+			</Suspense>
 		);
 	}
 }

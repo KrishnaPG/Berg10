@@ -8,6 +8,8 @@ import { doLogin, doLogout, fetchUserDetails  } from './globals/axios';
 import debounce from 'lodash/debounce';
 import { subscribeToEvLogout, unSubscribeToEvLogout } from './globals/eventBus';
 import { getMatchingRoute, decodeJWT } from './globals/utils';
+import { getServerDBIdField } from './globals/settings';
+
 import './main.css';
 
 const LoginUI = React.lazy(() => import(/* webpackChunkName: "loginUI", webpackPrefetch: true */ './components/Login/loginUI'));
@@ -51,7 +53,7 @@ class Main extends React.Component {
 				// check if the token is readable and not yet expired
 				if (!jwt || !user) return this.logout();
 				const payload = decodeJWT(jwt);
-				if (!payload || payload.email !== user.email)
+				if (!payload || payload.id !== user[getServerDBIdField()])
 					return this.logout();
 				// trigger the dashboard UI loading, by setting the jwt
 				this.safeSetState({ user, jwt, isAuthInProgress: false });
