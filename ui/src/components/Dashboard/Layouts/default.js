@@ -81,6 +81,12 @@ export default {
 					"enableClose": false,
 					"name": "Settings",
 					"component": "Settings"
+				},
+				{
+					"type": "tab",
+					"enableClose": false,
+					"name": "Properties",
+					"component": "Properties"
 				}
 			]
 		}

@@ -4,7 +4,7 @@
  */
 import React, { Suspense } from 'react';
 
-const DMNEditor = React.lazy(() => import(/* webpackChunkName: "bpmn", webpackPrefetch: true */ './bpmn.io/dmnEd'));
+const DMNEditor = React.lazy(() => import(/* webpackChunkName: "dmnEd", webpackPrefetch: true */ './bpmn.io/dmnEd'));
 
 class DMNAddNew extends React.PureComponent {
 	render() {
