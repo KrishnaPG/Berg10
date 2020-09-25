@@ -25,11 +25,9 @@ class Notify extends React.PureComponent {
 	render() {
 		return (<>
 			<h2>Notification Log</h2>
-		<ul>
-			{
-					gEventLog.map((obj, index) => (<li key={index}>[{obj.t.toLocaleString()}] {obj.title}: {obj.message}</li>))
-				}
-			</ul>
+			<ul> {
+				gEventLog.map((obj, index) => (<li key={index}>[{obj.t.toLocaleString()}] {obj.title}: {obj.message}</li>))
+			} </ul>
 			</>
 		);
 	}

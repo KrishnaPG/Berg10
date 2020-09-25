@@ -1,0 +1,17 @@
+.dmn-io-palette-icon {
+	background-color: white;
+	background-repeat: no-repeat;
+	height: 26px;
+	width: 26px;
+	margin: 10px;
+}
+
+.djs-palette .entry.dmn-io-palette-icon-save {
+	@extend .dmn-io-palette-icon;
+	background-image: url('~@ant-design/icons-svg/inline-namespaced-svg/outlined/save.svg');
+}
+
+.djs-palette .entry.dmn-io-palette-icon-load {
+	@extend .dmn-io-palette-icon;
+	background-image: url('~@ant-design/icons-svg/inline-namespaced-svg/outlined/file-text.svg');
+}

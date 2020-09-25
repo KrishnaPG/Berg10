@@ -3,6 +3,7 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
+import { triggerNotifyError } from '../../../globals/triggers';
 
 const DMNEditor = React.lazy(() => import(/* webpackChunkName: "dmnEd", webpackPrefetch: true */ './bpmn.io/dmnEd'));
 
@@ -10,10 +11,16 @@ class DMNAddNew extends React.PureComponent {
 	render() {
 		return (
 			<Suspense fallback={<div className="LoadingMsg">Loading the DMNEditor...</div>}>
-				<DMNEditor dmnXML={dmnXML} />
+				<DMNEditor dmnXML={dmnXML} onSave={this.saveDMNXml}/>
 			</Suspense>
 		);
 	}
+	
+	saveDMNXml = (error, xml) => {
+		if (error) return triggerNotifyError(error);
+		console.log("dmn xml: ", xml);
+	}
+
 }
 
 const dmnXML = `
