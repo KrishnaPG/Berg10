@@ -36,7 +36,7 @@ exports.create = (req, res, next) => {
 
 exports.get = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
-		Typedef.findByKey(req.body)
+		Typedef.findByKey(req.params)
 			.then(typeDef =>
 				res.send(RPCResponse(typeDef)))
 			.catch(err =>

@@ -51,3 +51,13 @@ export const triggerPanelUsers = () => {
 		config: {}
 	});
 }
+
+export const triggerPanelAQLQueries = () => {
+	triggerPanelAdd({
+		bringToFocus: true,
+		id: "AQL Queries",
+		component: "AQLQueries",
+		name: "AQL Queries",
+		config: {}
+	});
+}

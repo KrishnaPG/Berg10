@@ -5,7 +5,7 @@
 import React, { Suspense } from 'react';
 import { triggerNotifyError } from '../../../globals/triggers';
 
-const DMNEditor = React.lazy(() => import(/* webpackChunkName: "dmnEd", webpackPrefetch: true */ './bpmn.io/dmnEd'));
+const DMNEditor = React.lazy(() => import(/* webpackChunkName: "dmnEd", webpackPreload: true */ './bpmn.io/dmnEd'));
 
 class DMNAddNew extends React.PureComponent {
 	render() {

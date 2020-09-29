@@ -58,6 +58,11 @@ module.exports = {
 		inactiveUG: { type: "fk", foreignKey: "userGroups", unique: true },// group for users that are marked as inactive in this appCtx
 		publicKey: "string",	// only the owner/creator of this appCtx will hold the privateKey for this
 		allowedOrigins: ["string"]	// in case being called from web, the origins that this appCtx is allowed from
+	},
+	aqlQuery: {
+		name: { type: "string", nullable: false, unique: true, index: true, max: 64 },
+		description: "string",
+		query: "text"
 	}
 	// whenever these are changed, also update the create methods in the db.js
 };

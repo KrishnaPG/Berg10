@@ -3,6 +3,7 @@
  * All Rights Reserved.
  */
 const JOI = require('joi');
+const { NotFound } = require('./errors');
 
 const schema = JOI.object({
 	name: JOI.string().required().min(1).max(32),
@@ -18,7 +19,13 @@ module.exports = {
 			inputSchema: JOI.object({}),
 			outputSchema: JOI.object(),
 			fn: createInstance
-		}
+		},
+		// "findOne": {
+		// 	description: "Find a type",
+		// 	inputSchema: JOI.object({}),
+		// 	outputSchema: JOI.object(),
+		// 	fn: findOne
+		// }
 	},
 	description: "The built-in typedef interface"
 };
@@ -31,3 +38,10 @@ function createInstance(db, acl, { type, ...other}) {
 		addResourceToGroup(resource, someResourceGroup || "default");
 	});
 }
+
+// function findOne(db, acl, query) {
+// 	return db.typeDefColl.firstExample(query).then(results => {
+// 		if (!results) throw NotFound(`No typeDef record exists for the query:\n ${JSON.stringify(query, null, " ")}`);
+// 		return results;
+// 	});
+// }

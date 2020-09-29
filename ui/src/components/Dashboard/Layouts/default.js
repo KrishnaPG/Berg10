@@ -59,12 +59,14 @@ export default {
 				{
 					"type": "tab",
 					"enableClose": false,
+					"enableFloat": false,
 					"name": "Home",
 					"component": "Home"
 				},				
 				{
 					"type": "tab",
 					"enableClose": false,
+					"enableFloat": false,
 					"name": "Xplore",
 					"component": "Xplore"
 				}

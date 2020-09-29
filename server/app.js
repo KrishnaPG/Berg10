@@ -48,9 +48,9 @@ app.post('/api/user/login', userController.postLogin);
 app.post('/api/user/signup', userController.postSignup);
 
 // these use JWT
-app.get('/api/typedefs', typedefController.find);
+//app.get('/api/typedefs', typedefController.find);
 app.post('/api/typedefs', typedefController.create);
-//app.get('/api/typedefs/:_key', typedefController.get);
+app.get('/api/typedefs/:_key', typedefController.get);
 app.put('/api/typedefs/:_key', typedefController.update);
 app.delete('/api/typedefs/:_key', typedefController.remove);
 

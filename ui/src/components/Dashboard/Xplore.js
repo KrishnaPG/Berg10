@@ -7,6 +7,7 @@ import {
 	triggerLogout,
 	triggerNotifyWarning,
 	triggerNotifyError,
+	triggerPanelAQLQueries,
 	triggerPanelDMN,
 	triggerPanelTypeRepo,
 	triggerPanelUsers,
@@ -60,14 +61,17 @@ class Xplore extends React.PureComponent {
 					theme="dark"
 					inlineCollapsed={this.state.collapsed}
 				>
-					<MenuItem key="1" onClick={triggerPanelTypeRepo}>
+					<MenuItem key="panelTypeRepo" onClick={triggerPanelTypeRepo}>
 						Type Repo
           </MenuItem>
-					<MenuItem key="2" onClick={triggerPanelUsers}>
+					<MenuItem key="panelUsers" onClick={triggerPanelUsers}>
 						Users
           </MenuItem>
-					<MenuItem key="3" onClick={triggerPanelDMN}>
-						Option 3
+					<MenuItem key="panelAQL" onClick={triggerPanelAQLQueries}>
+						AQL Queries
+          </MenuItem>
+					<MenuItem key="panelDMN" onClick={triggerPanelDMN}>
+						DMN
           </MenuItem>
 					<SubMenu key="sub1" icon={<MailOutlined />} title="Navigation One">
 						<MenuItem key="5" onClick={ev => triggerNotifyWarning({ message: "Option 5" })}>Option 5</MenuItem>

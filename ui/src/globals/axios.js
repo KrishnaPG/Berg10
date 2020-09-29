@@ -106,7 +106,7 @@ export class AxiosBaseComponent extends React.PureComponent {
 		return Axios.isCancel(error);
 	}
 
-	getTypeDef() {
+	getTypeDef(_key) {
 		const tracker = this._callTrackers["getTypeDef"];
 		if (tracker) {
 			// Abort any previous calls that are in-progress. Does nothing if call has already been resolved or rejected.
@@ -120,7 +120,7 @@ export class AxiosBaseComponent extends React.PureComponent {
 			const tracker = Axios.CancelToken.source();
 			this._callTrackers["getTypeDef"] = tracker;
 			// make the actual call
-			return Axios.get("typedefs?name=schepe", { cancelToken: tracker.token })
+			return Axios.get(`typedefs/${_key}`, { cancelToken: tracker.token })
 				.then(response => response.data.result)
 				.finally(() => {
 					--this._pendingCalls["getTypeDef"];

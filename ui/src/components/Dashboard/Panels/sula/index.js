@@ -39,5 +39,5 @@ const loadSula = () => import(/* webpackChunkName: "sula" */ "sula").then(sula =
 });
 const sulaLoaded = new Promise((resolve, reject) => resolve(loadSula()));
 
-export const CreateForm = React.lazy(() => sulaLoaded.then(() => import(/* webpackChunkName: "sula-create", webpackPrefetch: true */ 'sula/es/template-create-form/CreateForm')));
-export const QueryTable = React.lazy(() => sulaLoaded.then(() => import(/* webpackChunkName: "sula-query", webpackPrefetch: true */ 'sula/es/template-query-table/QueryTable')));
+export const CreateForm = React.lazy(() => sulaLoaded.then(() => import(/* webpackChunkName: "sula-create", webpackPreload: true */ 'sula/es/template-create-form/CreateForm')));
+export const QueryTable = React.lazy(() => sulaLoaded.then(() => import(/* webpackChunkName: "sula-query", webpackPreload: true */ 'sula/es/template-query-table/QueryTable')));

@@ -136,7 +136,7 @@ function ensureCustomIndices() {
 	return Promise.all(p);
 }
 
-function ensureBuiltinRecords() {
+function ensureBuiltinRecords(builtinTables) {
 	const p = [];
 	// create system user
 	// p.push(ensureRecord(module.exports.userColl, {
@@ -195,7 +195,9 @@ function ensureBuiltinRecords() {
 	// TODO: ensure the built-in types (e.g. users etc.)
 	// TODO: setup the interfaces for each built-in types
 
-	return Promise.all(p).then(ensureBuiltinAppCtx);
+	return Promise.all(p)
+		.then(ensureBuiltinAppCtx)
+		.then(() => ensureBuiltinTypeRecords(builtinTables));
 }
 
 function ensureBuiltinAppCtx() {
@@ -211,13 +213,19 @@ function ensureBuiltinAppCtx() {
 	});
 }
 
-function ensureBuiltinTypeRecords() {
+function ensureBuiltinTypeRecords(builtinTables) {
 	const p = [];
 	p.push(ensureRecord(module.exports.typeDefColl, {
 		[dbConfig.keyField]: "schepe",
 		name: "schepe",
-		schema: {}//JSON.stringify(builtinTables["typeDefs"])
+		schema: builtinTables["typeDefs"]
 	}));
+	p.push(ensureRecord(module.exports.typeDefColl, {
+		[dbConfig.keyField]: "aqlQuery",
+		name: "aqlQuery",
+		schema: builtinTables["aqlQuery"]
+	}));
+	return Promise.all(p);
 }
 
 module.exports = db;
@@ -251,7 +259,7 @@ module.exports.init = function () {
 			module.exports.typedefInterfaces = relationGraph.edgeCollection(module.exports.builtIn.collName.supportedInterfaces);
 
 			return ensureCustomIndices();
-		}).then(ensureBuiltinRecords);
+		}).then(() => ensureBuiltinRecords(builtinTables));
 };
 
 module.exports.ensureRecord = ensureRecord;
