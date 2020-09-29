@@ -30,13 +30,13 @@ function ensureInterface(db, dbConfig, {name, methods, description}) {
 
 module.exports.init = function(db, dbConfig) {
 	const interfaces = [
-		require('./iAppCtx'),
+		require('./iAQLQueries'),
 		require('./iTypedef'),
 		require('./iTableEntry'),
 		require('./iUsers'),
 		require('./iUser'),
 		require('./iUserGroup')
-	];	
+	];
 	return Promise.all(interfaces.map(interfaceObj => ensureInterface(db, dbConfig, interfaceObj)))
 		.then(interfaceMethodsFnArray => Object.assign(module.exports.rpcMethods, ...interfaceMethodsFnArray));
 }

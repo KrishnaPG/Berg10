@@ -5,5 +5,6 @@
 
 module.exports = {
 	UnAuthorized: message => ({ code: 403, message, title: "UnAuthorized" }),
-	NotFound: message => ({ code: 404, message, title: "Not Found" })
+	NotFound: message => ({ code: 404, message, title: "Not Found" }),
+	Invalid: message => ({ code: 406, message, title: "Invalid Request" }),	
 };

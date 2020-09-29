@@ -155,17 +155,17 @@ module.exports = {
 			description: "Checks if the caller is a member of an Admin group",
 			inputSchema: JOI.object(),
 			outputSchema: JOI.boolean(),
-			fn: isAdmin
+			fn: CurrentUser.isAdmin
 		},
 		"memberOf": {
 			description: "Returns the userGroups that an user is a memberOf",
 			inputSchema: JOI.object({
 				userId: Validators.id.optional()
 			}),
-			outputSchema: JOI.array(JOI.object({
+			outputSchema: JOI.array() /*JOI.object({
 				ugCtx: JOI.string(),
 				userGroups: JOI.array(JOI.string())
-			})),
+			})) */,
 			fn: memberOf
 		},
 	}

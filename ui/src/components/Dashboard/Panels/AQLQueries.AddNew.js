@@ -4,8 +4,8 @@
  */
 import React, { Suspense } from 'react';
 import { CreateForm } from './sula/';
-import { getAxiosCommonHeaders } from '../../../globals/axios';
 import { getSulaFormField, getFieldDefaultValues } from './sula/formFields';
+import { jsonRPCObj } from '../../../globals/utils';
 
 const Button = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/button/button'));
 const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/page-header/index'));
@@ -23,25 +23,21 @@ class AQLQueriesAddNew extends React.PureComponent {
 			editConfig: {
 				initialValues,
 				fields,
-				submit: {
-					url: 'http://localhost:8080/api/typedef/new',
-					method: 'POST',
-					//headers: getAxiosCommonHeaders()
-				},
-				back: "resetFields",
-				backButtonProps: {
-					children: "Reset",
-					title: "Reset all fields back to their default values"
-				},
 				actionsRender: [
 					{
 						type: 'button',
 						props: {
-							children: 'custom',
+							children: 'Preview',
 						},
 						action: [
-							() => {
-								console.log('Back');
+							'validateFields',
+							{
+								url: 'invoke',
+								method: 'POST',
+								params: ({ result }) => {
+									return jsonRPCObj("iAQLQueries.exec", { ...result })
+								},
+								successMessage: 'Submitted successfully',
 							},
 						],
 					},
@@ -54,7 +50,7 @@ class AQLQueriesAddNew extends React.PureComponent {
 						action: [
 							'validateFields',
 							{
-								url: 'http://localhost:8080/api/typedefs',
+								url: 'typedefs',
 								method: 'POST',
 								params: ({ result }) => ({ ...result }),
 								successMessage: 'Submitted successfully',

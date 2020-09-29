@@ -113,7 +113,7 @@ class AQLQueries extends AxiosBaseComponent {
 				id: "New: AQLQuery",
 				name: "New: AQLQuery"
 			});
-		}).catch(error => { if (!this.isCancel(error)) triggerNotifyError(error); });
+		});
 	}	
 };
 

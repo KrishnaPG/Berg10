@@ -47,6 +47,6 @@ export function safeParse(jsonStr) {
 }
 
 // wrapper helper to create json-rpc request objects easily
-export function jsonRPCObj(method, params, id = performance.now()) {
+export function jsonRPCObj(method, params = {}, id = performance.now()) {
 	return { jsonrpc: "2.0", method, params, id };
 }

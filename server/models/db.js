@@ -183,20 +183,11 @@ function ensureBuiltinRecords(builtinTables) {
 		description: "A resource group that is accessible to Everyone"
 	}).then(group => module.exports.builtIn.resourceGroups.Public = group[dbConfig.idField]));
 	
-	// p.push(ensureRecord(module.exports.resGroupColl, {
-	// 	[dbConfig.keyField]: "rg-System",
-	// 	name: "System",
-	// 	description: "Built-in system resources. These are editable only by Admin users, and cannot be deleted."
-	// }).then(group => module.exports.builtIn.resourceGroups.System = group[dbConfig.idField]));
-
-	// ensure the interfaces are registered, and built-in types (e.g. users etc) are setup
-	// p.push(ensureInterfaceRecords(module.exports, dbConfig).then(ensureBuiltinTypeRecords));
-
-	// TODO: ensure the built-in types (e.g. users etc.)
 	// TODO: setup the interfaces for each built-in types
 
 	return Promise.all(p)
 		.then(ensureBuiltinAppCtx)
+		.then(() => ensureInterfaceRecords(module.exports, dbConfig))
 		.then(() => ensureBuiltinTypeRecords(builtinTables));
 }
 

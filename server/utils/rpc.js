@@ -4,7 +4,7 @@
  */
 
 		
-const RPCError = (err, id = null) => ({ "jsonrpc": "2.0", "error": { code: err.code, message: err.message, title: err.name || "Error" }, id });
+const RPCError = (err, id = null) => ({ "jsonrpc": "2.0", "error": { code: err.code, message: err.message, title: err.name || err.title || "Error" }, id });
 
 RPCError.duplicate = (message, id = null, code = -32409) => ({ "jsonrpc": "2.0", "error": { code, message, title: "Already Exists" }, id });
 RPCError.invalidRequest = (message, id = null, code = -32600) => ({ "jsonrpc": "2.0", "error": { code, message, title: "Invalid Request" }, id });

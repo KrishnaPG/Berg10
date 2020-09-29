@@ -122,6 +122,7 @@ export class AxiosBaseComponent extends React.PureComponent {
 			// make the actual call
 			return Axios.get(`typedefs/${_key}`, { cancelToken: tracker.token })
 				.then(response => response.data.result)
+				.catch(/* nothing to do - error is already notified by the axios handler */)
 				.finally(() => {
 					--this._pendingCalls["getTypeDef"];
 					// trigger ui update to hide any spinners

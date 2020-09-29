@@ -2,7 +2,7 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
-const validationSupportedTypes = { "string": true, "boolean": true };
+const validationSupportedTypes = { "string": "string", "boolean": "boolean", "text": "string" };
 const controlMap = {
 	"string": { field: "input" },
 	"text": { field: "textarea" },
@@ -13,13 +13,13 @@ const controlMap = {
 	"json": { field: "json" },
 };
 function getRules(fldDefn) {
-	const rules = [];
-	if (validationSupportedTypes[fldDefn.type]) {
-		rules.push({ type: fldDefn.type, required: fldDefn.nullable ? false : true });
-		if (fldDefn.min) rules.push({ type: fldDefn.type, min: fldDefn.min });
-		if (fldDefn.max) rules.push({ type: fldDefn.type, max: fldDefn.max });
-		if (fldDefn.type === "string") rules.push({ type: fldDefn.type, whitespace: true });
-	}
+	const rules = [];	
+	const type = validationSupportedTypes[fldDefn.type];
+	if (!type) return rules;
+	rules.push({ type, required: fldDefn.nullable === false ? true : false });
+	if (fldDefn.min) rules.push({ type, min: fldDefn.min });
+	if (fldDefn.max) rules.push({ type, max: fldDefn.max });
+	if (type === "string") rules.push({ type, whitespace: true });
 	return rules;
 }
 export function getSulaFormField([fldName, fldDefn]) {

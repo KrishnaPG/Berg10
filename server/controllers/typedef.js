@@ -30,17 +30,19 @@ exports.create = (req, res, next) => {
 		return Typedef.create(req.body)
 			.then(typeDef =>
 				res.send(RPCResponse(typeDef)))
-			.catch(err => res.status(err.statusCode).send(RPCError(err)));
+			.catch(err => res.status(err.code || 500).send(RPCError(err)));
 	});
 };
 
 exports.get = (req, res, next) => {
 	verifyJWT(req, res, jwtPayload => {
 		Typedef.findByKey(req.params)
-			.then(typeDef =>
-				res.send(RPCResponse(typeDef)))
-			.catch(err =>
-				res.status(err.statusCode).send(RPCError(err)));
+			.then(typeDef => res.send(RPCResponse(typeDef)))
+			.catch(err => {
+				if (err.code === 404)
+					return res.status(404).send(RPCError.notFound(`No typeDef record exists for findByKey: ${JSON.stringify(req.params, null, " ")}`));
+				res.status(err.code || 500).send(RPCError(err));
+			});
 	});
 }
 

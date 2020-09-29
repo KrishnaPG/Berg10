@@ -62,7 +62,7 @@ module.exports = {
 	aqlQuery: {
 		name: { type: "string", nullable: false, unique: true, index: true, max: 64 },
 		description: "string",
-		query: "text"
+		query: { type: "text", nullable: false, min: 3, max: 4096 },
 	}
 	// whenever these are changed, also update the create methods in the db.js
 };
