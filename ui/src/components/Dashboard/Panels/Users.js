@@ -10,14 +10,7 @@ import { getServerDBIdField } from '../../../globals/settings';
 import { jsonRPCObj } from '../../../globals/utils';
 import { triggerPanelAdd, triggerNotifyError } from '../../../globals/triggers';
 import { QueryTable } from './sula';
-
-const Button = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/es/button/button'));
-const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/es/page-header/index'));
-const Switch = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPrefetch: true */ 'antd/es/switch/index'));
-const Tabs = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/es/tabs/index'));
-const Tooltip = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPrefetch: true */ 'antd/es/tooltip/index'));
-
-const { TabPane } = Tabs;
+import { Button, PageHeader, Switch } from './antComponents';
 
 const fieldsConfig = [
 	{

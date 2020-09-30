@@ -3,14 +3,16 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
-import { CreateForm, JsonFieldEditor } from './sula/';
+import { CreateForm } from './sula/';
 import { getSulaFormField, getFieldDefaultValues } from './sula/formFields';
 import { jsonRPCObj } from '../../../globals/utils';
-import { Button, PageHeader } from './antComponents';
+import { Button, Collapse, CollapsePanel, PageHeader } from './antComponents';
 
-// const Button = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/es/button/button'));
-// const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/es/page-header/index'));
+import "./AQLQueries.AddNew.scss";
+import 'react-perfect-scrollbar/dist/css/styles.css';
 
+const JSONViewer = React.lazy(() => import(/* webpackChunkName: "jsonViewer", webpackPreload: true */ 'react-json-viewer'));
+const PerfectScroll = React.lazy(() => import(/* webpackChunkName: "pScroll", webpackPreload: true */ 'react-perfect-scrollbar'));
 
 class AQLQueriesAddNew extends React.PureComponent {
 
@@ -39,9 +41,7 @@ class AQLQueriesAddNew extends React.PureComponent {
 								converter: axiosResponse => axiosResponse.data.result,
 								//successMessage: 'Submitted successfully',
 							},
-							({result}) => {
-								console.log("result: ", result);
-							}
+							this.addToPreviewResults
 						],
 					},
 					{
@@ -63,7 +63,7 @@ class AQLQueriesAddNew extends React.PureComponent {
 					}
 				]
 			},
-			tabs: [{ title: '一', index: 0 }, { title: '二', index: 1 }, { title: '三', index: 2 }, { title: '四', index: 3 }, { title: '五', index: 4 }]
+			previewResults: []
 		};
 	}
 
@@ -84,19 +84,28 @@ class AQLQueriesAddNew extends React.PureComponent {
 				</Button>,
 			]}
 		>
+			<PerfectScroll>
+
 			<Suspense fallback={<div className="LoadingMsg">Loading the CreateForm...</div>}>
 				<CreateForm {...this.state.editConfig} />
 			</Suspense>
 
-			<Suspense fallback={<div className="LoadingMsg">Loading the CreateForm...</div>}>
-				<h3>Preview</h3>
+			<Suspense fallback={<div className="LoadingMsg">Loading the PreViewer...</div>}>
+				{this.state.previewResults.length && <h3>Preview</h3>}
+				<Collapse className="AQLQueries-AddNew-PreviewResults">
+						{this.state.previewResults.map((result, index) => <CollapsePanel key={index}>
+							<PerfectScroll>
+								<JSONViewer json={result}></JSONViewer></PerfectScroll>
+					</CollapsePanel>)}
+				</Collapse>
 			</Suspense>
+			</PerfectScroll>
 
 		</PageHeader>
 	}
 
-	handleChange = ev => {
-		console.log("content changed: ", ev);
+	addToPreviewResults = ({ result }) => {
+		this.setState({ previewResults: [result, ...this.state.previewResults] });
 	}	
 
 	onClick = ev => {

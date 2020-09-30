@@ -4,16 +4,9 @@
  */
 import React from 'react';
 import { triggerLogout } from '../../globals/triggers';
-
+import { EditOutlined, LogoutOutlined, SettingOutlined } from './Panels/icons';
+import { Avatar, Card, Meta } from './Panels/antComponents';
 import "./home.scss";
-
-const Avatar = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/es/avatar/index'));
-const Card = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/es/card/index'));
-const Meta = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/es/card/Meta'));
-
-const EditOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/EditOutlined'));
-const LogoutOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/LogoutOutlined'));
-const SettingOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/SettingOutlined'));
 
 class Home extends React.PureComponent {
 

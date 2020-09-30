@@ -19,7 +19,7 @@ const AQLQueriesAddNew = React.lazy(() => import(/* webpackChunkName: "fl-aqlAdd
 const DMNAddNew = React.lazy(() => import(/* webpackChunkName: "fl-dmnAddNew" */ './Panels/DMN.AddNew'));
 const TypeRepo = React.lazy(() => import(/* webpackChunkName: "fl-typeRepo" */ './Panels/TypeRepo'));
 const TypeRepoAddNew = React.lazy(() => import(/* webpackChunkName: "fl-typeRepoAddNew" */ './Panels/TypeRepo.AddNew'));
-const Users = React.lazy(() => import(/* webpackChunkName: "fl-queryView" */ './Panels/Users'));
+const Users = React.lazy(() => import(/* webpackChunkName: "fl-users" */ './Panels/Users'));
 
 
 const componentMap = {

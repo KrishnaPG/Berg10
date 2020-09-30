@@ -6,7 +6,7 @@ import React, { Suspense } from 'react';
 
 import 'jsoneditor-react/es/editor.min.css';
 import { imported } from "react-imported-component/macro";
-const Skeleton = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/es/skeleton/Skeleton'));
+const Skeleton = React.lazy(() => import(/* webpackChunkName: "antSkeleton", webpackPreload: true */ 'antd/es/skeleton/Skeleton'));
 
 const JsonEditor = imported(() => Promise.all([
 	import(/* webpackChunkName: "jsonEd" */ 'jsoneditor-react'),

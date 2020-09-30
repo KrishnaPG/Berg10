@@ -17,6 +17,8 @@
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-imported-component": "^6.3.13",
+    "react-json-viewer": "^2.1.0",
+    "react-perfect-scrollbar": "^1.5.8",
     "react-scripts": "3.4.3",
     "sula": "1.0.0-beta.8",
     "y-indexeddb": "9.0.5",

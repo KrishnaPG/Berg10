@@ -3,6 +3,8 @@
  * All Rights Reserved.
  */
 import React from 'react';
+import { EditOutlined, MailOutlined, LogoutOutlined, SettingOutlined } from './Panels/icons';
+import { Card, Menu, MenuItem, SubMenu } from './Panels/antComponents';
 import {
 	triggerLogout,
 	triggerNotifyWarning,
@@ -14,18 +16,6 @@ import {
 } from '../../globals/triggers';
 
 import "./xplore.scss";
-
-const Card = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/es/card/index'));
-const Menu = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/es/menu/index'));
-const MenuItem = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/es/menu/MenuItem'));
-const SubMenu = React.lazy(() => import(/* webpackChunkName: "antSidebars", webpackPreload: true */ 'antd/es/menu/SubMenu'));
-
-
-const EditOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/EditOutlined'));
-const MailOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/MailOutlined'));
-const LogoutOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/LogoutOutlined'));
-const SettingOutlined = React.lazy(() => import(/* webpackChunkName: "sidebarIcons", webpackPreload: true */ '@ant-design/icons/SettingOutlined'));
-
 
 class Xplore extends React.PureComponent {
 
