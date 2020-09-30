@@ -5,9 +5,10 @@
 import React, { Suspense } from 'react';
 import { CreateForm } from './sula/';
 import { getAxiosCommonHeaders } from '../../../globals/axios';
+import { Button, PageHeader } from './antComponents';
 
-const Button = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/button/button'));
-const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/page-header/index'));
+// const Button = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/es/button/button'));
+// const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/es/page-header/index'));
 
 const validationSupportedTypes = { "string": true, "boolean": true };
 const controlMap = {

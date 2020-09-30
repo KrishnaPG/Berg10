@@ -30,7 +30,7 @@ export function getSulaFormField([fldName, fldDefn]) {
 
 const defaultValues = {
 	"string": "",
-	"text": "",
+	"text": "for u in users \n return u",
 	"boolean": false,
 	"json": {}
 };

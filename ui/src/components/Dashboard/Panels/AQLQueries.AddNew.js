@@ -3,12 +3,13 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
-import { CreateForm } from './sula/';
+import { CreateForm, JsonFieldEditor } from './sula/';
 import { getSulaFormField, getFieldDefaultValues } from './sula/formFields';
 import { jsonRPCObj } from '../../../globals/utils';
+import { Button, PageHeader } from './antComponents';
 
-const Button = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/button/button'));
-const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/lib/page-header/index'));
+// const Button = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/es/button/button'));
+// const PageHeader = React.lazy(() => import(/* webpackChunkName: "antPanels", webpackPreload: true */ 'antd/es/page-header/index'));
 
 
 class AQLQueriesAddNew extends React.PureComponent {
@@ -34,11 +35,13 @@ class AQLQueriesAddNew extends React.PureComponent {
 							{
 								url: 'invoke',
 								method: 'POST',
-								params: ({ result }) => {
-									return jsonRPCObj("iAQLQueries.exec", { ...result })
-								},
-								successMessage: 'Submitted successfully',
+								params: ({ result }) => jsonRPCObj("iAQLQueries.exec", { ...result }),
+								converter: axiosResponse => axiosResponse.data.result,
+								//successMessage: 'Submitted successfully',
 							},
+							({result}) => {
+								console.log("result: ", result);
+							}
 						],
 					},
 					{
@@ -59,7 +62,8 @@ class AQLQueriesAddNew extends React.PureComponent {
 						]
 					}
 				]
-			}
+			},
+			tabs: [{ title: '一', index: 0 }, { title: '二', index: 1 }, { title: '三', index: 2 }, { title: '四', index: 3 }, { title: '五', index: 4 }]
 		};
 	}
 
@@ -83,6 +87,11 @@ class AQLQueriesAddNew extends React.PureComponent {
 			<Suspense fallback={<div className="LoadingMsg">Loading the CreateForm...</div>}>
 				<CreateForm {...this.state.editConfig} />
 			</Suspense>
+
+			<Suspense fallback={<div className="LoadingMsg">Loading the CreateForm...</div>}>
+				<h3>Preview</h3>
+			</Suspense>
+
 		</PageHeader>
 	}
 
