@@ -22,3 +22,5 @@ export const SubMenu = React.lazy(() => import(/* webpackChunkName: "antMenu", w
 
 export const Collapse = React.lazy(() => import(/* webpackChunkName: "antCollapse", webpackPreload: true */ 'antd/es/collapse/Collapse'));
 export const CollapsePanel = React.lazy(() => import(/* webpackChunkName: "antCollapse", webpackPreload: true */ 'antd/es/collapse/CollapsePanel'));
+
+export const Modal = React.lazy(() => import(/* webpackChunkName: "antModal", webpackPreload: true */ 'antd/es/modal/Modal'));

@@ -8,14 +8,12 @@ import { getSulaFormField, getFieldDefaultValues } from './sula/formFields';
 import { jsonRPCObj } from '../../../globals/utils';
 import { Button, Collapse, CollapsePanel, PageHeader } from './antComponents';
 
-import { PeculiarFortifyCertificates } from '@peculiar/fortify-webcomponents-react';
-import "@peculiar/fortify-webcomponents/dist/peculiar/peculiar.css";
-
 import 'react-perfect-scrollbar/dist/css/styles.css';
 import "./AQLQueries.AddNew.scss";
 
-const JSONViewer = React.lazy(() => import(/* webpackChunkName: "jsonViewer", webpackPreload: true */ 'react-json-viewer'));
+const JSONViewer = React.lazy(() => import(/* webpackChunkName: "jsonViewer", webpackPrefetch: true */ 'react-json-viewer'));
 const PerfectScroll = React.lazy(() => import(/* webpackChunkName: "pScroll", webpackPreload: true */ 'react-perfect-scrollbar'));
+const CertSigner = React.lazy(() => import(/* webpackChunkName: "certSign", webpackPrefetch: true */ './CertSign'));
 
 class AQLQueriesAddNew extends React.PureComponent {
 
@@ -66,7 +64,8 @@ class AQLQueriesAddNew extends React.PureComponent {
 					}
 				]
 			},
-			previewResults: []
+			previewResults: [],
+			certSignerIsVisible: false
 		};
 	}
 
@@ -76,42 +75,55 @@ class AQLQueriesAddNew extends React.PureComponent {
 	}
 
 	render() {
-		return <PageHeader
-			className="pageHeader"
-			title="AQL Query"
-			subTitle=""
-			extra={[
-				<Button key="2" onClick={this.onClick}>Operation</Button>,
-				<Button key="1" type="primary">
-					Primary
-				</Button>,
-			]}
-		>
-			<PeculiarFortifyCertificates hideFooter={true}/>
-			<PerfectScroll>
+		const resultPreviews = (<><h3>Preview</h3>
+			<Suspense fallback={<div className="LoadingMsg">Loading the PreViewer...</div>}>
+				<Collapse className="AQLQueries-AddNew-PreviewResults">
+					{this.state.previewResults.map((result, index) => <CollapsePanel key={index}>
+						<PerfectScroll>
+							<JSONViewer json={result}></JSONViewer>
+						</PerfectScroll>
+					</CollapsePanel>)}
+				</Collapse>
+			</Suspense></>);
+		return (<>
+			<PageHeader
+				className="pageHeader"
+				title="AQL Query"
+				subTitle=""
+				extra={[
+					<Button key="2" onClick={this.onShowSignerModal}>Operation</Button>,
+					<Button key="1" type="primary">
+						Primary
+					</Button>,
+				]}
+			>
 				<Suspense fallback={<div className="LoadingMsg">Loading the CreateForm...</div>}>
-					<CreateForm {...this.state.editConfig} />
+					<PerfectScroll>
+						<CreateForm {...this.state.editConfig} />
+
+						{this.state.previewResults.length > 0 && resultPreviews }
+					</PerfectScroll>
 				</Suspense>
 
-				<Suspense fallback={<div className="LoadingMsg">Loading the PreViewer...</div>}>
-					{this.state.previewResults.length && <h3>Preview</h3>}
-					<Collapse className="AQLQueries-AddNew-PreviewResults">
-							{this.state.previewResults.map((result, index) => <CollapsePanel key={index}>
-								<PerfectScroll>
-								<JSONViewer json={result}></JSONViewer>
-								</PerfectScroll>
-						</CollapsePanel>)}
-					</Collapse>
-				</Suspense>
-			</PerfectScroll>
-		</PageHeader>
+			</PageHeader>
+			<CertSigner
+				isVisible={this.state.certSignerIsVisible}
+				onCancel={this.onSignerModalCancel}>
+				<h2>Loading</h2>
+			</CertSigner>
+		</>);
 	}
 
 	addToPreviewResults = ({ result }) => {
 		this.setState({ previewResults: [result, ...this.state.previewResults] });
 	}	
 
-	onClick = ev => {
+	onShowSignerModal = ev => {
+		this.setState({ certSignerIsVisible: true });
+	}
+
+	onSignerModalCancel = ev => {
+		this.setState({ certSignerIsVisible: false });
 	}
 }
 
