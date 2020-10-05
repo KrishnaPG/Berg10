@@ -8,8 +8,11 @@ import { getSulaFormField, getFieldDefaultValues } from './sula/formFields';
 import { jsonRPCObj } from '../../../globals/utils';
 import { Button, Collapse, CollapsePanel, PageHeader } from './antComponents';
 
-import "./AQLQueries.AddNew.scss";
+import { PeculiarFortifyCertificates } from '@peculiar/fortify-webcomponents-react';
+import "@peculiar/fortify-webcomponents/dist/peculiar/peculiar.css";
+
 import 'react-perfect-scrollbar/dist/css/styles.css';
+import "./AQLQueries.AddNew.scss";
 
 const JSONViewer = React.lazy(() => import(/* webpackChunkName: "jsonViewer", webpackPreload: true */ 'react-json-viewer'));
 const PerfectScroll = React.lazy(() => import(/* webpackChunkName: "pScroll", webpackPreload: true */ 'react-perfect-scrollbar'));
@@ -84,23 +87,23 @@ class AQLQueriesAddNew extends React.PureComponent {
 				</Button>,
 			]}
 		>
+			<PeculiarFortifyCertificates hideFooter={true}/>
 			<PerfectScroll>
+				<Suspense fallback={<div className="LoadingMsg">Loading the CreateForm...</div>}>
+					<CreateForm {...this.state.editConfig} />
+				</Suspense>
 
-			<Suspense fallback={<div className="LoadingMsg">Loading the CreateForm...</div>}>
-				<CreateForm {...this.state.editConfig} />
-			</Suspense>
-
-			<Suspense fallback={<div className="LoadingMsg">Loading the PreViewer...</div>}>
-				{this.state.previewResults.length && <h3>Preview</h3>}
-				<Collapse className="AQLQueries-AddNew-PreviewResults">
-						{this.state.previewResults.map((result, index) => <CollapsePanel key={index}>
-							<PerfectScroll>
-								<JSONViewer json={result}></JSONViewer></PerfectScroll>
-					</CollapsePanel>)}
-				</Collapse>
-			</Suspense>
+				<Suspense fallback={<div className="LoadingMsg">Loading the PreViewer...</div>}>
+					{this.state.previewResults.length && <h3>Preview</h3>}
+					<Collapse className="AQLQueries-AddNew-PreviewResults">
+							{this.state.previewResults.map((result, index) => <CollapsePanel key={index}>
+								<PerfectScroll>
+								<JSONViewer json={result}></JSONViewer>
+								</PerfectScroll>
+						</CollapsePanel>)}
+					</Collapse>
+				</Suspense>
 			</PerfectScroll>
-
 		</PageHeader>
 	}
 
