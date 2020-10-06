@@ -3,14 +3,14 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
-import Barrier from '../../RenderBarrier';
-import { PlusCircleOutlined } from './icons';
-import { AxiosBaseComponent } from '../../../globals/axios';
-import { getServerDBIdField } from '../../../globals/settings';
-import { jsonRPCObj } from '../../../globals/utils';
-import { triggerPanelAdd, triggerNotifyError } from '../../../globals/triggers';
-import { QueryTable } from './sula';
-import { Button, PageHeader, Switch } from './antComponents';
+import Barrier from '../../../RenderBarrier';
+import { PlusCircleOutlined } from '../icons';
+import { AxiosBaseComponent } from '../../../../globals/axios';
+import { getServerDBIdField } from '../../../../globals/settings';
+import { jsonRPCObj } from '../../../../globals/utils';
+import { triggerPanelAdd, triggerNotifyError } from '../../../../globals/triggers';
+import { QueryTable } from '../sula';
+import { Button, PageHeader, Switch } from '../antComponents';
 
 const fieldsConfig = [
 	{

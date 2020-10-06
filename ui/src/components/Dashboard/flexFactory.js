@@ -14,12 +14,12 @@ const Notifications = React.lazy(() => import(/* webpackChunkName: "fl-notify" *
 const Properties = React.lazy(() => import(/* webpackChunkName: "fl-props" */ './Properties'));
 const Settings = React.lazy(() => import(/* webpackChunkName: "fl-settings" */ './Settings'));
 
-const AQLQueries = React.lazy(() => import(/* webpackChunkName: "fl-aql"*/ './Panels/AQLQueries'));
-const AQLQueriesAddNew = React.lazy(() => import(/* webpackChunkName: "fl-aqlAddNew" */ './Panels/AQLQueries.AddNew'));
-const DMNAddNew = React.lazy(() => import(/* webpackChunkName: "fl-dmnAddNew" */ './Panels/DMN.AddNew'));
-const TypeRepo = React.lazy(() => import(/* webpackChunkName: "fl-typeRepo" */ './Panels/TypeRepo'));
-const TypeRepoAddNew = React.lazy(() => import(/* webpackChunkName: "fl-typeRepoAddNew" */ './Panels/TypeRepo.AddNew'));
-const Users = React.lazy(() => import(/* webpackChunkName: "fl-users" */ './Panels/Users'));
+const AQLQueries = React.lazy(() => import(/* webpackChunkName: "fl-aql"*/ './Panels/aqlQueries/list'));
+const AQLQueriesAddNew = React.lazy(() => import(/* webpackChunkName: "fl-aqlAddNew" */ './Panels/aqlQueries/addNew'));
+const DMNAddNew = React.lazy(() => import(/* webpackChunkName: "fl-dmnAddNew" */ './Panels/dmn/addNew'));
+const TypeRepo = React.lazy(() => import(/* webpackChunkName: "fl-typeRepo" */ './Panels/typeRepo/list'));
+const TypeRepoAddNew = React.lazy(() => import(/* webpackChunkName: "fl-typeRepoAddNew" */ './Panels/typeRepo/addNew'));
+const Users = React.lazy(() => import(/* webpackChunkName: "fl-users" */ './Panels/users/list'));
 
 
 const componentMap = {

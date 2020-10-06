@@ -3,9 +3,9 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
-import { CreateForm } from './sula/';
-import { getAxiosCommonHeaders } from '../../../globals/axios';
-import { Button, PageHeader } from './antComponents';
+import { CreateForm } from '../sula';
+import { getAxiosCommonHeaders } from '../../../../globals/axios';
+import { Button, PageHeader } from '../antComponents';
 
 
 const validationSupportedTypes = { "string": true, "boolean": true };
