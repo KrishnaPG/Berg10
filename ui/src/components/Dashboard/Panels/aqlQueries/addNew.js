@@ -117,7 +117,6 @@ class AQLQueriesAddNew extends React.PureComponent {
 	}
 
 	onSignerModalOk = async ev => {
-		this.setState({ certSignerIsVisible: false }); // hide the ui
 		const selectedCert = ev.detail;
 
 		const provider = await selectedCert.server.getCrypto(selectedCert.providerId);
@@ -135,6 +134,8 @@ class AQLQueriesAddNew extends React.PureComponent {
 
 		const result = await provider.subtle.verify(alg, publicKey, sign, message);
 		console.log("verification result: ", result, alg);
+
+		this.setState({ certSignerIsVisible: false }); // hide the ui
 	}
 
 }

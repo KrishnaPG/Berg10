@@ -24,3 +24,7 @@ export const Collapse = React.lazy(() => import(/* webpackChunkName: "antCollaps
 export const CollapsePanel = React.lazy(() => import(/* webpackChunkName: "antCollapse", webpackPreload: true */ 'antd/es/collapse/CollapsePanel'));
 
 export const Modal = React.lazy(() => import(/* webpackChunkName: "antModal", webpackPreload: true */ 'antd/es/modal/Modal'));
+
+export const Steps = React.lazy(() => import(/* webpackChunkName: "antSteps", webpackPreload: true */ 'antd/es/steps'));
+export const Step = React.lazy(() => import(/* webpackChunkName: "antSteps", webpackPreload: true */ 'antd/es/steps')
+	.then(module => ({ default: module.default.Step })));

@@ -3,7 +3,7 @@
  * All Rights Reserved.
  */
 import React, { Suspense } from 'react';
-import { Modal } from '../antComponents';
+import { Modal, Step, Steps } from '../antComponents';
 
 import { PeculiarFortifyCertificates } from '@peculiar/fortify-webcomponents-react';
 import "@peculiar/fortify-webcomponents/dist/peculiar/peculiar.css";
@@ -37,11 +37,19 @@ class CertSigner extends React.PureComponent {
 			width={window.outerWidth/2}
 			onCancel={this.props.onCancel}
 		>
-			<PeculiarFortifyCertificates
+			<Suspense fallback={<div className="LoadingMsg">Loading the Steps...</div>}>
+				<Steps>
+					<Step title="first step" />
+					<Step title="second step" />
+					<Step title="third step" />
+				</Steps>
+			</Suspense>
+
+			{/* <PeculiarFortifyCertificates
 				hideFooter={true}
 				filters={filters}
 				onCancel={this.props.onCancel}
-				onContinue={this.props.onOk} />
+				onContinue={this.props.onOk} /> */}
 		</Modal>
 	}
 };
