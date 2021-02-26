@@ -15,5 +15,21 @@ RPCError.generic = (message, id = null, title = "Error", code = -32000) => ({ "j
 
 module.exports = {
 	RPCResponse: (result, id = null) => ({ "jsonrpc": "2.0", result, id }),
-	RPCError
+	RPCError,
+	ErrorCode: {
+		BadRequest: 400,
+		Conflict: 409,
+		MethodNotAllowed: 405,
+		NotFound: 404,
+		NotReady: 425,	// too early, server is not ready
+		Timeout: 408,
+		TooManyRequests: 429,
+		UnAuthenticated: 401,
+		UnAuthorized: 403,
+
+		InternalError: 500,
+		MethodNotImplemented: 501,
+		ServerBusy: 503,	// overloaded server, unable to complete the request
+		ServerDown: 521,
+	}
 }
