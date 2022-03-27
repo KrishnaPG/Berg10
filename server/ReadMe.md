@@ -12,6 +12,11 @@ The Resource REST endpoints are compatible with FeathersJS endpoints. Below is a
 
 Reference: [FeathersJS REST](https://docs.feathersjs.com/api/client/rest.html#find)
 
+## ArangoDB docker command
+```sh
+docker run -d --restart unless-stopped --name arangodb -p 8529:8529 -e ARANGO_ROOT_PASSWORD=openSesame arangodb/arangodb:3.9.0
+```
+
 ## Permissions
 Each `Typedef` includes a `table` name that specifies where the instances of that type are stored. Each `tableEntry` inside that `table` is a resource that belongs to one `resourceGroup` exclusively. 
 

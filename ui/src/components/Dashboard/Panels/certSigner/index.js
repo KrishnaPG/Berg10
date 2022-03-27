@@ -38,18 +38,18 @@ class CertSigner extends React.PureComponent {
 			onCancel={this.props.onCancel}
 		>
 			<Suspense fallback={<div className="LoadingMsg">Loading the Steps...</div>}>
-				<Steps>
-					<Step title="first step" />
-					<Step title="second step" />
-					<Step title="third step" />
+				<Steps current={1}>
+					<Step title="Source" description="This is a description."/>
+					<Step title="Certificate" />
+					<Step title="Verification" />
 				</Steps>
 			</Suspense>
 
-			{/* <PeculiarFortifyCertificates
+			<PeculiarFortifyCertificates
 				hideFooter={true}
 				filters={filters}
 				onCancel={this.props.onCancel}
-				onContinue={this.props.onOk} /> */}
+				onContinue={this.props.onOk} />
 		</Modal>
 	}
 };

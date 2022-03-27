@@ -63,6 +63,7 @@
     "command-line-usage": "^6.1.0",
     "cross-env": "^7.0.2",
     "jest": "26.4.2",
+    "nodemon": "^2.0.15",
     "pino-pretty": "^4.2.1"
   },
   "nodemonConfig": {

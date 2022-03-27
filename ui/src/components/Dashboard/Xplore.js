@@ -2,7 +2,8 @@
  * Copyright © 2020 Cenacle Research India Private Limited.
  * All Rights Reserved.
  */
-import React from 'react';
+import React, { Suspense } from 'react';
+import { Convert } from 'pvtsutils';
 import { EditOutlined, MailOutlined, LogoutOutlined, SettingOutlined } from './Panels/icons';
 import { Card, Menu, MenuItem, SubMenu } from './Panels/antComponents';
 import {
@@ -17,11 +18,14 @@ import {
 
 import "./xplore.scss";
 
+const CertSigner = React.lazy(() => import(/* webpackChunkName: "certSign", webpackPrefetch: true */ './Panels/certSigner'));
+
 class Xplore extends React.PureComponent {
 
 	constructor(props) {
 		super(props);
 		this.state = {
+			certSignerIsVisible: false
 		};
 	}
 
@@ -29,7 +33,7 @@ class Xplore extends React.PureComponent {
 	// 	return false;
 	// }
 
-	render() { console.log("xplore render")
+	render() {
 		return (
 			<Card id="xplore-card" className="sidebar-card"
 				cover={
@@ -60,6 +64,9 @@ class Xplore extends React.PureComponent {
 					<MenuItem key="panelAQL" onClick={triggerPanelAQLQueries}>
 						AQL Queries
           </MenuItem>
+					<MenuItem key="certSigner" onClick={this.onShowSignerModal}>
+						CertSigner
+          </MenuItem>
 					<MenuItem key="panelDMN" onClick={triggerPanelDMN}>
 						DMN
           </MenuItem>
@@ -78,9 +85,46 @@ class Xplore extends React.PureComponent {
 						</SubMenu>
 					</SubMenu>
 				</Menu>
+				<Suspense fallback={<div className="LoadingMsg">Loading the CertSigner...</div>}>
+					<CertSigner
+						isVisible={this.state.certSignerIsVisible}
+						onCancel={this.onSignerModalCancel}
+						onOk={this.onSignerModalOk}>
+					</CertSigner>
+				</Suspense>
 			</Card>
 		);
 	}
+
+	onShowSignerModal = ev => {
+		this.setState({ certSignerIsVisible: true });
+	}
+
+	onSignerModalCancel = ev => {
+		this.setState({ certSignerIsVisible: false });
+	}
+
+	onSignerModalOk = async ev => {
+		const selectedCert = ev.detail;
+
+		const provider = await selectedCert.server.getCrypto(selectedCert.providerId);
+		const privateKey = await provider.keyStorage.getItem(selectedCert.privateKeyId);
+		if (!privateKey) throw new Error('Selected Certificate does not have a private key');
+
+		const message = Convert.FromUtf8String("Test message");
+
+		const alg = { name: privateKey.algorithm.name, hash: privateKey.algorithm.hash.name };
+		const sign = await provider.subtle.sign(alg, privateKey, message);
+
+		console.log("sign: ", Convert.ToHex(sign));
+		const cert = await provider.certStorage.getItem(selectedCert.certificateId);
+		const publicKey = cert.publicKey;
+
+		const result = await provider.subtle.verify(alg, publicKey, sign, message);
+		console.log("verification result: ", result, alg);
+
+		this.setState({ certSignerIsVisible: false }); // hide the ui
+	}	
 };
 
 export default Xplore;
