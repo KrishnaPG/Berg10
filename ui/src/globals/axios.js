@@ -3,6 +3,7 @@
  * All Rights Reserved.
  */
 import React from 'react';
+import ObjMerge from 'lodash/merge';
 import { getServerBaseURL } from './settings';
 import { triggerLogout, triggerNotifyError, triggerNotifyWarning } from './triggers';
 
@@ -79,7 +80,7 @@ export function getAxiosCommonHeaders() {
 }
 
 export function setAxiosAuthBearer(token) {
-	loadAxios().then(Axios => Axios.defaults.headers.common['Authorization'] = `Bearer ${token}`);
+	return loadAxios().then(Axios => Axios.defaults.headers.common['Authorization'] = `Bearer ${token}`);
 }
 
 export class AxiosBaseComponent extends React.PureComponent {
@@ -87,8 +88,7 @@ export class AxiosBaseComponent extends React.PureComponent {
 		super(props);
 		this._isMounted = false;
 		this._callTrackers = {};
-		this._pendingCalls = {};
-		this.state = { lastQueryMadeAt: null }
+		this.state = { lastQueryMadeAt: null, pendingCalls: {} }
 	}
 	componentDidMount() {
 		this._isMounted = true;
@@ -99,35 +99,43 @@ export class AxiosBaseComponent extends React.PureComponent {
 		this._isMounted = false;
 	}
 	safeSetState(changedState) {
-		return this._isMounted ? this.setState(changedState) : Object.assign(this.state, changedState);
+		return this._isMounted ?
+			this.setState(state => ObjMerge({}, state, changedState)) :
+			ObjMerge(this.state, changedState);
+	}
+	safeSetStateFn(fn) {
+		return this._isMounted ?
+			this.setState(state => ObjMerge({}, state, fn(state))) :
+			ObjMerge(this.state, fn(this.state));
 	}
 
 	isCancel(error) {
 		return Axios.isCancel(error);
 	}
 
-	getTypeDef(_key) {
-		const tracker = this._callTrackers["getTypeDef"];
+	makeCall(req, callScope) {
+		const tracker = this._callTrackers[callScope];
 		if (tracker) {
 			// Abort any previous calls that are in-progress. Does nothing if call has already been resolved or rejected.
 			tracker.cancel("Aborting old call");
 		}
 		// trigger ui update.
-		this._pendingCalls["getTypeDef"] = (this._pendingCalls["getTypeDef"] || 0) + 1;
-		this.setState({ lastQueryMadeAt: performance.now() });
+		this.safeSetStateFn(state => ({ lastQueryMadeAt: performance.now(), pendingCalls: { [callScope]: (state.pendingCalls[callScope] || 0) + 1  }  }));
 		// load the axios and make the call
 		return loadAxios().then(Axios => {
 			const tracker = Axios.CancelToken.source();
-			this._callTrackers["getTypeDef"] = tracker;
+			this._callTrackers[callScope] = tracker;
 			// make the actual call
-			return Axios.get(`typedefs/${_key}`, { cancelToken: tracker.token })
+			return Axios.request(req, { cancelToken: tracker.token })
 				.then(response => response.data.result)
 				.catch(/* nothing to do - error is already notified by the axios handler */)
 				.finally(() => {
-					--this._pendingCalls["getTypeDef"];
 					// trigger ui update to hide any spinners
-					this.safeSetState({ lastQueryMadeAt: performance.now() });
+					this.safeSetStateFn(state => {
+						return ({ lastQueryMadeAt: performance.now(), pendingCalls: { [callScope]: Math.max(state.pendingCalls[callScope] - 1, 0) } })
+					});
 				});
 		});
 	}
+
 }

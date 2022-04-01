@@ -38,3 +38,11 @@ export function subscribeToEvPanelAdd(fn) {
 export function unSubscribeToEvPanelAdd(fn) {
 	gEventBus.removeEventListener("ev.panel.add", fn);
 }
+
+// Tab switch
+export function subscribeToEvTabSwitch(fn) {
+	gEventBus.addEventListener("ev.tab.switch", fn);
+}
+export function unSubscribeToEvTabSwitch(fn) {
+	gEventBus.removeEventListener("ev.tab.switch", fn);
+}

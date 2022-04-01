@@ -22,6 +22,10 @@ export const triggerPanelAdd = panelSpec => {
 	gEventBus.dispatchEvent(new CustomEvent("ev.panel.add", { bubbles: false, detail: panelSpec }));
 }
 
+export const triggerEvTabSwitch = ev => {
+	gEventBus.dispatchEvent(new CustomEvent("ev.tab.switch", { bubbles: false, detail: ev }));
+}
+
 export const triggerPanelDMN = () => {
 	triggerPanelAdd({
 		bringToFocus: true,
