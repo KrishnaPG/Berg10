@@ -28,7 +28,7 @@ class Main extends React.Component {
 		};
 		
 		this.state = {
-			user: null,
+			user: "xyz",
 			jwt: null,
 			isAuthInProgress: true,
 			busyMsg: "Loading previous sessions, if any...",
@@ -90,7 +90,7 @@ class Main extends React.Component {
 	}
 
 	render() {
-		return this.state.jwt ?
+		return !this.state.jwt ?
 			(<Suspense fallback={<div className="LoadingMsg">Loading the Dashboard...</div>}>
 				<Dashboard user={this.state.user} jwt={this.state.jwt}/>
 			</Suspense>) :
