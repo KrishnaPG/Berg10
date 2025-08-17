@@ -14,7 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "arangojs": "^7.0.1",
-    "axios": "^0.20.0",
+    "axios": "^0.30.0",
     "bcrypt": "^5.0.0",
     "bs58": "^4.0.1",
     "chalk": "^4.1.0",
