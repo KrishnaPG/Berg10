@@ -1,0 +1,244 @@
+{
+	"name": "global-demo-group",
+	"description": "Example group that showcases every supported feature.",
+	"filter": {
+		"operator": "AND",
+		"operands": [
+			{
+				"operator": "OR",
+				"operands": [
+					{
+						"field": "mime_type",
+						"op": "eq",
+						"value": "image/jpeg"
+					},
+					{
+						"field": "mime_type",
+						"op": "eq",
+						"value": "image/png"
+					},
+					{
+						"field": "mime_type",
+						"op": "eq",
+						"value": "application/pdf"
+					}
+				]
+			},
+			{
+				"operator": "NOT",
+				"operands": [
+					{
+						"field": "path",
+						"op": "regex",
+						"value": ".*/personal/.*"
+					}
+				]
+			},
+			{
+				"field": "size",
+				"op": "range",
+				"min": 10240,
+				"max": 104857600
+			},
+			{
+				"field": "created_at",
+				"op": "range",
+				"min": "2024-01-01T00:00:00Z",
+				"max": "2024-12-31T23:59:59Z"
+			}
+		]
+	},
+	"versionPolicy": {
+		"mode": "latestOnBranch",
+		"branch": "release"
+	},
+	"grouping": {
+		"strategy": "composite",
+		"rules": [
+			{
+				"match": {
+					"mime_type": "application/pdf"
+				},
+				"strategy": "per_page",
+				"pageRange": [
+					1,
+					-1
+				],
+				"entityNameTemplate": "{{fileName}}-page-{{page}}"
+			},
+			{
+				"match": {
+					"mime_type": "image/*"
+				},
+				"strategy": "per_file",
+				"entityNameTemplate": "{{fileName}}"
+			}
+		]
+	},
+	"lanes": [
+		{
+			"id": "cv_color_yolo",
+			"displayName": "Color Object Detection (YOLO)",
+			"embedder": {
+				"model": "ultralytics/yolov8x",
+				"uri": "oci://ghcr.io/ultralytics/yolov8x:v1.0",
+				"digest": "sha256:47bc...e3",
+				"parameters": {
+					"imgSize": 640,
+					"confidence": 0.5,
+					"iou": 0.45
+				},
+				"modality": "image",
+				"postProcessing": [
+					"bbox",
+					"labels"
+				]
+			},
+			"indexConfig": {
+				"chunkSize": 1,
+				"overlap": 0,
+				"storeVectors": true,
+				"storeMetadata": true
+			},
+			"tags": [
+				"cv",
+				"object-detection",
+				"color"
+			],
+			"visibility": {
+				"scope": "shared",
+				"teams": [
+					"vision",
+					"product"
+				]
+			},
+			"retention": {
+				"policy": "keep_last_n",
+				"n": 5,
+				"maxAge": "P90D"
+			}
+		},
+		{
+			"id": "cv_bw_edges",
+			"displayName": "B&W Edge Detection (Canny)",
+			"embedder": {
+				"model": "opencv/canny",
+				"uri": "internal://opencv/v4.8.1",
+				"digest": "sha256:aa12...99",
+				"parameters": {
+					"lowThreshold": 50,
+					"highThreshold": 150
+				},
+				"modality": "image",
+				"postProcessing": [
+					"edges"
+				]
+			},
+			"indexConfig": {
+				"storeVectors": false,
+				"storeMetadata": true
+			},
+			"tags": [
+				"cv",
+				"edges",
+				"bw",
+				"lightweight"
+			],
+			"visibility": {
+				"scope": "public"
+			},
+			"retention": {
+				"policy": "expire_after",
+				"maxAge": "P30D"
+			}
+		},
+		{
+			"id": "nlp_fin_bert",
+			"displayName": "Finance BERT embeddings",
+			"embedder": {
+				"model": "yiyanghkust/finbert-pretrain",
+				"uri": "huggingface://yiyanghkust/finbert-pretrain",
+				"digest": "sha256:3f9c...77",
+				"tokenizerUri": "huggingface://bert-base-uncased",
+				"tokenizerDigest": "sha256:21bd...ff",
+				"parameters": {
+					"maxSeqLen": 512,
+					"stride": 256,
+					"pooling": "mean",
+					"normalize": true
+				},
+				"modality": "text"
+			},
+			"indexConfig": {
+				"chunkSize": 512,
+				"overlap": 128,
+				"storeVectors": true,
+				"storeMetadata": true
+			},
+			"tags": [
+				"nlp",
+				"finance",
+				"bert"
+			],
+			"visibility": {
+				"scope": "shared",
+				"teams": [
+					"finance",
+					"audit"
+				]
+			},
+			"retention": {
+				"policy": "keep_last_n",
+				"n": 3,
+				"maxAge": "P365D"
+			}
+		},
+		{
+			"id": "audio_whisper",
+			"displayName": "Audio transcription & embedding (Whisper)",
+			"embedder": {
+				"model": "openai/whisper-large-v3",
+				"uri": "oci://ghcr.io/openai/whisper-large:v3.0",
+				"digest": "sha256:e8f1...aa",
+				"parameters": {
+					"language": "en",
+					"task": "transcribe"
+				},
+				"modality": "audio",
+				"postProcessing": [
+					"transcript",
+					"embed"
+				]
+			},
+			"indexConfig": {
+				"chunkSize": 30,
+				"unit": "seconds",
+				"overlap": 5,
+				"storeVectors": true,
+				"storeMetadata": true
+			},
+			"tags": [
+				"audio",
+				"transcription",
+				"whisper"
+			],
+			"visibility": {
+				"scope": "internal",
+				"teams": [
+					"compliance"
+				]
+			},
+			"retention": {
+				"policy": "expire_after",
+				"maxAge": "P180D"
+			}
+		}
+	],
+	"metadata": {
+		"ownerTeam": "platform",
+		"labels": {
+			"cost-center": "RD-42",
+			"confidentiality": "internal"
+		}
+	}
+}
