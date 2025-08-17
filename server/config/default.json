@@ -1,0 +1,48 @@
+{
+	"host": "0.0.0.0",
+	"port": 8080,
+	"cors": {
+		"allowedOrigins": []
+	},
+	"adminUI": {
+		"appCtx": "appCtxBerg10",
+		"allowedOrigins": []
+	},
+	"db": {
+		"url": "http://localhost:8529",
+		"dbName": "default",
+		"auth": {
+			"username": "test",
+			"password": "password"
+		},
+		"idField": "_id",
+		"keyField": "_key",
+		"rayField": "_rayId"
+	},
+	"jwt": {
+		"secret": null,
+		"expiresIn": 86400000,
+		"iss": "Berg10.Server",
+		"noTimestamp": true,
+
+		"cache": true,
+		"allowedIss": "Berg10.Server"
+	},
+	"logger": {
+		"pino": {
+			"level": "info"
+		}
+	},
+	"passport": {
+		"local": {
+			"usernameField": "email",
+			"passwordField": "password"
+		}
+	},
+	"session": {
+		"name": "Berg10-Session"
+	},
+	"ws": {
+		"maxPayload": 4194304
+	}
+}
