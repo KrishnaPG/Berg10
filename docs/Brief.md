@@ -82,6 +82,14 @@ Developer UX:
 - Large-scale cross-repo federation: keep manifests in each repo and have a catalog repo that merely lists `(repo_url, manifest_sha)` tuples.
 - Streaming ingestion: embedder can write to a WAL file in `.semantic/wal/` first, then flush to blob+manifest every N minutes, still fits the same layout.
 
+Performance Tactics:
+| Bottleneck        | Mitigation                                                            |
+| ----------------- | --------------------------------------------------------------------- |
+| Large manifests   | Manifest sharding (`manifest.YYYY-MM-DD.jsonl`), tail-first rebuild.  |
+| Vector insertions | Bulk insert 4 k vectors / request to Qdrant, use binary quantization. |
+| Cold start        | Pre-compute mmap-friendly FAISS index for last 7 days.                |
+| Hot path search   | In-memory LRU cache of top-k vector results (stale-while-revalidate). |
+
 
 File details:
 - `.semantic/version`
@@ -101,7 +109,7 @@ File details:
       "embedder_id": "bert-base-finetuned-finance",
       "model_cfg_digest": "sha256:2a9c…01", // lock of model + hyper-params
       "git_commit_sha": "a3f6e2",            // repository commit that produced the file
-      "created": "2024-10-05T14:23:11Z",
+      "created_at": "2024-10-05T14:23:11Z",
       "tags": ["finance", "en"]
     }
   ```
