@@ -49,28 +49,36 @@ Following the PRD's "Monolithic" repository structure guidance, the project will
 
 ```mermaid
 graph TD
-    subgraph "External Systems"
-        A[LakeFS/Git Repository] -->|Read| B[Connectors (LakeFS/Git)]
-        C[AI/ML Model Service] -->|Embeddings| D[Indexing Engine]
-        E[Vector DB (Qdrant/Milvus)] -->|Search Results| F[API/MCP Server]
+    subgraph "Users & Admin Tools"
+        User_CLI[User via CLI] --> CLI
+        Admin_UI[Admin UI] --> Mgmt_API
+        App_Client[Application / AI Agent] --> Search_API
     end
 
     subgraph "Berg10 System (Modular Monolith)"
-        B --> G[Core Engine]
-        G --> H[(semantic-repo - Git)]
-        H --> G
-        G --> D[Indexing Engine]
-        D --> H
-        G --> I[CLI (berg10)]
-        G --> J[API/MCP Server]
-        J --> D
-        J --> H
+        Connectors["Connectors (LakeFS/Git)"] --> Core_Engine
+        Core_Engine --> Indexing_Engine
+        Core_Engine --> Mgmt_API[Management API (GraphQL)]
+        Core_Engine --> CLI{berg10 CLI}
+
+        Indexing_Engine --> Semantic_Repo
+        Indexing_Engine --> AI_Service[AI/ML Model Service]
+
+        Semantic_Repo["semantic-repo (Source of Truth)"] -->|Ingest| Vector_DB
+        Semantic_Repo --> Core_Engine
+        Semantic_Repo --> Search_API
+
+        Vector_DB["Vector DB (Hot Index)"] --> Search_API
+
+        Search_API["Search API (gRPC/REST/MCP)"] --> AI_Service
     end
 
-    subgraph "Users/Applications"
-        K[User (CLI)] --> I
-        L[Application/MCP Client] --> J
+    subgraph "External Systems"
+        Source_Repo[LakeFS/Git Repository] -->|Read| Connectors
+        AI_Service
     end
+
+    style Semantic_Repo fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
 ### Architectural Patterns
@@ -181,7 +189,72 @@ interface SemanticEntity {
 
 ## API Specification
 
-*(To be defined based on data models and user stories)*
+The Berg10 system exposes two distinct APIs, each tailored for a specific purpose and audience, and protected by a different security policy.
+
+### 1. Management API (GraphQL)
+
+This API is for managing the `semantic-repo`, including the lifecycle of Semantic Groups and their configurations. It is the primary interface for administrative tools like the CLI and a future Admin UI.
+
+-   **Protocol:** GraphQL. This is to support modern frontend frameworks like Refine.js that can consume GraphQL endpoints as a data provider.
+-   **Audience:** Administrators, CLI tool, future Admin UI.
+-   **Security:** Access is protected by the **Configuration Access Policy** ABAC (as defined in the Authentication and Authorization section).
+
+#### Sample GraphQL Schema
+
+```graphql
+type Query {
+  semanticGroup(name: String!): SemanticGroup
+  semanticGroups: [SemanticGroup!]!
+}
+
+type Mutation {
+  applySemanticGroup(config: SemanticGroupInput!): SemanticGroup
+  deleteSemanticGroup(name: String!): Boolean
+}
+
+type SemanticGroup {
+  name: String!
+  filter: JSONObject!
+  versionPolicy: JSONObject!
+  groupingRule: JSONObject!
+  indexing: JSONObject!
+  retentionPolicy: JSONObject
+}
+
+input SemanticGroupInput {
+  name: String!
+  filter: JSONObject!
+  versionPolicy: JSONObject!
+  groupingRule: JSONObject!
+  indexing: JSONObject!
+  retentionPolicy: JSONObject
+}
+
+scalar JSONObject
+```
+
+### 2. Search API (gRPC / REST / MCP)
+
+This API is for querying the AI-indexed knowledge derived from the semantic groups. It is optimized for performance and consumption by AI agents and applications.
+
+-   **Protocols:** gRPC (for high-performance internal or trusted communication), REST (for standard web compatibility), and a native MCP Server endpoint.
+-   **Audience:** AI Agents, Applications, End-user services.
+-   **Security:** Access is protected by the **Knowledge Access Policy** ABAC.
+
+#### REST Endpoint (Example)
+
+The REST endpoint remains as previously defined, providing a simple, accessible interface for semantic queries.
+
+```yaml
+openapi: 3.0.1
+info:
+  title: Berg10 Search API
+  version: v1
+paths:
+  /search:
+    post:
+      # ... (specification remains the same)
+```
 
 ## Components
 
@@ -290,44 +363,39 @@ interface SemanticEntity {
 6. CLI provides success/failure feedback.
 
 ### Workflow 2: Index Semantic Entities for a Group
-1. Triggered by `berg10 apply` completion or file system change detection.
-2. Core Engine's `IndexingOrchestrator` loads the group config.
-3. `IndexingOrchestrator` calls `EntityManager.mapEntities(group)`.
-4. `EntityManager` uses the appropriate `FileSystemConnector` to list files based on `versionPolicy`.
-5. `EntityManager` applies the `filter` to get matching files.
-6. `EntityManager` applies the `groupingRule` to create `SemanticEntity` objects.
-7. For each new/updated `SemanticEntity`:
-    a. `IndexingOrchestrator` retrieves entity content.
-    b. `IndexingOrchestrator` calls AI Model Service to generate embedding.
-    c. `IndexingOrchestrator` calls `SemanticRepoManager.storeIndex(entity, embedding, metadata)`.
-    d. `SemanticRepoManager` stores blob, updates `manifest.jsonl`.
-    e. `IndexingOrchestrator` calls Vector DB Client to upsert embedding/metadata.
+8.  **Primary Storage (Source of Truth):**
+    a. The `SemanticRepoManager` saves the generated embedding as an immutable blob in the `semantic-repo` at `.semantic/index/sha256/<hash>`.
+    b. It then appends a record to the group's `manifest.jsonl`, linking the entity, source version, and the embedding blob's hash.
+9.  **Vector DB Ingestion (Secondary Index):**
+    a. After successfully writing to the `semantic-repo`, the `IndexingOrchestrator` triggers an ingestion process.
+    b. This process reads the new manifest entry and upserts the embedding vector and associated metadata into the **Vector DB**. This makes the data available for fast querying.
 
 ### Workflow 3: Semantic Search
-1. Application/MCP Client sends query to Search API endpoint.
-2. API Server receives request, parses query.
-3. API Server calls AI Model Service to generate query embedding.
-4. API Server calls Vector DB Client to search with query embedding.
-5. Vector DB returns list of relevant `entity_id`s.
-6. API Server (optionally) fetches entity details from `semantic-repo`.
-7. API Server returns results to client.
+1.  **Query:** An application or MCP Client or AI Agent sends a query to the **Search API**.
+2.  **Embedding:** The API server generates a vector embedding for the incoming query using the **AI Model Service**.
+3.  **Fast Lookup:** The server queries the **Vector DB** using the query embedding to get a list of top-K relevant `entity_id`s. The Vector DB acts as a high-performance "hot" index.
+4.  **Enrichment (Source of Truth):** The API server (optionally) uses the returned `entity_id`s to look up the full, authoritative metadata from the `semantic-repo`'s `manifest.jsonl` file and fetch the entity details. This ensures the returned data is always consistent with the source of truth.
+5.  **Response:** The API server returns the (enriched) results to the client.
 
 ## Database Schema
 
 *(Conceptual, as the primary "database" is the `semantic-repo` filesystem structure)*
 
-1.  **`semantic-repo` Structure:**
+1.  **`semantic-repo` Structure (Single Source of Truth):**
     *   `.semantic/`
         *   `version`: File containing the semantic-repo schema version.
         *   `index/`
-            *   `sha256/`: Directory for immutable index blobs, named by their SHA256 hash (e.g., `a1b2c3d4...embed`).
+            *   `sha256/`: Directory for immutable index blobs, named by their SHA256 hash (e.g., `a1b2c3d4...embed`). **This directory can be a standard folder or a mount point for external object storage like S3 or a LakeFS data lake.**
         *   `groups/`
             *   `<group_name>/`
                 *   `config.json`: The `SemanticGroup` configuration.
-                *   `manifest.jsonl`: Append-only log of index records for this group's entities.
-    *   `.git/`: Standard Git metadata for versioning the `semantic-repo`.
+                *   `manifest.jsonl`: The authoritative, append-only log of index records for this group's entities.
+    *   `.git/`: Standard Git metadata for versioning the `semantic-repo` configurations and manifests. The `index/` folder that contains the blobs may be ignored from git when it is an S3 or LakeFS mount-point. When the `index/` is just a local file system path, then it can be included in the git. In such case Git LFS may have to be enabled if the blobs sizes are large.
 
-*(Actual vector database schema for Qdrant/Milvus to be defined based on chosen DB and search requirements)*
+2.  **Vector Database (Secondary Index / Hot Store):**
+    *   The Vector DB is considered a secondary, performance-oriented data store.
+    *   Its state is derived entirely from the data in the `semantic-repo`. For local-only scenarios, the DB must be explicitly populated from the blob store. In enterprise deployments, the `semantic-repo` can mounted as data lake source for compatible databases (e.g. Dremio), or run a cron or schedule-based ingestion into vector databases (e.g. AirByte).
+    *   If the Vector DB becomes corrupted or is lost, it can be fully rebuilt from the `semantic-repo`.
 
 ## Frontend Architecture
 
@@ -346,10 +414,27 @@ For the Vector Database (Qdrant/Milvus):
 *   **Data Access Layer:** Managed through the Vector DB client library integrated into the Core Engine's Indexing and Search modules.
 
 ### Authentication and Authorization
-*(To be detailed, considering API/MCP security requirements)*
-- API/MCP endpoints will likely require authentication (API Key/JWT).
-- Authorization rules for accessing specific groups/entities will need definition.
-- Integration with identity providers or simple key management within the system.
+
+The system supports two distinct, configurable security modes to cater to different usage scenarios: Local Mode and Enterprise Mode. The mode is determined by the system's configuration.
+
+#### Local Mode (Default)
+
+This mode is designed for individual users running the system on their local machine for personal or development purposes.
+
+-   **Security Mechanism:** The API server binds to `localhost` by default. This provides inherent security for single-user, local instances, as the API is not exposed to the network.
+-   **Authentication:** No authentication (e.g., API keys, tokens) is required. This ensures a frictionless, "zero-config" user experience.
+-   **Deployment:** This mode is intended for standalone executable deployments created with Bun, requiring no Docker or other containerization frameworks.
+
+#### Enterprise Mode
+
+This mode is designed for team or organizational use, typically in a shared, networked environment (cloud or on-premises).
+
+-   **Security Mechanism:** The API server binds to a network-accessible interface (e.g., `0.0.0.0`) within its container.
+-   **Authentication:** Authentication is mandatory and pluggable. The primary recommended mechanism is integration with an external Identity Provider (IdP) via **LDAP**.
+-   **Authorization:** The system uses an Attribute-Based Access Control (ABAC) model, implemented with **Casbin**. This allows for fine-grained permission policies.
+-   **Policy Granularity:** The architecture must support two distinct Casbin ABAC policies to meet enterprise needs:
+    1.  **Configuration Access Policy:** Governs read/write access to the `semantic-repo` configurations. This allows teams (e.g., Finance) to manage their own semantic overlays privately.
+    2.  **Knowledge Access Policy:** Governs access to the AI-indexed search results. This policy can be more permissive, allowing broader access to the derived knowledge (e.g., enabling a CEO to query results from the Finance index, even without access to the underlying configuration).
 
 ## Unified Project Structure
 
@@ -416,7 +501,21 @@ berg10/
 
 ## Deployment Architecture
 
-*(To be defined in detail, based on containerization and orchestration choices)*
+The system is designed for two primary deployment targets, corresponding to the Local and Enterprise security modes.
+
+### Local Deployment
+
+-   **Target:** Standalone, single-file executable.
+-   **Mechanism:** Utilizes Bun's native build capabilities (`bun build`) to package the entire application into a single binary for a specific platform (Linux, macOS, Windows).
+-   **Requirements:** No external dependencies like Docker are required. The user can run the binary directly.
+-   **Configuration:** Reads configuration from local files (e.g., `.env`, `group-config.json`).
+
+### Enterprise Deployment
+
+-   **Target:** OCI-compliant container image (Docker).
+-   **Mechanism:** A `Dockerfile` will be provided to build a container image containing the application and its runtime dependencies. This image can be deployed to any container orchestrator like Kubernetes or a managed container service.
+-   **Configuration:** Managed via environment variables, allowing for secure and flexible configuration in orchestrated environments.
+-   **Infrastructure as Code:** A `docker-compose.yaml` file will be provided for easy local testing of the containerized setup.
 
 ## Security and Performance
 
@@ -424,15 +523,63 @@ berg10/
 
 ## Testing Strategy
 
-*(To be defined in detail, leveraging unit, integration, and e2e tests as per PRD/testing assumptions)*
+The project will adhere to a comprehensive testing strategy to ensure code quality, correctness, and reliability.
+
+-   **Framework:** **Bun Test** (`bun:test`) will be the exclusive framework for all automated tests, including unit and integration tests.
+-   **Unit Tests:**
+    -   **Scope:** All core logic within the `/packages` directories, especially utility functions, data model transformations, and business logic in the `core` engine.
+    -   **Requirement:** A minimum of **80% code coverage** is required for all new code in the `core` package.
+-   **Integration Tests:**
+    -   **Scope:** Test the interaction between internal modules (e.g., API layer calling the Core Engine) and between the system and external services (e.g., connectors, vector database).
+    -   **Requirement:** Every API endpoint must have at least one happy-path integration test and one test for a common error case.
+-   **End-to-End (E2E) Tests:**
+    -   **Scope:** Full user workflows, such as `berg10 group apply` followed by a successful search query via the API.
+    -   **Framework:** Playwright or a similar framework will be used.
 
 ## Coding Standards
 
-*(To be defined, focusing on TypeScript/Elysia best practices and project-specific rules)*
+To ensure code consistency, readability, and quality across the project, all contributions must adhere to the following standards.
+
+-   **Tooling:** **Biomejs** will be used for all linting, formatting, and code analysis. A `biome.json` configuration file will be committed to the root of the repository.
+-   **Formatting:** All code will be automatically formatted by Biomejs on save and as a pre-commit hook.
+-   **Linting:** The Biomejs linter will be configured with a recommended ruleset to catch common errors and enforce best practices. No code with linting errors will be merged.
+-   **Naming Conventions:**
+    -   Interfaces: `PascalCase` prefixed with `I` (e.g., `interface ISemanticGroup`).
+    -   Types: `PascalCase` prefixed with `T` (e.g., `type TGroup`)
+    -   Classes: `PascalCase`.
+    -   Functions/Variables: `camelCase`.
+    -   Constants: `UPPER_SNAKE_CASE`.
+-   **Modularity:** Code should be organized into small, focused modules with clear responsibilities.
 
 ## Error Handling Strategy
 
-*(To be defined, ensuring robust error handling across modules and APIs)*
+The system will implement a robust error handling strategy that provides clear, consistent feedback for both CLI users and API consumers.
+
+### API Error Responses
+
+All REST/gRPC API endpoints will return a standardized JSON error response in case of failure:
+
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "A human-readable error message.",
+    "details": { ... } // Optional, for structured error details
+  }
+}
+```
+
+-   **Error Codes:** A list of standardized error codes will be maintained (e.g., `GROUP_NOT_FOUND`, `INVALID_CONFIG`, `INDEXING_FAILED`).
+-   **Logging:** All errors will be logged with a unique request ID to correlate API responses with internal log entries.
+
+### CLI Error Handling
+
+-   The `berg10` CLI will provide user-friendly error messages and exit with a non-zero status code on failure.
+-   For configuration errors, the CLI will output the specific validation issue and line number if possible.
+
+### Internal Error Propagation
+
+-   Within the modular monolith, errors will be propagated using exceptions. A central middleware in the API server will catch unhandled exceptions and format them into the standard JSON error response.
 
 ## Monitoring and Observability
 
@@ -451,12 +598,10 @@ The following reliability weak-links have been identified and require further ar
 - Health monitoring for vector DB availability
 
 ### 2. Semantic Repository Data Protection
-**Open Question:** What backup strategy should be implemented for the `semantic-repo` (Git-based storage)?
-**Considerations:**
-- Automated Git repository backups
-- Geo-replication of semantic-repo
-- Recovery mechanism for corrupted Git repository
-- Versioning rollback strategy for corrupted index blobs
+**Decision:** The backup strategy for the `semantic-repo` will differ based on the operational mode.
+
+-   **Local Mode:** Backup is the user's responsibility. Users are encouraged to push their project, including the `.semantic` directory, to a remote Git repository as part of their standard workflow. The system will ensure atomic file writes to prevent local corruption during operations.
+-   **Enterprise Mode:** An automated, regular backup is mandatory. The recommended strategy is a scheduled job (e.g., a Kubernetes CronJob) that executes a `git push` from the live `semantic-repo` to a remote, secure, and backed-up bare Git repository (e.g., on GitHub Enterprise, GitLab, or a dedicated server).
 
 ### 3. AI/ML Service Reliability
 **Open Question:** What reliability mechanisms should be implemented for external AI/ML services (Hugging Face/Cloud AI)?
@@ -465,6 +610,12 @@ The following reliability weak-links have been identified and require further ar
 - Circuit breaker for AI service failures
 - Fallback to local models when cloud services fail
 - Caching of embeddings for offline scenarios
+
+**Decision:** To ensure resilience when interacting with external AI/ML services, the following will be implemented:
+
+-   **Retry with Exponential Backoff:** All API calls to external services will be wrapped in a retry mechanism (e.g., 3 retries with exponential backoff) to handle transient network issues or temporary service unavailability.
+-   **Circuit Breaker:** A circuit breaker pattern will be implemented to prevent the system from repeatedly calling a failing service. If a service fails consistently, the breaker will trip, and indexing jobs requiring that service will fail fast for a configured cool-down period.
+-   **Caching (Future):** While not in the MVP, the design will allow for a future caching layer for embeddings to reduce redundant API calls.
 
 ### 4. Event Processing Reliability
 **Open Question:** What event-driven architecture should be implemented for change detection?
