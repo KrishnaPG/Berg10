@@ -12,10 +12,10 @@ semantic-repo/
     │           └── manifest.jsonl
     ├── groups/
     │   ├── finance/
-    │   │   ├── group.yaml          # multi-lane spec -> group_sha256
+    │   │   ├── config.json          # multi-lane spec -> group_sha256
     │   │   └── lock.toml           # optional, pins model digests
     │   └── cv/
-    │       ├── group.yaml
+    │       ├── config.json
     │       └── lock.toml
     └── cache/                      # entities pre-computed and cached for quick access
         └── <group_sha256>/         # for each unique group id (across diff versions)
@@ -60,3 +60,12 @@ semantic-repo/
   "tags": ["finance", "en"]
 }
 ```
+
+## Notes
+A semantic group (which the ISemanticGroup is supposed to represent) maps LakeFS file content into `Semantic Entities` by filtering their paths and grouping based on certain conditions. The `filtering` decides which files from LakeFS to allow-in, and the `grouping` determines what constitute a semantic entity from the allowed-in files. For example, a `book chapter` semantic entity may be defined by its filter of *.pdf and grouping of page ranges. 
+
+This is an example that demonstrates a semantic group definition:  @/docs/group-config-sample.json ; A semantic group is identified by its SHA256 internally, and by its `label` visibly. In a `semantic-repo`, when a semantic group is created, a folder with its `label` as pathname is created under the `.semantic/groups/` path (inside which its definition file (config.json) is placed. 
+
+The `lanes`  in the `config.json` define set of AI indexer/embedder/chunkers that need to be run on top of the content that is mapped (from LakeFS, based on the `filter` and `grouping`). Each embedder generates vector blobs which are stored under the `.semantic/index/blobs/` path by their sha256, and a `manifest.jsonl` line is appended to the `.semantic/index/lanes/<group_sha256>/manifest.jsonl` file to keep track of the location of blobs.
+
+Since the `filter` and `grouping` are costly to run, we cache the LakeFS -> semantic-entity mappings under the path `.sematic/cache/<group_sha256>/<commit_sha>.entities.jsonl` where the `commit_sha` is the commit of LakeFS that triggered this indexing operation.

@@ -1,6 +1,6 @@
 {
 	"sha256": "<...sha256...>",
-	"label": "Global Demo Group",
+	"name": "Global Demo Group",
 	"description": "Example group that showcases every supported feature.",
 	"filter": {
 		"operator": "AND",
