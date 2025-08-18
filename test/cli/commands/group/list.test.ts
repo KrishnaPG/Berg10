@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { GroupList } from '../../../packages/cli/src/commands/group/list';
+import GroupList from '../../../../packages/cli/src/commands/group/list';
 
 test('group list command exists', () => {
   expect(GroupList).toBeDefined();

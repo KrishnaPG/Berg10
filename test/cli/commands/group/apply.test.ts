@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { GroupApply } from '../../../packages/cli/src/commands/group/apply';
+import GroupApply from '../../../../packages/cli/src/commands/group/apply';
 
 test('group apply command exists', () => {
   expect(GroupApply).toBeDefined();
