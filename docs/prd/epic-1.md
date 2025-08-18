@@ -24,7 +24,7 @@ so that data is organized, persistent, and manageable.
 
 #### Acceptance Criteria
 
-1.  Implement the core `semantic-repo` directory structure: `.semantic/version`, `.semantic/index/sha256/`, `groups/<group_name>/config.json`.
+1.  Implement the core `semantic-repo` directory structure: `.semantic/version`, `.semantic/index/blobs/`, `groups/<group_name>/config.json`.
 2.  Implement logic to initialize a new `semantic-repo` directory with the correct structure and initial version file.
 3.  Implement logic to read and write `config.json` files for groups within the `groups/` directory.
 

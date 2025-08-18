@@ -5,8 +5,16 @@
 
 import type {
 	ISemanticEntity,
-	ISourceReference,
 } from "./semantic-entity.types";
+
+// Define ISourceReference interface based on the inline structure in ISemanticEntity
+export interface ISourceReference {
+	connectorType: "lakefs" | "git";
+	repository: string;
+	ref: string;
+	path: string;
+	metadata?: Record<string, any>;
+}
 
 /**
  * Validation result interface
@@ -93,7 +101,7 @@ export function validateSourceReference(
 	const errors: ValidationError[] = [];
 
 	// Validate connector type
-	const validConnectorTypes = ["lakefs", "git", "s3", "local"];
+	const validConnectorTypes = ["lakefs", "git"];
 	if (!reference.connectorType) {
 		errors.push({
 			field: "connectorType",
@@ -185,9 +193,7 @@ export function createSemanticEntity(config: {
 	id?: string;
 	sourceRefs: ISourceReference[];
 	metadata?: Record<string, any>;
-	version?: string;
 }): ISemanticEntity {
-	const now = new Date().toISOString();
 	const entity: Partial<ISemanticEntity> = {
 		id: config.id || generateUUID(),
 		sourceRefs: config.sourceRefs,
@@ -212,16 +218,6 @@ function isValidUUID(uuid: string): boolean {
 	return uuidRegex.test(uuid);
 }
 
-function isValidISO8601(date: string): boolean {
-	const isoRegex = /^d{4}-d{2}-d{2}Td{2}:d{2}:d{2}(?:.d{3})?Z?$/;
-	return isoRegex.test(date) || !isNaN(Date.parse(date));
-}
-
-function isValidSemanticVersion(version: string): boolean {
-	const semverRegex =
-		/^(0|[1-9]d*).(0|[1-9]d*).(0|[1-9]d*)(?:-((?:0|[1-9]d*|d*[a-zA-Z-][0-9a-zA-Z-]*)(?:.(?:0|[1-9]d*|d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:+([0-9a-zA-Z-]+(?:.[0-9a-zA-Z-]+)*))?$/;
-	return semverRegex.test(version);
-}
 
 function isValidRepositoryName(name: string): boolean {
 	return /^[a-zA-Z0-9_-]{1,100}$/.test(name);
@@ -234,7 +230,7 @@ function isValidRef(ref: string): boolean {
 
 function isValidPath(path: string): boolean {
 	// Basic path validation - relative path format
-	return /^[^/][^]*$/.test(path) && path.length <= 500;
+	return /^[^/].*$/.test(path) && path.length <= 500;
 }
 
 function generateUUID(): string {

@@ -1,0 +1,35 @@
+{
+  "name": "@berg10/cli",
+  "version": "0.0.1",
+  "description": "CLI tool for berg10 semantic repository management",
+  "main": "dist/index.js",
+  "bin": {
+    "berg10": "bin/run.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "bun test",
+    "start": "node bin/run.js",
+    "prepack": "tsc"
+  },
+  "keywords": ["cli", "semantic", "repository", "berg10"],
+  "author": "Berg10 Team",
+  "license": "MIT",
+  "dependencies": {
+    "@oclif/core": "^4.5.2",
+    "@oclif/plugin-help": "^6.2.32"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  },
+  "oclif": {
+    "bin": "berg10",
+    "dirname": "berg10",
+    "commands": "./dist/commands",
+    "plugins": [
+      "@oclif/plugin-help"
+    ]
+  }
+}
