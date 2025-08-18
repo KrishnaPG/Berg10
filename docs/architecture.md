@@ -438,6 +438,66 @@ berg10/
 
 *(To be defined, implementing logging and metrics as per NFRs)*
 
+## Reliability Considerations and Open Questions
+
+The following reliability weak-links have been identified and require further architectural decisions:
+
+### 1. Vector Database Reliability
+**Open Question:** What reliability mechanisms should be implemented for the vector database (Milvus/Qdrant)?
+**Considerations:**
+- Backup/restore strategy for vector indices
+- Failover mechanism for vector DB
+- Data replication across vector DB instances
+- Health monitoring for vector DB availability
+
+### 2. Semantic Repository Data Protection
+**Open Question:** What backup strategy should be implemented for the `semantic-repo` (Git-based storage)?
+**Considerations:**
+- Automated Git repository backups
+- Geo-replication of semantic-repo
+- Recovery mechanism for corrupted Git repository
+- Versioning rollback strategy for corrupted index blobs
+
+### 3. AI/ML Service Reliability
+**Open Question:** What reliability mechanisms should be implemented for external AI/ML services (Hugging Face/Cloud AI)?
+**Considerations:**
+- Retry logic with exponential backoff
+- Circuit breaker for AI service failures
+- Fallback to local models when cloud services fail
+- Caching of embeddings for offline scenarios
+
+### 4. Event Processing Reliability
+**Open Question:** What event-driven architecture should be implemented for change detection?
+**Considerations:**
+- Event store for change events
+- Replay mechanism for missed events
+- Dead letter queue for failed processing
+- Idempotency handling for duplicate events
+
+### 5. Data Pipeline Reliability
+**Open Question:** What reliability mechanisms should be implemented for the indexing pipeline?
+**Considerations:**
+- Checkpointing for long-running indexing jobs
+- Retry mechanism for failed indexing steps
+- Rollback mechanism for failed index updates
+- Validation of index integrity
+
+### 6. Configuration Management Reliability
+**Open Question:** What reliability mechanisms should be implemented for semantic group configurations?
+**Considerations:**
+- Configuration validation on apply
+- Configuration backup/versioning
+- Rollback mechanism for bad configurations
+- Atomic configuration updates
+
+### 7. Cross-Service Communication Reliability
+**Open Question:** What reliability mechanisms should be implemented for inter-service communication?
+**Considerations:**
+- Service mesh for resilience
+- Circuit breakers between components
+- Timeout/retry policies for service calls
+- Health checks for service dependencies
+
 ## Checklist Results Report
 
 *To be populated after review.*

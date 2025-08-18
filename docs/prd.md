@@ -66,7 +66,7 @@ The primary interface for the MVP will be the `berg10` CLI and the Search/MCP AP
 
 ### Key Interaction Paradigms
 
-- Configuration-Driven Management: Defining and managing semantic groups primarily through declarative configuration files (`config.json`).
+- Configuration-Driven Management: Defining and managing semantic groups primarily through declarative configuration files (`group-config.json`).
 - CLI Operations: Using the `berg10` CLI for applying configurations, listing groups, and potentially monitoring status.
 - API Consumption: Interacting with the system programmatically via GraphQL, RESTful or gRPC APIs for search and MCP access.
 - Event-Driven Awareness (Future): Reacting to system events (e.g., indexing completion) via broadcast mechanisms.
@@ -74,7 +74,7 @@ The primary interface for the MVP will be the `berg10` CLI and the Search/MCP AP
 ### Core Screens and Views
 
 - **CLI Terminal:** The main interface for `berg10` commands (apply, list, etc.).
-- **Configuration File Editor:** Editing `config.json` to define semantic groups.
+- **Configuration File Editor:** Editing `group-config.json` to define semantic groups.
 - **API Response Viewer:** Viewing results from Search API or MCP endpoints (likely via scripts/tools initially).
 - **(Future) Admin Dashboard:** Visualizing groups, entities, indexing status, and logs.
 
@@ -134,7 +134,7 @@ so that the system can consistently parse, store, and use group configurations.
 
 #### Acceptance Criteria
 
-1.  Define the structure for a `SemanticGroup` configuration (likely `config.json`), including fields for `name`, `filter` (initially just regex string), `versionPolicy` (initially just `latest`), and `indexing` (placeholder for future details).
+1.  Define the structure for a `SemanticGroup` configuration (likely `group-config.json`), including fields for `name`, `filter` (initially just regex string), `versionPolicy` (initially just `latest`), and `indexing` (placeholder for future details).
 2.  Define the structure for a `SemanticEntity`, including a unique identifier and a reference to its source file(s).
 3.  Document the data model in a readily accessible format (e.g., a markdown file or code comments).
 
@@ -146,9 +146,9 @@ so that data is organized, persistent, and manageable.
 
 #### Acceptance Criteria
 
-1.  Implement the core `semantic-repo` directory structure: `.semantic/version`, `.semantic/index/sha256/`, `groups/<group_name>/config.json`.
+1.  Implement the core `semantic-repo` directory structure: `.semantic/version`, `.semantic/index/sha256/`, `groups/<group_name>/group-config.json`.
 2.  Implement logic to initialize a new `semantic-repo` directory with the correct structure and initial version file.
-3.  Implement logic to read and write `config.json` files for groups within the `groups/` directory.
+3.  Implement logic to read and write `group-config.json` files for groups within the `groups/` directory.
 
 ### Story 1.3: Create `berg10` CLI Tool Skeleton
 
@@ -172,7 +172,7 @@ so that the group is defined and stored in the `semantic-repo`.
 
 1.  The `berg10 group apply <config-file>` command SHALL read the specified configuration file.
 2.  The command SHALL validate the configuration file against the defined `SemanticGroup` data model.
-3.  The command SHALL store the validated configuration in the `semantic-repo` under `groups/<group_name>/config.json`.
+3.  The command SHALL store the validated configuration in the `semantic-repo` under `groups/<group_name>/group-config.json`.
 4.  The command SHALL provide success/error feedback to the user.
 
 ### Story 1.5: Implement `berg10 group list` Command
