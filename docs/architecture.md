@@ -452,10 +452,10 @@ This mode is designed for team or organizational use, typically in a shared, net
     1.  **Configuration Access Policy:** Governs read/write access to the `semantic-repo` configurations. This allows teams (e.g., Finance) to manage their own semantic overlays privately.
     2.  **Knowledge Access Policy:** Governs access to the AI-indexed search results. This policy can be more permissive, allowing broader access to the derived knowledge (e.g., enabling a CEO to query results from the Finance index, even without access to the underlying configuration).
 
-## Unified Project Structure
+## Source Tree
 
 ```
-berg10/
+berg10/                        # current folder
 ├── .github/                    
 │   └── workflows/             # CI/CD (GitHub Actions)
 │       ├── ci.yaml
