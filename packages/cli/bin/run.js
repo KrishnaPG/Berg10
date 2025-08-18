@@ -1,3 +1,5 @@
 #!/usr/bin/env node
 
-require('../dist/index.js');
+import {execute} from '@oclif/core'
+
+await execute({dir: import.meta.url})
