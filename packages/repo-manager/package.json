@@ -1,0 +1,28 @@
+{
+  "name": "semantic-content-management",
+  "version": "1.0.0",
+  "description": "A semantic content management system that acts as a virtual layer over versioned repositories",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "bun run --watch src/index.ts",
+    "semanticctl": "bun run src/semanticctl.ts"
+  },
+  "bin": {
+    "semanticctl": "./dist/semanticctl.js"
+  },
+  "dependencies": {
+    "@elysiajs/graphql-yoga": "^1.3.0",
+    "@graphql-tools/schema": "^10.0.25",
+    "commander": "^14.0.0",
+    "elysia": "^1.3.11",
+    "graphql": "^16.11.0",
+    "graphql-yoga": "^5.15.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "bun-types": "^1.2.20",
+    "typescript": "^5.9.2"
+  }
+}
