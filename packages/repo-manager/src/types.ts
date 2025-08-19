@@ -54,7 +54,7 @@ export const FilterOperand = T.Union([
 	}),
 ]);
 
-export type FilterOperandType = Static<typeof FilterOperand>;
+export type TFilterOperand = Static<typeof FilterOperand>;
 
 export const VersionPolicy = T.Object({
 	mode: T.String(),
@@ -62,7 +62,7 @@ export const VersionPolicy = T.Object({
 	tag: T.Optional(T.String()),
 });
 
-export type VersionPolicyType = Static<typeof VersionPolicy>;
+export type TVersionPolicy = Static<typeof VersionPolicy>;
 
 export const GroupingRule = T.Object({
 	match: T.Record(T.String(), T.Any()),
@@ -71,14 +71,14 @@ export const GroupingRule = T.Object({
 	entityNameTemplate: T.String(),
 });
 
-export type GroupingRuleType = Static<typeof GroupingRule>;
+export type TGroupingRule = Static<typeof GroupingRule>;
 
 export const GroupingConfig = T.Object({
 	strategy: T.String(),
 	rules: T.Array(GroupingRule),
 });
 
-export type GroupingConfigType = Static<typeof GroupingConfig>;
+export type TGroupingConfig = Static<typeof GroupingConfig>;
 
 export const EmbedderConfig = T.Object({
 	model: T.String(),
@@ -89,7 +89,7 @@ export const EmbedderConfig = T.Object({
 	postProcessing: T.Array(T.String()),
 });
 
-export type EmbedderConfigType = Static<typeof EmbedderConfig>;
+export type TEmbedderConfig = Static<typeof EmbedderConfig>;
 
 export const IndexConfig = T.Object({
 	chunkSize: T.Number(),
@@ -98,14 +98,14 @@ export const IndexConfig = T.Object({
 	storeMetadata: T.Boolean(),
 });
 
-export type IndexConfigType = Static<typeof IndexConfig>;
+export type TIndexConfig = Static<typeof IndexConfig>;
 
 export const VisibilityConfig = T.Object({
 	scope: T.String(),
 	teams: T.Array(T.String()),
 });
 
-export type VisibilityConfigType = Static<typeof VisibilityConfig>;
+export type TVisibilityConfig = Static<typeof VisibilityConfig>;
 
 export const RetentionPolicy = T.Object({
 	policy: T.String(),
@@ -113,7 +113,7 @@ export const RetentionPolicy = T.Object({
 	maxAge: T.Optional(T.String()),
 });
 
-export type RetentionPolicyType = Static<typeof RetentionPolicy>;
+export type TRetentionPolicy = Static<typeof RetentionPolicy>;
 
 export const LaneConfig = T.Object({
 	sha256: T.String(),
@@ -125,7 +125,7 @@ export const LaneConfig = T.Object({
 	retention: RetentionPolicy,
 });
 
-export type LaneConfigType = Static<typeof LaneConfig>;
+export type TLaneConfig = Static<typeof LaneConfig>;
 
 export const SemanticGroupConfig = T.Object({
 	sha256: T.String(),
@@ -173,3 +173,9 @@ export const QueueEntry = T.Object({
 
 export type TQueueEntry = Static<typeof QueueEntry>;
 
+
+// Branded types for better type safety
+export type SHA256 = string & { readonly __brand: unique symbol };
+export type LaneSha = SHA256 & { readonly __laneBrand: unique symbol };
+export type EntityId = string & { readonly __entityBrand: unique symbol };
+export type BlobSha256 = SHA256 & { readonly __blobBrand: unique symbol };

@@ -4,12 +4,13 @@ import type { GraphQLSchema } from "graphql";
 import { buildSchema } from "graphql";
 import { createPubSub } from "graphql-yoga";
 import { SemanticRepoManager } from "./semantic-repo-manager";
+import type { BlobSha256, EntityId, LaneSha, TSemanticGroupConfig } from "./types";
 
 // ---------- Pub-Sub ----------
 const pubsub = createPubSub<{
-	indexingStarted: [payload: { laneSha: string; entityId: string }];
+	indexingStarted: [payload: { laneSha: LaneSha; entityId: EntityId }];
 	indexingFinished: [
-		payload: { laneSha: string; entityId: string; success: boolean },
+		payload: { laneSha: LaneSha; entityId: EntityId; success: boolean },
 	];
 }>();
 
@@ -22,19 +23,20 @@ const resolvers = {
 			const names = await repo.listGroups();
 			return Promise.all(names.map(async (n) => repo.getGroup(n)));
 		},
-		group: async (_: any, { name }: { name: string }) => repo.getGroup(name),
+		group: async (_: unknown, { name }: { name: string }) =>
+			repo.getGroup(name),
 
-		lanes: async (_: any, { laneSha }: { laneSha: string }) => {
+		lanes: async (_: unknown, { laneSha }: { laneSha: LaneSha }) => {
 			const entries = await repo.listManifestEntries(laneSha);
 			return { laneSha, entries };
 		},
 
 		entry: async (
-			_: any,
-			{ laneSha, entityId }: { laneSha: string; entityId: string },
+			_: unknown,
+			{ laneSha, entityId }: { laneSha: LaneSha; entityId: EntityId },
 		) => repo.readManifestEntry(laneSha, entityId),
 
-		blob: async (_: any, { sha256 }: { sha256: string }) => {
+		blob: async (_: unknown, { sha256 }: { sha256: BlobSha256 }) => {
 			const buffer = await repo.readBlob(sha256);
 			return buffer ? { sha256, size: buffer.length } : null;
 		},
@@ -42,48 +44,79 @@ const resolvers = {
 
 	Mutation: {
 		createGroup: async (
-			_: any,
-			{ name, config }: { name: string; config: any },
+			_: unknown,
+			{ name, config }: { name: string; config: TSemanticGroupConfig },
 		) => repo.createGroup(name, config),
 
 		updateGroup: async (
-			_: any,
-			{ name, patch }: { name: string; patch: any },
+			_: unknown,
+			{ name, patch }: { name: string; patch: Partial<TSemanticGroupConfig> },
 		) => repo.updateGroup(name, patch),
 
-		deleteGroup: async (_: any, { name }: { name: string }) => {
+		deleteGroup: async (_: unknown, { name }: { name: string }) => {
 			await repo.deleteGroup(name);
 			return true;
 		},
 
 		triggerIndexing: async (
-			_: any,
-			{ laneSha, entityId }: { laneSha: string; entityId: string },
+			_: unknown,
+			{ laneSha, entityId }: { laneSha: LaneSha; entityId: EntityId },
 		) => {
-			// 1. enqueue (dummy queue here)
-			pubsub.publish("indexingStarted", { laneSha, entityId });
+			// 1. Start indexing process
+			pubsub.publish("indexingStarted", {
+				laneSha: laneSha as LaneSha,
+				entityId: entityId as EntityId,
+			});
 
-			// 2. simulate background work
-			setTimeout(async () => {
-				// pretend we produced embedding
-				await repo.writeManifestEntry({
-					entity_id: entityId,
-					src_sha256: "dummy",
-					blob_sha256: "dummy",
-					lane_sha256: laneSha,
-					embedder: "bert",
-					model_cfg_digest: "sha256:xyz",
-					git_commit: "HEAD",
-					created_at: new Date().toISOString(),
-					tags: ["auto"],
-				});
+			// 2. Perform actual indexing work in background
+			;(async () => {
+				try {
+					// Read the existing manifest entry if it exists
+					const existingEntry = await repo.readManifestEntry(laneSha, entityId);
+					
+					if (!existingEntry) {
+						throw new Error(`Manifest entry not found for entity ${entityId} in lane ${laneSha}`);
+					}
 
-				pubsub.publish("indexingFinished", {
-					laneSha,
-					entityId,
-					success: true,
-				});
-			}, 2000);
+					// Simulate actual embedding generation process
+					// In a real implementation, this would call an embedding service
+					const embeddingData = {
+						dtype: "float32" as const,
+						shape: [768], // Example BERT embedding size
+						data: btoa(String.fromCharCode(...new Uint8Array(768 * 4))), // Simulated embedding data
+					};
+
+					// Create updated manifest entry with embedding
+					const updatedEntry = {
+						...existingEntry,
+						embedding: embeddingData,
+						embedder: "bert",
+						model_cfg_digest: "sha256:current-model-config",
+						git_commit: process.env.GIT_COMMIT || "HEAD",
+						created_at: new Date().toISOString(),
+						tags: [...(existingEntry.tags || []), "indexed"],
+					};
+
+					// Write the updated manifest entry
+					await repo.writeManifestEntry(updatedEntry);
+
+					// Publish success event
+					pubsub.publish("indexingFinished", {
+						laneSha: laneSha as LaneSha,
+						entityId: entityId as EntityId,
+						success: true,
+					});
+				} catch (error) {
+					console.error(`Indexing failed for entity ${entityId} in lane ${laneSha}:`, error);
+					
+					// Publish failure event
+					pubsub.publish("indexingFinished", {
+						laneSha: laneSha as LaneSha,
+						entityId: entityId as EntityId,
+						success: false,
+					});
+				}
+			})();
 
 			return true;
 		},
@@ -92,29 +125,33 @@ const resolvers = {
 	Subscription: {
 		indexingStarted: {
 			subscribe: () => pubsub.subscribe("indexingStarted"),
-			resolve: (payload: any) => payload,
+			resolve: (payload: { laneSha: LaneSha; entityId: EntityId }) => payload,
 		},
 		indexingFinished: {
 			subscribe: () => pubsub.subscribe("indexingFinished"),
-			resolve: (payload: any) => payload,
+			resolve: (payload: { laneSha: LaneSha; entityId: EntityId; success: boolean }) => payload,
 		},
 	},
 
 	Group: {
-		lanes: async (parent: any) => {
+		lanes: async (parent: { lanes: Array<{ sha256: string }> }) => {
 			// parent.lanes is already in config
-			return parent.lanes.map((l: any) => ({ laneSha: l.sha256 }));
+			return parent.lanes.map((l) => ({ laneSha: l.sha256 as LaneSha }));
 		},
 	},
 
 	Lane: {
-		entries: async (parent: { laneSha: string }) =>
+		entries: async (parent: { laneSha: LaneSha }) =>
 			repo.listManifestEntries(parent.laneSha),
 	},
 
 	ManifestEntry: {
-		blob: async (parent: any) =>
-			resolvers.Query.blob({}, { sha256: parent.blob_sha256 }),
+		blob: async (parent: { blob_sha256: BlobSha256 }) => {
+			const buffer = await repo.readBlob(parent.blob_sha256);
+			return buffer
+				? { sha256: parent.blob_sha256, size: buffer.length }
+				: null;
+		},
 	},
 };
 

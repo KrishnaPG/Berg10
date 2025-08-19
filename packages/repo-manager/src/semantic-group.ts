@@ -8,9 +8,9 @@ import {
 } from "fs";
 import { join } from "path";
 import {
-	FilterOperandType,
-	GroupingConfigType,
-	LaneConfigType,
+	TFilterOperand,
+	TGroupingConfig,
+	TLaneConfig,
 	TSemanticEntity,
 	type TSemanticGroupConfig,
 } from "./types";
