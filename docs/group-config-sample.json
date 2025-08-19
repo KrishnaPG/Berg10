@@ -1,5 +1,5 @@
 {
-	"sha256": "<...sha256...>",
+	"sha256": "<...sha256(filter+grouping)...>",
 	"name": "Global Demo Group",
 	"description": "Example group that showcases every supported feature.",
 	"filter": {
@@ -78,7 +78,7 @@
 	},
 	"lanes": [
 		{
-			"id": "cv_color_yolo",
+			"sha256": "<...sha256(embedder+indexConfig)...>",
 			"displayName": "Color Object Detection (YOLO)",
 			"embedder": {
 				"model": "ultralytics/yolov8x",
@@ -120,7 +120,7 @@
 			}
 		},
 		{
-			"id": "cv_bw_edges",
+			"sha256": "<...sha256(embedder+indexConfig)...>",
 			"displayName": "B&W Edge Detection (Canny)",
 			"embedder": {
 				"model": "opencv/canny",
@@ -154,7 +154,7 @@
 			}
 		},
 		{
-			"id": "nlp_fin_bert",
+			"sha256": "<...sha256(embedder+indexConfig)...>",
 			"displayName": "Finance BERT embeddings",
 			"embedder": {
 				"model": "yiyanghkust/finbert-pretrain",
@@ -195,7 +195,7 @@
 			}
 		},
 		{
-			"id": "audio_whisper",
+			"sha256": "<...sha256(embedder+indexConfig)...>",
 			"displayName": "Audio transcription & embedding (Whisper)",
 			"embedder": {
 				"model": "openai/whisper-large-v3",
