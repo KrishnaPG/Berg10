@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "crypto";
 import {
 	closeSync,
 	existsSync,
+	fdatasyncSync,
 	fstatSync,
 	ftruncateSync,
 	openSync,
@@ -95,7 +96,7 @@ export class BackgroundWorker {
 				for (const entity of entities) {
 					// Write the entity to the temp file
 					const line = JSON.stringify(entity) + "\n";
-					writeSync(fd, line, { position: existingOffset });
+					writeSync(fd, line, existingOffset);
 
 					existingOffset += line.length;
 					processedCount++;

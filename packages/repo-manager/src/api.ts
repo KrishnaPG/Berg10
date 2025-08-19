@@ -1,19 +1,157 @@
-import { yoga as createYoga } from "@elysiajs/graphql-yoga";
-import { makeExecutableSchema } from "@graphql-tools/schema";
+import { yoga } from "@elysiajs/graphql-yoga";
 import { Elysia } from "elysia";
-import { SemanticRepoManager } from "./semantic-repo-manager";
-import type { GraphQLContext } from "./types";
+import { buildSchema } from "graphql";
+import { createPubSub } from "graphql-yoga";
+import { SemanticRepo } from "./semantic-repo-manager";
 
-// GraphQL type definitions
-const typeDefs = `
-  type SemanticEntity {
-    entity_id: String!
-    src_sha256: String!
-    file_path: String!
-    byte_range: [Int]
-    mime_type: String!
-    metadata: JSON
-    git_commit: String!
+// ---------- Pub-Sub ----------
+const pubsub = createPubSub<{
+	indexingStarted: [payload: { laneSha: string; entityId: string }];
+	indexingFinished: [
+		payload: { laneSha: string; entityId: string; success: boolean },
+	];
+}>();
+
+// ---------- Resolvers ----------
+const repo = new SemanticRepo(process.env.REPO_ROOT ?? ".");
+
+const resolvers = {
+	Query: {
+		groups: async () => {
+			const names = await repo.listGroups();
+			return Promise.all(names.map(async (n) => repo.getGroup(n)));
+		},
+		group: async (_: any, { name }: { name: string }) => repo.getGroup(name),
+
+		lanes: async (_: any, { laneSha }: { laneSha: string }) => {
+			const entries = await repo.listManifestEntries(laneSha);
+			return { laneSha, entries };
+		},
+
+		entry: async (
+			_: any,
+			{ laneSha, entityId }: { laneSha: string; entityId: string },
+		) => repo.readManifestEntry(laneSha, entityId),
+
+		blob: async (_: any, { sha256 }: { sha256: string }) => {
+			const buffer = await repo.readBlob(sha256);
+			return buffer ? { sha256, size: buffer.length } : null;
+		},
+	},
+
+	Mutation: {
+		createGroup: async (
+			_: any,
+			{ name, config }: { name: string; config: any },
+		) => repo.createGroup(name, config),
+
+		updateGroup: async (
+			_: any,
+			{ name, patch }: { name: string; patch: any },
+		) => repo.updateGroup(name, patch),
+
+		deleteGroup: async (_: any, { name }: { name: string }) => {
+			await repo.deleteGroup(name);
+			return true;
+		},
+
+		triggerIndexing: async (
+			_: any,
+			{ laneSha, entityId }: { laneSha: string; entityId: string },
+		) => {
+			// 1. enqueue (dummy queue here)
+			pubsub.publish("indexingStarted", { laneSha, entityId });
+
+			// 2. simulate background work
+			setTimeout(async () => {
+				// pretend we produced embedding
+				await repo.writeManifestEntry({
+					entity_id: entityId,
+					src_sha256: "dummy",
+					blob_sha256: "dummy",
+					lane_sha256: laneSha,
+					embedder: "bert",
+					model_cfg_digest: "sha256:xyz",
+					git_commit: "HEAD",
+					created_at: new Date().toISOString(),
+					tags: ["auto"],
+				});
+
+				pubsub.publish("indexingFinished", {
+					laneSha,
+					entityId,
+					success: true,
+				});
+			}, 2000);
+
+			return true;
+		},
+	},
+
+	Subscription: {
+		indexingStarted: {
+			subscribe: () => pubsub.subscribe("indexingStarted"),
+			resolve: (payload) => payload,
+		},
+		indexingFinished: {
+			subscribe: () => pubsub.subscribe("indexingFinished"),
+			resolve: (payload) => payload,
+		},
+	},
+
+	Group: {
+		lanes: async (parent: any) => {
+			// parent.lanes is already in config
+			return parent.lanes.map((l: any) => ({ laneSha: l.sha256 }));
+		},
+	},
+
+	Lane: {
+		entries: async (parent: { laneSha: string }) =>
+			repo.listManifestEntries(parent.laneSha),
+	},
+
+	ManifestEntry: {
+		blob: async (parent: any) =>
+			resolvers.Query.blob({}, { sha256: parent.blob_sha256 }),
+	},
+};
+
+// ---------- Schema ----------
+const schema = buildSchema(/* GraphQL */ `
+  scalar DateTime
+
+  type Query {
+    groups: [Group!]!
+    group(name: String!): Group
+    lanes(laneSha: String!): Lane!
+    entry(laneSha: String!, entityId: String!): ManifestEntry
+    blob(sha256: String!): Blob
+  }
+
+  type Mutation {
+    createGroup(name: String!, config: JSON!): Group!
+    updateGroup(name: String!, patch: JSON!): Group!
+    deleteGroup(name: String!): Boolean!
+    triggerIndexing(laneSha: String!, entityId: String!): Boolean!
+  }
+
+  type Subscription {
+    indexingStarted: IndexingEvent!
+    indexingFinished: IndexingEvent!
+  }
+
+  type Group {
+    name: String!
+    description: String
+    filter: JSON
+    grouping: JSON
+    lanes: [Lane!]!
+  }
+
+  type Lane {
+    laneSha: String!
+    entries: [ManifestEntry!]!
   }
 
   type ManifestEntry {
@@ -24,247 +162,33 @@ const typeDefs = `
     embedder: String!
     model_cfg_digest: String!
     git_commit: String!
-    created_at: String!
+    created_at: DateTime!
     tags: [String!]!
+    embedding: Embedding
+    blob: Blob!
   }
 
-  type JobEntry {
-    job_id: String!
-    status: String!
-    created_at: String!
-    worker_id: String
-    heartbeat_ts: String
-    progress: Float
-    error_message: String
+  type Embedding {
+    dtype: String!
+    shape: [Int!]!
+    data: String! # base64
   }
 
-  type QueueEntry {
-    entity_id: String!
-    src_sha256: String!
-    lane_sha256: String!
-    enqueue_ts: String!
-    retries: Int!
-    lease_expires: String
-    worker_id: String
-  }
-
-  type SemanticGroup {
+  type Blob {
     sha256: String!
-    name: String!
-    description: String!
-    filter: JSON!
-    versionPolicy: JSON!
-    grouping: JSON!
-    lanes: [JSON!]!
-    metadata: JSON!
-  }
-
-  type Query {
-    groups: [String!]!
-    group(name: String!): SemanticGroup
-    job(jobId: String!): JobEntry
-    queueLength(laneSha: String): Int!
-    queueEntries(laneSha: String): [QueueEntry!]!
-  }
-
-  type Mutation {
-    createGroup(name: String!, config: JSON!): Boolean!
-    updateGroup(name: String!, config: JSON!): Boolean!
-    deleteGroup(name: String!): Boolean!
-    triggerProcessing(groupName: String!, commitSha: String!): Boolean!
-  }
-
-  type Subscription {
-    jobUpdates(jobId: String!): JobEntry!
-    systemEvents: String!
+    size: Int!
   }
 
   scalar JSON
-`;
-
-// GraphQL resolvers
-const resolvers = {
-	Query: {
-		groups: (_: any, __: any, { repoManager }: GraphQLContext) => {
-			return repoManager.listGroups();
-		},
-
-		group: (
-			_: any,
-			{ name }: { name: string },
-			{ repoManager }: GraphQLContext,
-		) => {
-			return repoManager.getGroup(name);
-		},
-
-		job: (
-			_: any,
-			{ jobId }: { jobId: string },
-			{ repoManager }: GraphQLContext,
-		) => {
-			return repoManager.getJobStatus(jobId);
-		},
-
-		queueLength: (
-			_: any,
-			{ laneSha }: { laneSha?: string },
-			{ repoManager }: GraphQLContext,
-		) => {
-			return repoManager.getQueueLength(laneSha);
-		},
-
-		queueEntries: (
-			_: any,
-			{ laneSha }: { laneSha?: string },
-			{ repoManager }: GraphQLContext,
-		) => {
-			// This would require adding a method to the repo manager
-			// For now, return an empty array
-			return [];
-		},
-	},
-
-	Mutation: {
-		createGroup: (
-			_: any,
-			{ name, config }: { name: string; config: any },
-			{ repoManager }: GraphQLContext,
-		) => {
-			try {
-				repoManager.createGroup(name, config);
-				return true;
-			} catch (error) {
-				console.error("Error creating group:", error);
-				return false;
-			}
-		},
-
-		updateGroup: (
-			_: any,
-			{ name, config }: { name: string; config: any },
-			{ repoManager }: GraphQLContext,
-		) => {
-			try {
-				repoManager.updateGroup(name, config);
-				return true;
-			} catch (error) {
-				console.error("Error updating group:", error);
-				return false;
-			}
-		},
-
-		deleteGroup: (
-			_: any,
-			{ name }: { name: string },
-			{ repoManager }: GraphQLContext,
-		) => {
-			try {
-				repoManager.deleteGroup(name);
-				return true;
-			} catch (error) {
-				console.error("Error deleting group:", error);
-				return false;
-			}
-		},
-
-		triggerProcessing: (
-			_: any,
-			{ groupName, commitSha }: { groupName: string; commitSha: string },
-			{ repoManager }: GraphQLContext,
-		) => {
-			try {
-				repoManager.triggerProcessing(groupName, commitSha);
-				return true;
-			} catch (error) {
-				console.error("Error triggering processing:", error);
-				return false;
-			}
-		},
-	},
-
-	Subscription: {
-		jobUpdates: {
-			subscribe: (
-				_: any,
-				{ jobId }: { jobId: string },
-				{ pubsub }: GraphQLContext,
-			) => {
-				// This would require implementing a pubsub system
-				// For now, return a dummy async iterator
-				const dummyIterator = {
-					async next() {
-						// In a real implementation, this would wait for actual job updates
-						await new Promise((resolve) => setTimeout(resolve, 5000));
-						return {
-							value: { job_id: jobId, status: "COMPLETED" },
-							done: false,
-						};
-					},
-					async return() {
-						return { value: undefined, done: true };
-					},
-					[Symbol.asyncIterator]() {
-						return this;
-					},
-				};
-
-				return dummyIterator;
-			},
-		},
-
-		systemEvents: {
-			subscribe: (_: any, __: any, { pubsub }: GraphQLContext) => {
-				// This would require implementing a pubsub system
-				// For now, return a dummy async iterator
-				const dummyIterator = {
-					async next() {
-						// In a real implementation, this would wait for actual system events
-						await new Promise((resolve) => setTimeout(resolve, 10000));
-						return { value: "System event", done: false };
-					},
-					async return() {
-						return { value: undefined, done: true };
-					},
-					[Symbol.asyncIterator]() {
-						return this;
-					},
-				};
-
-				return dummyIterator;
-			},
-		},
-	},
-};
-
-// Create executable schema
-const schema = makeExecutableSchema({
-	typeDefs,
-	resolvers,
-});
-
-// Create GraphQL Yoga instance
-const yoga = createYoga({
-	schema,
-	context: (req): GraphQLContext => {
-		// In a real implementation, we would create a new instance of the repo manager
-		// or use a shared instance depending on the deployment model
-
-		// For now, create a new instance for each request
-		const repoManager = new SemanticRepoManager("./semantic-repo");
-		repoManager.initialize();
-
-		return {
-			repoManager,
-			req,
-			pubsub: null, // Placeholder for pubsub system
-		};
-	},
-	multipart: false,
-});
+`);
 
 // Create Elysia app
 const app = new Elysia()
-	.use(yoga)
+	.use(yoga({
+    schema,
+    resolvers,
+    context: () => ({ pubsub }),
+  })
 	.get("/", ({ redirect }) => redirect("/graphql"))
 	.listen(3000);
 

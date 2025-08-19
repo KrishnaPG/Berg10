@@ -23,3 +23,4 @@
 | **CI/CD** | GitHub Actions | N/A | Continuous Integration and Deployment | Integrated with GitHub, free for public repos |
 | **Monitoring & Logging** | Standard Logging (Pino) + OTLP/Prometheus (Future) | Latest | Logging and metrics | Structured logging (NFR10), extensible for metrics (NFR14) |
 | **Configuration** | JSON | Standard | Defining Semantic Groups | Aligns with CLI/API expectations |
+| **Type Validation** | TypeBox + Ajv | Latest | Validating types in Typescript | High-performance with Json-Schema compatibility |

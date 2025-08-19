@@ -5,13 +5,13 @@ export const SemanticEntity = T.Object({
 	entity_id: T.String(),
 	src_sha256: T.String(),
 	file_path: T.String(),
-	byte_range: T.Optional(T.Array(T.Number())),
+	byte_range: T.Optional(T.Tuple([T.Number(), T.Number()])),
 	mime_type: T.String(),
 	metadata: T.Optional(T.Record(T.String(), T.Any())),
 	git_commit: T.String(),
 });
 
-export type SemanticEntityType = Static<typeof SemanticEntity>;
+export type TSemanticEntity = Static<typeof SemanticEntity>;
 
 export const ManifestEntry = T.Object({
 	entity_id: T.String(),
@@ -21,11 +21,18 @@ export const ManifestEntry = T.Object({
 	embedder: T.String(),
 	model_cfg_digest: T.String(),
 	git_commit: T.String(),
-	created_at: T.String(),
+	created_at: T.String({ format: "date-time" }),
 	tags: T.Array(T.String()),
+	embedding: T.Optional(
+		T.Object({
+			dtype: T.Literal("float32"),
+			shape: T.Array(T.Number()),
+			data: T.String(), // base64
+		}),
+	),
 });
 
-export type ManifestEntryType = Static<typeof ManifestEntry>;
+export type TManifestEntry = Static<typeof ManifestEntry>;
 
 export const FilterOperator = T.Union([
 	T.Literal("AND"),
@@ -43,7 +50,7 @@ export const FilterOperand = T.Union([
 	FilterCondition,
 	T.Object({
 		operator: FilterOperator,
-		operands: T.Array(T.Self()),
+		operands: T.Any(),
 	}),
 ]);
 
@@ -165,3 +172,4 @@ export const QueueEntry = T.Object({
 });
 
 export type QueueEntryType = Static<typeof QueueEntry>;
+
