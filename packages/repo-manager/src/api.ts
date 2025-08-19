@@ -15,7 +15,7 @@ const pubsub = createPubSub<{
 }>();
 
 // ---------- Resolvers ----------
-const repo = new SemanticRepoManager(process.env.REPO_ROOT ?? ".");
+const repo = new SemanticRepoManager(process.env.REPO_ROOT ?? process.cwd());
 
 const resolvers = {
 	Query: {

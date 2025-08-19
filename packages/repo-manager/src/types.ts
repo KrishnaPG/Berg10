@@ -1,9 +1,44 @@
 import { type Static, Type as T } from "@sinclair/typebox";
 
+// Branded types for better type safety
+export type TB58String = string & { readonly __B58Brand: unique symbol };
+export type UniqueID = string & { readonly __uniqueID: unique symbol };
+
+export type TSHA256B58 = TB58String & { readonly __sha256Brand: unique symbol };
+export type TLaneSha = TSHA256B58 & { readonly __laneBrand: unique symbol };
+export type TEntityId = UniqueID & { readonly __entityBrand: unique symbol };
+export type TBlobSha256 = TSHA256B58 & { readonly __blobBrand: unique symbol };
+
+// Custom schema for Base58 strings
+const SHA256Schema = T.Unsafe<TSHA256B58>(
+	T.String({
+		pattern: "^[1-9A-HJ-NP-Za-km-z]+$", // Base58 character set
+		description: "Base58 encoded string",
+	}),
+);
+const LaneShaSchema = T.Unsafe<TLaneSha>(
+	T.String({
+		pattern: "^[1-9A-HJ-NP-Za-km-z]+$", // Base58 character set
+		description: "Base58 encoded string",
+	}),
+);
+const BlobShaSchema = T.Unsafe<TBlobSha256>(
+	T.String({
+		pattern: "^[1-9A-HJ-NP-Za-km-z]+$", // Base58 character set
+		description: "Base58 encoded string",
+	}),
+);
+const EntityIDSchema = T.Unsafe<TEntityId>(
+	T.String({
+		minLength: 1,
+		description: "Unique identifier",
+	}),
+);
+
 // Core types for the semantic repository system
 export const SemanticEntity = T.Object({
-	entity_id: T.String(),
-	src_sha256: T.String(),
+	entity_id: EntityIDSchema,
+	src_sha256: SHA256Schema,
 	file_path: T.String(),
 	byte_range: T.Optional(T.Tuple([T.Number(), T.Number()])),
 	mime_type: T.String(),
@@ -14,10 +49,10 @@ export const SemanticEntity = T.Object({
 export type TSemanticEntity = Static<typeof SemanticEntity>;
 
 export const ManifestEntry = T.Object({
-	entity_id: T.String(),
-	src_sha256: T.String(),
-	blob_sha256: T.String(),
-	lane_sha256: T.String(),
+	entity_id: EntityIDSchema,
+	src_sha256: SHA256Schema,
+	blob_sha256: BlobShaSchema,
+	lane_sha256: LaneShaSchema,
 	embedder: T.String(),
 	model_cfg_digest: T.String(),
 	git_commit: T.String(),
@@ -116,7 +151,7 @@ export const RetentionPolicy = T.Object({
 export type TRetentionPolicy = Static<typeof RetentionPolicy>;
 
 export const LaneConfig = T.Object({
-	sha256: T.String(),
+	sha256: SHA256Schema,
 	displayName: T.String(),
 	embedder: EmbedderConfig,
 	indexConfig: IndexConfig,
@@ -128,7 +163,7 @@ export const LaneConfig = T.Object({
 export type TLaneConfig = Static<typeof LaneConfig>;
 
 export const SemanticGroupConfig = T.Object({
-	sha256: T.String(),
+	sha256: SHA256Schema,
 	name: T.String(),
 	description: T.String(),
 	filter: FilterOperand,
@@ -163,8 +198,8 @@ export type TJobEntry = Static<typeof JobEntry>;
 
 export const QueueEntry = T.Object({
 	entity_id: T.String(),
-	src_sha256: T.String(),
-	lane_sha256: T.String(),
+	src_sha256: SHA256Schema,
+	lane_sha256: LaneShaSchema,
 	enqueue_ts: T.String(),
 	retries: T.Number(),
 	lease_expires: T.Optional(T.String()),
@@ -172,10 +207,3 @@ export const QueueEntry = T.Object({
 });
 
 export type TQueueEntry = Static<typeof QueueEntry>;
-
-
-// Branded types for better type safety
-export type SHA256 = string & { readonly __brand: unique symbol };
-export type LaneSha = SHA256 & { readonly __laneBrand: unique symbol };
-export type EntityId = string & { readonly __entityBrand: unique symbol };
-export type BlobSha256 = SHA256 & { readonly __blobBrand: unique symbol };
