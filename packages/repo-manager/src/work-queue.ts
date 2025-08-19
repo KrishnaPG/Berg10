@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { join } from "path";
-import type { QueueEntryType } from "./types";
+import type { TQueueEntry } from "./types";
 
 export class WorkQueue {
 	private db: Database;
@@ -43,7 +43,7 @@ export class WorkQueue {
 	dequeue(
 		workerId: string,
 		leaseDurationSeconds: number = 300,
-	): QueueEntryType | null {
+	): TQueueEntry | null {
 		const leaseExpires = new Date(
 			Date.now() + leaseDurationSeconds * 1000,
 		).toISOString();
@@ -63,7 +63,7 @@ export class WorkQueue {
 
 		const now = new Date().toISOString();
 		const result = query.get(leaseExpires, workerId, now) as
-			| QueueEntryType
+			| TQueueEntry
 			| undefined;
 
 		return result || null;
@@ -105,7 +105,7 @@ export class WorkQueue {
 		return result.count;
 	}
 
-	getQueueEntries(laneSha256?: string): QueueEntryType[] {
+	getQueueEntries(laneSha256?: string): TQueueEntry[] {
 		let query =
 			"SELECT entity_id, src_sha256, lane_sha256, enqueue_ts, retries, lease_expires, worker_id FROM work_queue";
 		const params: any[] = [];
@@ -117,7 +117,7 @@ export class WorkQueue {
 
 		query += " ORDER BY enqueue_ts ASC";
 
-		return this.db.prepare(query).all(...params) as QueueEntryType[];
+		return this.db.prepare(query).all(...params) as TQueueEntry[];
 	}
 
 	close(): void {

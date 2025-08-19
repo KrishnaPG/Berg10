@@ -11,12 +11,12 @@ import {
 	FilterOperandType,
 	GroupingConfigType,
 	LaneConfigType,
-	SemanticEntityType,
-	type SemanticGroupConfigType,
+	TSemanticEntity,
+	type TSemanticGroupConfig,
 } from "./types";
 
 export class SemanticGroup {
-	private config: SemanticGroupConfigType;
+	private config: TSemanticGroupConfig;
 	private configPath: string;
 	private repoPath: string;
 
@@ -35,10 +35,10 @@ export class SemanticGroup {
 		}
 
 		const configContent = readFileSync(this.configPath, "utf-8");
-		this.config = JSON.parse(configContent) as SemanticGroupConfigType;
+		this.config = JSON.parse(configContent) as TSemanticGroupConfig;
 	}
 
-	getConfig(): SemanticGroupConfigType {
+	getConfig(): TSemanticGroupConfig {
 		return this.config;
 	}
 
@@ -50,7 +50,7 @@ export class SemanticGroup {
 		return this.config.sha256;
 	}
 
-	updateConfig(newConfig: Partial<SemanticGroupConfigType>): void {
+	updateConfig(newConfig: Partial<TSemanticGroupConfig>): void {
 		// Merge the new config with the existing one
 		this.config = { ...this.config, ...newConfig };
 

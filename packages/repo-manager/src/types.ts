@@ -138,7 +138,7 @@ export const SemanticGroupConfig = T.Object({
 	metadata: T.Record(T.String(), T.Any()),
 });
 
-export type SemanticGroupConfigType = Static<typeof SemanticGroupConfig>;
+export type TSemanticGroupConfig = Static<typeof SemanticGroupConfig>;
 
 export const JobStatus = T.Union([
 	T.Literal("PENDING"),
@@ -147,7 +147,7 @@ export const JobStatus = T.Union([
 	T.Literal("FAILED"),
 ]);
 
-export type JobStatusType = Static<typeof JobStatus>;
+export type TJobStatus = Static<typeof JobStatus>;
 
 export const JobEntry = T.Object({
 	job_id: T.String(),
@@ -159,7 +159,7 @@ export const JobEntry = T.Object({
 	error_message: T.Optional(T.String()),
 });
 
-export type JobEntryType = Static<typeof JobEntry>;
+export type TJobEntry = Static<typeof JobEntry>;
 
 export const QueueEntry = T.Object({
 	entity_id: T.String(),
@@ -171,5 +171,5 @@ export const QueueEntry = T.Object({
 	worker_id: T.Optional(T.String()),
 });
 
-export type QueueEntryType = Static<typeof QueueEntry>;
+export type TQueueEntry = Static<typeof QueueEntry>;
 

@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { join } from "path";
-import { type JobEntryType, JobStatusType } from "./types";
+import { type TJobEntry, TJobStatus } from "./types";
 
 export class JobLedger {
 	private db: Database;
@@ -74,17 +74,17 @@ export class JobLedger {
 		query.run("FAILED", errorMessage, now, jobId);
 	}
 
-	getJob(jobId: string): JobEntryType | null {
+	getJob(jobId: string): TJobEntry | null {
 		const query = this.db.prepare(`
       SELECT job_id, status, created_at, worker_id, heartbeat_ts, progress, error_message
       FROM jobs WHERE job_id = ?
     `);
 
-		const result = query.get(jobId) as JobEntryType | undefined;
+		const result = query.get(jobId) as TJobEntry | undefined;
 		return result || null;
 	}
 
-	getStaleJobs(thresholdSeconds: number = 300): JobEntryType[] {
+	getStaleJobs(thresholdSeconds: number = 300): TJobEntry[] {
 		const threshold = new Date(
 			Date.now() - thresholdSeconds * 1000,
 		).toISOString();
@@ -95,7 +95,7 @@ export class JobLedger {
       WHERE status = 'RUNNING' AND (heartbeat_ts IS NULL OR heartbeat_ts < ?)
     `);
 
-		return query.all(threshold) as JobEntryType[];
+		return query.all(threshold) as TJobEntry[];
 	}
 
 	close(): void {

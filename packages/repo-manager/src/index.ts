@@ -24,4 +24,6 @@ process.on("SIGTERM", () => {
 });
 
 // Start the API server
-console.log("🚀 Semantic Content Management System starting...");
+app.listen(3000, () => {
+	console.log("🚀 Semantic Content Management System API running at http://localhost:3000/graphql");
+});

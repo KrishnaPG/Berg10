@@ -55,14 +55,14 @@ program
 		"Path to the semantic repository",
 		"./semantic-repo",
 	)
-	.action((options) => {
+	.action(async (options) => {
 		const repoManager = new SemanticRepoManager(options.path);
 		repoManager.initialize();
 
 		try {
-			const groups = repoManager.listGroups();
+			const groups = await repoManager.listGroups();
 			console.log("Semantic groups:");
-			groups.forEach((group) => console.log(`- ${group}`));
+			groups.forEach((group: string) => console.log(`- ${group}`));
 		} catch (error) {
 			console.error("Error listing groups:", error);
 		} finally {
@@ -181,13 +181,13 @@ program
 		"./semantic-repo",
 	)
 	.option("-j, --job <jobId>", "Show status for a specific job")
-	.action((options) => {
+	.action(async (options) => {
 		const repoManager = new SemanticRepoManager(options.path);
 		repoManager.initialize();
 
 		try {
 			if (options.job) {
-				const job = repoManager.getJobStatus(options.job);
+				const job = await repoManager.getJobStatus(options.job);
 				if (job) {
 					console.log("Job status:");
 					console.log(JSON.stringify(job, null, 2));
@@ -195,10 +195,10 @@ program
 					console.error(`Job '${options.job}' not found`);
 				}
 			} else {
-				const groups = repoManager.listGroups();
+				const groups = await repoManager.listGroups();
 				console.log(`Semantic repository at ${options.path}`);
 				console.log(`Groups: ${groups.length}`);
-				console.log(`Queue length: ${repoManager.getQueueLength()}`);
+				console.log(`Queue length: ${await repoManager.getQueueLength()}`);
 			}
 		} catch (error) {
 			console.error("Error getting status:", error);

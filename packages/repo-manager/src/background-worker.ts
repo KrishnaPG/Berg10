@@ -16,7 +16,7 @@ import { join } from "path";
 import { Indexer } from "./indexer";
 import type { JobLedger } from "./job-ledger";
 import { SemanticGroup } from "./semantic-group";
-import type { SemanticEntityType } from "./types";
+import type { TSemanticEntity } from "./types";
 import type { WorkQueue } from "./work-queue";
 
 export class BackgroundWorker {
@@ -189,19 +189,19 @@ export class BackgroundWorker {
 		group: SemanticGroup,
 		commitSha: string,
 		offset: number,
-	): Promise<SemanticEntityType[]> {
+	): Promise<TSemanticEntity[]> {
 		// In a real implementation, this would query LakeFS for files matching the filter
 		// and apply the grouping rules to create semantic entities
 
 		// For simulation, we'll generate some dummy entities
-		const entities: SemanticEntityType[] = [];
+		const entities: TSemanticEntity[] = [];
 		const count = 1000; // Generate 1000 entities
 
 		// Skip entities we've already processed based on the offset
 		const startIndex = Math.floor(offset / 200); // Approximate entity size
 
 		for (let i = startIndex; i < count; i++) {
-			const entity: SemanticEntityType = {
+			const entity: TSemanticEntity = {
 				entity_id: `entity-${group.getName()}-${i}`,
 				src_sha256: createHash("sha256").update(`content-${i}`).digest("hex"),
 				file_path: `path/to/file-${i}.pdf`,
@@ -222,7 +222,7 @@ export class BackgroundWorker {
 	private loadEntity(
 		group: SemanticGroup,
 		entityId: string,
-	): SemanticEntityType | null {
+	): TSemanticEntity | null {
 		// In a real implementation, this would load the entity from the cache
 		// For simulation, we'll return a dummy entity
 

@@ -1,8 +1,9 @@
 import { yoga } from "@elysiajs/graphql-yoga";
 import { Elysia } from "elysia";
+import type { GraphQLSchema } from "graphql";
 import { buildSchema } from "graphql";
 import { createPubSub } from "graphql-yoga";
-import { SemanticRepo } from "./semantic-repo-manager";
+import { SemanticRepoManager } from "./semantic-repo-manager";
 
 // ---------- Pub-Sub ----------
 const pubsub = createPubSub<{
@@ -13,7 +14,7 @@ const pubsub = createPubSub<{
 }>();
 
 // ---------- Resolvers ----------
-const repo = new SemanticRepo(process.env.REPO_ROOT ?? ".");
+const repo = new SemanticRepoManager(process.env.REPO_ROOT ?? ".");
 
 const resolvers = {
 	Query: {
@@ -91,11 +92,11 @@ const resolvers = {
 	Subscription: {
 		indexingStarted: {
 			subscribe: () => pubsub.subscribe("indexingStarted"),
-			resolve: (payload) => payload,
+			resolve: (payload: any) => payload,
 		},
 		indexingFinished: {
 			subscribe: () => pubsub.subscribe("indexingFinished"),
-			resolve: (payload) => payload,
+			resolve: (payload: any) => payload,
 		},
 	},
 
@@ -184,13 +185,14 @@ const schema = buildSchema(/* GraphQL */ `
 
 // Create Elysia app
 const app = new Elysia()
-	.use(yoga({
-    schema,
-    resolvers,
-    context: () => ({ pubsub }),
-  })
-	.get("/", ({ redirect }) => redirect("/graphql"))
-	.listen(3000);
+	.use(
+		yoga({
+			schema,
+			resolvers: resolvers as any,
+			context: () => ({ pubsub }),
+		}),
+	)
+	.get("/", ({ redirect }) => redirect("/graphql"));
 
 console.log(
 	"🚀 Semantic Content Management System API running at http://localhost:3000/graphql",
