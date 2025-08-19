@@ -179,6 +179,12 @@ const schema = buildSchema(/* GraphQL */ `
     indexingFinished: IndexingEvent!
   }
 
+  type IndexingEvent {
+    laneSha: String!
+    entityId: String!
+    success: Boolean
+  }
+
   type Group {
     name: String!
     description: String
@@ -230,9 +236,5 @@ const app = new Elysia()
 		}),
 	)
 	.get("/", ({ redirect }) => redirect("/graphql"));
-
-console.log(
-	"🚀 Semantic Content Management System API running at http://localhost:3000/graphql",
-);
 
 export default app;
