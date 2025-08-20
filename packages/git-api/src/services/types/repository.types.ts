@@ -3,9 +3,11 @@
  * Generated from packages/git-api/api-spec/repository-api.yml
  */
 
+import type { TRepositoryId, TRepositoryName, TUserId } from "./branded.types";
+
 // Request Types
 export interface IRepositoryCreateRequest {
-  name: string;
+  name: TRepositoryName;
   description?: string;
   default_branch?: string;
   is_private?: boolean;
@@ -15,7 +17,7 @@ export interface IRepositoryCreateRequest {
 }
 
 export interface IRepositoryUpdateRequest {
-  name?: string;
+  name?: TRepositoryName;
   description?: string;
   default_branch?: string;
   is_private?: boolean;
@@ -31,8 +33,8 @@ export interface IRepositoryUpdateRequest {
 
 // Response Types
 export interface IRepository {
-  id: string;
-  name: string;
+  id: TRepositoryId;
+  name: TRepositoryName;
   description?: string;
   default_branch: string;
   is_private: boolean;
@@ -63,7 +65,7 @@ export interface IRepositoryUpdateResponse extends IRepository {
 
 // Supporting Types
 export interface IUser {
-  id: string;
+  id: TUserId;
   name: string;
   email: string;
 }

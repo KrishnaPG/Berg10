@@ -3,13 +3,14 @@
  * Generated from packages/git-api/api-spec/commit-api.yml
  */
 
+import type { TAuthor, TBranch, TCommitMessage, TPath, TSha } from "./branded.types";
 import type { ICommitAuthor, IPaginatedResponse } from "./shared.types";
 
 // Request Types
 export interface ICommitCreateRequest {
-  message: string;
-  tree: string;
-  parents?: string[];
+  message: TCommitMessage;
+  tree: TSha;
+  parents?: TSha[];
   author?: ICommitAuthor;
   committer?: ICommitAuthor;
 }
@@ -21,16 +22,16 @@ export interface ICommitUpdateRequest {
 
 // Response Types
 export interface ICommit {
-  sha: string;
-  message: string;
+  sha: TSha;
+  message: TCommitMessage;
   author: ICommitAuthor;
   committer: ICommitAuthor;
   tree: {
-    sha: string;
+    sha: TSha;
     url: string;
   };
   parents: Array<{
-    sha: string;
+    sha: TSha;
     url: string;
   }>;
   url: string;
@@ -63,9 +64,9 @@ export interface ICommitFile {
 export interface IListCommitsOptions {
   page?: number;
   per_page?: number;
-  sha?: string;
-  path?: string;
-  author?: string;
+  sha?: TSha;
+  path?: TPath;
+  author?: TAuthor;
   since?: string;
   until?: string;
   sort?: "created" | "updated";

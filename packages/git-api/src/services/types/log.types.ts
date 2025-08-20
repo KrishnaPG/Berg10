@@ -3,11 +3,12 @@
  * Generated from packages/git-api/api-spec/log-blame-api.yml
  */
 
+import type { TAuthor, TBranch, TPath, TSha } from "./branded.types";
 import type { ICommitAuthor, IPaginatedResponse } from "./shared.types";
 
 // Response Types
 export interface ICommitLogEntry {
-  sha: string;
+  sha: TSha;
   message: string;
   author: ICommitAuthor;
   committer: ICommitAuthor;
@@ -24,7 +25,7 @@ export interface ICommitLogEntry {
 
 export interface IFileHistoryEntry extends ICommitLogEntry {
   file: {
-    path: string;
+    path: TPath;
     status: "added" | "modified" | "deleted" | "renamed" | "copied";
     changes: {
       additions: number;
@@ -38,11 +39,11 @@ export interface IFileHistoryEntry extends ICommitLogEntry {
 
 export interface IBlameInfo {
   file: {
-    path: string;
+    path: TPath;
     size: number;
     lines: number;
   };
-  ref: string;
+  ref: TBranch;
   ranges: IBlameRange[];
   commits: Record<string, ICommitLogEntry>;
 }
@@ -50,7 +51,7 @@ export interface IBlameInfo {
 export interface IBlameRange {
   starting_line: number;
   ending_line: number;
-  commit: string;
+  commit: TSha;
   author: ICommitAuthor;
   committer: ICommitAuthor;
   message: string;
@@ -61,9 +62,9 @@ export interface IBlameRange {
 export interface IGetCommitLogOptions {
   page?: number;
   per_page?: number;
-  ref?: string;
-  path?: string;
-  author?: string;
+  ref?: TBranch;
+  path?: TPath;
+  author?: TAuthor;
   since?: string;
   until?: string;
   sort?: "created" | "updated";
@@ -74,7 +75,7 @@ export interface IGetCommitLogOptions {
 export interface IGetFileHistoryOptions {
   page?: number;
   per_page?: number;
-  ref?: string;
+  ref?: TBranch;
   since?: string;
   until?: string;
   sort?: "created" | "updated";
@@ -83,7 +84,7 @@ export interface IGetFileHistoryOptions {
 }
 
 export interface IGetBlameInfoOptions {
-  ref?: string;
+  ref?: TBranch;
 }
 
 // Service Method Return Types

@@ -3,12 +3,13 @@
  * Generated from packages/git-api/api-spec/merge-rebase-api.yml
  */
 
+import type { TBranch, TPath, TSha } from "./branded.types";
 import type { ICommitAuthor, ICommitSummary } from "./shared.types";
 
 // Request Types
 export interface IMergeRequest {
-  source: string;
-  target: string;
+  source: TBranch;
+  target: TBranch;
   message?: string;
   commit_message?: string;
   strategy?: "merge" | "squash" | "rebase";
@@ -16,8 +17,8 @@ export interface IMergeRequest {
 }
 
 export interface IRebaseRequest {
-  source: string;
-  target: string;
+  source: TBranch;
+  target: TBranch;
   async?: boolean;
   autosquash?: boolean;
   autosign?: boolean;
@@ -25,7 +26,7 @@ export interface IRebaseRequest {
 
 // Response Types
 export interface IMergeResult {
-  sha: string;
+  sha: TSha;
   merged: boolean;
   message: string;
   author: ICommitAuthor;
@@ -69,7 +70,7 @@ export interface IRebaseStatus {
 }
 
 export interface IMergeConflict {
-  path: string;
+  path: TPath;
   conflict_type:
     | "both_modified"
     | "both_added"
@@ -85,8 +86,8 @@ export interface IMergeConflict {
 }
 
 export interface IRebaseConflict {
-  commit: string;
-  path: string;
+  commit: TSha;
+  path: TPath;
   conflict_type:
     | "both_modified"
     | "both_added"

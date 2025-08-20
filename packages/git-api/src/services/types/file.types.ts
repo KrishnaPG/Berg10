@@ -3,16 +3,17 @@
  * Generated from packages/git-api/api-spec/tree-file-api.yml
  */
 
+import type { TBranch, TPath, TSha } from "./branded.types";
 import type { ICommitAuthor } from "./shared.types";
 
 // Request Types
 export interface ITreeCreateRequest {
-  base_tree?: string;
+  base_tree?: TSha;
   tree: Array<{
-    path: string;
+    path: TPath;
     mode: string;
     type: "blob" | "tree";
-    sha?: string;
+    sha?: TSha;
   }>;
 }
 
@@ -25,37 +26,37 @@ export interface IFileCreateUpdateRequest {
   message: string;
   content: string;
   encoding?: "utf-8" | "base64";
-  branch?: string;
-  sha?: string;
+  branch?: TBranch;
+  sha?: TSha;
   author?: ICommitAuthor;
   committer?: ICommitAuthor;
 }
 
 export interface IFileDeleteRequest {
   message: string;
-  sha: string;
-  branch?: string;
+  sha: TSha;
+  branch?: TBranch;
   author?: ICommitAuthor;
   committer?: ICommitAuthor;
 }
 
 // Response Types
 export interface ITree {
-  sha: string;
+  sha: TSha;
   url: string;
   tree: Array<{
-    path: string;
+    path: TPath;
     mode: string;
     type: "blob" | "tree";
     size?: number;
-    sha: string;
+    sha: TSha;
     url: string;
   }>;
   truncated: boolean;
 }
 
 export interface IBlob {
-  sha: string;
+  sha: TSha;
   content: string;
   encoding: string;
   size: number;
@@ -64,8 +65,8 @@ export interface IBlob {
 
 export interface IFileContent {
   name: string;
-  path: string;
-  sha: string;
+  path: TPath;
+  sha: TSha;
   size: number;
   url: string;
   html_url: string;
@@ -83,8 +84,8 @@ export interface IFileContent {
 
 export interface IDirectoryContent {
   name: string;
-  path: string;
-  sha: string;
+  path: TPath;
+  sha: TSha;
   size: number;
   url: string;
   html_url: string;
@@ -100,7 +101,7 @@ export interface IDirectoryContent {
 
 // Supporting Types
 export interface IFileCommit {
-  sha: string;
+  sha: TSha;
   message: string;
   author: ICommitAuthor;
   committer: ICommitAuthor;
@@ -109,7 +110,7 @@ export interface IFileCommit {
 
 // Query Parameters
 export interface IGetFileContentOptions {
-  ref?: string;
+  ref?: TBranch;
 }
 
 export interface IGetTreeOptions {

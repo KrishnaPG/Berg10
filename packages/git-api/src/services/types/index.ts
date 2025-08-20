@@ -2,6 +2,8 @@
  * Export all service types
  */
 
+// Branded types
+export * from "./branded.types";
 // Core types
 export * from "./commit.types";
 // Service-specific types

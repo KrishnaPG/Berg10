@@ -3,11 +3,13 @@
  * Generated from packages/git-api/api-spec/diff-api.yml
  */
 
+import type { TBranch, TPath, TSha } from "./branded.types";
+
 // Response Types
 export interface IDiff {
   repo: string;
-  from: string;
-  to: string;
+  from: TSha | TBranch;
+  to: TSha | TBranch;
   files: IDiffFile[];
   stats: {
     total_files: number;
@@ -20,9 +22,9 @@ export interface IDiff {
 }
 
 export interface IDiffFile {
-  filename: string;
-  old_filename?: string;
-  status: 'added' | 'modified' | 'deleted' | 'renamed' | 'copied';
+  filename: TPath;
+  old_filename?: TPath;
+  status: "added" | "modified" | "deleted" | "renamed" | "copied";
   additions: number;
   deletions: number;
   changes: number;
@@ -46,32 +48,32 @@ export interface IDiffHunk {
 export interface IDiffLine {
   old_line?: number;
   new_line?: number;
-  type: 'context' | 'added' | 'deleted';
+  type: "context" | "added" | "deleted";
   content: string;
   no_newline_at_end?: boolean;
 }
 
 // Query Parameters
 export interface IGetDiffOptions {
-  target?: string;
-  path?: string;
+  target?: TSha | TBranch;
+  path?: TPath;
   context_lines?: number;
   ignore_whitespace?: boolean;
-  format?: 'unified' | 'json';
+  format?: "unified" | "json";
 }
 
 export interface ICompareCommitsOptions {
-  path?: string;
+  path?: TPath;
   context_lines?: number;
   ignore_whitespace?: boolean;
-  format?: 'unified' | 'json';
+  format?: "unified" | "json";
 }
 
 export interface IGetCommitDiffOptions {
-  path?: string;
+  path?: TPath;
   context_lines?: number;
   ignore_whitespace?: boolean;
-  format?: 'unified' | 'json';
+  format?: "unified" | "json";
 }
 
 // Service Method Return Types

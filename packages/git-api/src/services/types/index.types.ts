@@ -3,9 +3,11 @@
  * Generated from packages/git-api/api-spec/index-api.yml
  */
 
+import type { TBranch, TPath } from "./branded.types";
+
 // Request Types
 export interface IIndexAddRequest {
-  paths: string[];
+  paths: TPath[];
   pattern?: string;
   update?: boolean;
   add_all?: boolean;
@@ -13,15 +15,15 @@ export interface IIndexAddRequest {
 
 export interface IIndexUpdateRequest {
   updates: Array<{
-    path: string;
+    path: TPath;
     content: string;
-    encoding?: 'utf-8' | 'base64';
+    encoding?: "utf-8" | "base64";
     mode?: string;
   }>;
 }
 
 export interface IIndexRemoveRequest {
-  paths: string[];
+  paths: TPath[];
   pattern?: string;
   cached?: boolean;
   recursive?: boolean;
@@ -45,14 +47,14 @@ export interface IIndex {
 }
 
 export interface IIndexEntry {
-  path: string;
+  path: TPath;
   mode: string;
   blob: {
     sha: string;
     size: number;
     url: string;
   };
-  status: 'added' | 'modified' | 'deleted' | 'renamed' | 'copied' | 'unmodified';
+  status: "added" | "modified" | "deleted" | "renamed" | "copied" | "unmodified";
   changes: {
     additions: number;
     deletions: number;
@@ -63,7 +65,7 @@ export interface IIndexEntry {
 
 // Query Parameters
 export interface IGetIndexOptions {
-  ref?: string;
+  ref?: TBranch;
 }
 
 // Service Method Return Types

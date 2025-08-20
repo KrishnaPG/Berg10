@@ -3,6 +3,7 @@
  * Generated from packages/git-api/api-spec/stash-api.yml
  */
 
+import type { TBranch } from "./branded.types";
 import { ICommitAuthor, type ICommitSummary, type IPaginatedResponse } from "./shared.types";
 
 // Request Types
@@ -23,7 +24,7 @@ export interface IStash {
   id: string;
   message: string;
   created_at: string;
-  branch: string;
+  branch: TBranch;
   stats: {
     files_changed: number;
     insertions: number;

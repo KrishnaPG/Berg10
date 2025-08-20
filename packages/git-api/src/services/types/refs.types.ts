@@ -3,34 +3,35 @@
  * Generated from packages/git-api/api-spec/refs-api.yml
  */
 
+import type { TBranch, TSha, TTagName } from "./branded.types";
 import type { ICommitAuthor, ICommitSummary, IPaginatedResponse } from "./shared.types";
 
 // Request Types
 export interface IBranchCreateRequest {
-  name: string;
-  ref: string;
-  start_point?: string;
+  name: TBranch;
+  ref: TSha;
+  start_point?: TSha;
 }
 
 export interface ITagCreateRequest {
-  name: string;
-  ref: string;
+  name: TTagName;
+  ref: TSha;
   message?: string;
   lightweight?: boolean;
 }
 
 export interface IRefUpdateRequest {
-  ref: string;
+  ref: TSha;
   force?: boolean;
 }
 
 // Response Types
 export interface IRef {
   name: string;
-  ref: string;
+  ref: TSha;
   object: {
     type: string;
-    sha: string;
+    sha: TSha;
   };
   url: string;
 }
