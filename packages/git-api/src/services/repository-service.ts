@@ -1,5 +1,18 @@
 import { backend } from "../git/backend";
 import type { IGitBackend } from "../git/base";
+import type {
+  IListRepositoriesOptions,
+  IRepository,
+  IRepositoryCreateRequest,
+  IRepositoryDetails,
+  IRepositoryUpdateRequest,
+  IRepositoryUpdateResponse,
+  TCreateRepositoryResult,
+  TDeleteRepositoryResult,
+  TGetRepositoryResult,
+  TListRepositoriesResult,
+  TUpdateRepositoryResult,
+} from "./types/repository.types";
 
 /**
  * Service class for handling repository operations
@@ -27,11 +40,10 @@ export class RepositoryService {
    * @param name - Repository name
    * @param options - Repository creation options
    */
-  async createRepository(name: string, options?: {
-    description?: string;
-    isPrivate?: boolean;
-    initializeWithReadme?: boolean;
-  }): Promise<void> {
+  async createRepository(
+    name: string,
+    options?: Omit<IRepositoryCreateRequest, "name">,
+  ): Promise<TCreateRepositoryResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -40,21 +52,16 @@ export class RepositoryService {
    * List repositories
    * @param options - Pagination and filtering options
    */
-  async listRepositories(options?: {
-    page?: number;
-    perPage?: number;
-    sort?: string;
-    order?: 'asc' | 'desc';
-  }): Promise<any[]> {
+  async listRepositories(options?: IListRepositoriesOptions): Promise<TListRepositoriesResult> {
     // Implementation will be added
-    return [];
+    throw new Error("Not implemented");
   }
 
   /**
    * Get repository details
    * @param repo - Repository name or ID
    */
-  async getRepository(repo: string): Promise<any> {
+  async getRepository(repo: string): Promise<TGetRepositoryResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -64,7 +71,7 @@ export class RepositoryService {
    * @param repo - Repository name or ID
    * @param updates - Repository update options
    */
-  async updateRepository(repo: string, updates: any): Promise<any> {
+  async updateRepository(repo: string, updates: IRepositoryUpdateRequest): Promise<TUpdateRepositoryResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -72,8 +79,9 @@ export class RepositoryService {
   /**
    * Delete a repository
    * @param repo - Repository name or ID
+   * @param confirm - Confirmation text (must match repository name)
    */
-  async deleteRepository(repo: string): Promise<void> {
+  async deleteRepository(repo: string, confirm: string): Promise<TDeleteRepositoryResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -111,7 +119,7 @@ export class RepositoryService {
    * Get repository configuration
    * @param repo - Repository name or ID
    */
-  async getRepositoryConfig(repo: string): Promise<any> {
+  async getRepositoryConfig(repo: string): Promise<Record<string, string>> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -121,7 +129,7 @@ export class RepositoryService {
    * @param repo - Repository name or ID
    * @param config - Configuration settings
    */
-  async setRepositoryConfig(repo: string, config: any): Promise<void> {
+  async setRepositoryConfig(repo: string, config: Record<string, string>): Promise<void> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
