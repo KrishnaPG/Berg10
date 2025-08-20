@@ -60,9 +60,12 @@ All keys are **deterministic** and **backend-agnostic**:
 | `getBlob(treeish, path)` | `blob:<treeish>:<path>` | ∞ |
 | `listFiles(treeish, path, recursive)` | `tree:<treeish>:<path>:<recursive>` | ∞ |
 | `diffCommits(parent, child)` | `diff:<parent>..<child>` | ∞ |
+| `getCommitDiff(sha, options?) ` | `cdiff:<sha>:<hash-of-options>` | ∞ |
 | `blame(path, rev)` | `blame:<rev>:<path>` | ∞ |
 | `fileHistory(path, {page,size})` | `history:<path>:<page>:<size>` | 1 h (append-only) |
 | `listRefs(type)` | `refs:<type>` | 30 s (lightweight) |
+| `getRef(name)` | `ref:<name>` | 30 s (tags are immutable, but branches can change) |
+
 | `getIndex()` | `index:<repoPath>` | 0 (do not cache) |
 
 ---
