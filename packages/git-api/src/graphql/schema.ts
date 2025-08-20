@@ -43,8 +43,8 @@ export const resolvers = {
 };
 
 const pubsub = createPubSub<{
-  indexingStarted: [payload: {}];
-  indexingFinished: [payload: {}];
+  indexingStarted: [payload: {x: false}];
+  indexingFinished: [payload: {x: true}];
 }>();
 
 export const gQLPlugin = yoga({

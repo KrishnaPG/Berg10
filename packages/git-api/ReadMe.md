@@ -61,7 +61,7 @@ Backend Abstraction
   }
 ```
 Implementations  
-  - LibGit2Backend (C native addon via N-API)  
+  - LibGit2Backend (NodeGit or C native addon via N-API)  
     - Zero-copy buffer sharing between JS/C via ArrayBuffer.  
     - Thread-safe, pooled libgit2 objects.  
   - ShellGitBackend (spawn git)  
