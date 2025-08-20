@@ -10,6 +10,7 @@ import type {
   ICommit,
   ICommitCreateRequest,
   ICommitLogEntry,
+  ICompareCommitsOptions,
   IDiff,
   IDirectoryContent,
   IFileContent,
@@ -17,6 +18,7 @@ import type {
   IFileDeleteRequest,
   IFileHistoryEntry,
   IGetCommitDiffOptions,
+  IGetCommitLogOptions,
   IGetFileContentOptions,
   IGetFileHistoryOptions,
   IIndex,
@@ -115,13 +117,13 @@ export interface IGitBackend {
   dropStash(index?: number): Promise<void>;
 
   // Diff operations
-  diffCommits(from: TSha, to: TSha, options?: any): Promise<IDiff[]>;
+  diffCommits(from: TSha, to: TSha, options?: ICompareCommitsOptions): Promise<IDiff[]>;
   diffIndex(treeIsh?: TSha, cached?: boolean): Promise<IDiff[]>;
   diffWorktree(path?: TPath): Promise<IDiff[]>;
   getCommitDiff(sha: TSha, options?: IGetCommitDiffOptions): Promise<IDiff>;
 
   // Log operations
-  getCommitLog(options?: any): Promise<IPaginatedResponse<ICommitLogEntry>>;
+  getCommitLog(options?: IGetCommitLogOptions): Promise<IPaginatedResponse<ICommitLogEntry>>;
   getFileHistory(path: TPath, options?: IGetFileHistoryOptions): Promise<IPaginatedResponse<IFileHistoryEntry>>;
   blame(path: TPath, rev?: TSha): Promise<IBlameInfo>;
 
