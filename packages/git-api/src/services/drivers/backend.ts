@@ -16,7 +16,6 @@ import type {
   IFileCreateUpdateRequest,
   IFileDeleteRequest,
   IFileHistoryEntry,
-  IGetBlameInfoOptions,
   IGetCommitDiffOptions,
   IGetFileContentOptions,
   IGetFileHistoryOptions,
@@ -42,6 +41,11 @@ import type {
   ITagCreateRequest,
   ITree,
   ITreeCreateRequest,
+  TBranch,
+  TCommitMessage,
+  TPath,
+  TSha,
+  TTagName,
 } from "../types";
 
 // Repository configuration type
@@ -56,9 +60,9 @@ export type GitBackendType = "libgit2" | "shell";
 
 export interface IGitBackend {
   // Repository operations
-  init(repoPath: string, config?: IRepositoryConfig): Promise<void>;
-  clone(url: string, path: string, options?: ICloneOptions): Promise<void>;
-  open(repoPath: string): Promise<void>;
+  init(repoPath: TPath, config?: IRepositoryConfig): Promise<void>;
+  clone(url: string, path: TPath, options?: ICloneOptions): Promise<void>;
+  open(repoPath: TPath): Promise<void>;
   close(): Promise<void>;
   listRepositories(): Promise<IRepository[]>;
   getRepository(): Promise<IRepositoryDetails>;
@@ -72,62 +76,62 @@ export interface IGitBackend {
   // Ref operations
   listRefs(type?: "branch" | "tag" | "all"): Promise<IRef[]>;
   getRef(name: string): Promise<IRef | null>;
-  createRef(name: string, sha: string, type: "branch" | "tag"): Promise<void>;
+  createRef(name: string, sha: TSha, type: "branch" | "tag"): Promise<void>;
   deleteRef(name: string): Promise<void>;
   renameRef(oldName: string, newName: string): Promise<void>;
-  createBranch(name: string, ref: string, startPoint?: string): Promise<IBranch>;
-  createTag(name: string, ref: string, options?: ITagCreateRequest): Promise<ITag>;
+  createBranch(name: TBranch, ref: TSha, startPoint?: TSha): Promise<IBranch>;
+  createTag(name: TTagName, ref: TSha, options?: ITagCreateRequest): Promise<ITag>;
   updateRef(ref: string, options: IRefUpdateRequest): Promise<IRef>;
 
   // Commit operations
   listCommits(options?: IListCommitsOptions): Promise<ICommit[]>;
-  getCommit(sha: string): Promise<ICommit>;
+  getCommit(sha: TSha): Promise<ICommit>;
   createCommit(options: ICommitCreateRequest): Promise<ICommit>;
-  updateCommitMessage(sha: string, message: string, force?: boolean): Promise<ICommit>;
-  revert(sha: string): Promise<ICommit>;
-  reset(target: string, mode: "soft" | "mixed" | "hard"): Promise<void>;
+  updateCommitMessage(sha: TSha, message: TCommitMessage, force?: boolean): Promise<ICommit>;
+  revert(sha: TSha): Promise<ICommit>;
+  reset(target: TSha, mode: "soft" | "mixed" | "hard"): Promise<void>;
 
   // Tree operations
-  listFiles(treeIsh: string, path?: string, recursive?: boolean): Promise<ITree>;
-  getBlob(treeIsh: string, path: string): Promise<Buffer>;
+  listFiles(treeIsh: TSha, path?: TPath, recursive?: boolean): Promise<ITree>;
+  getBlob(treeIsh: TSha, path: TPath): Promise<Buffer>;
   createTree(tree: ITreeCreateRequest): Promise<ITree>;
   createBlob(content: string, encoding?: "utf-8" | "base64"): Promise<IBlob>;
-  getFileContents(path: string, options?: IGetFileContentOptions): Promise<IFileContent | IDirectoryContent>;
-  createOrUpdateFile(path: string, options: IFileCreateUpdateRequest): Promise<IFileContent>;
-  deleteFile(path: string, options: IFileDeleteRequest): Promise<void>;
+  getFileContents(path: TPath, options?: IGetFileContentOptions): Promise<IFileContent | IDirectoryContent>;
+  createOrUpdateFile(path: TPath, options: IFileCreateUpdateRequest): Promise<IFileContent>;
+  deleteFile(path: TPath, options: IFileDeleteRequest): Promise<void>;
 
   // Index operations
   getIndex(): Promise<IIndexEntry[]>;
-  addToIndex(path: string): Promise<void>;
-  removeFromIndex(path: string): Promise<void>;
+  addToIndex(path: TPath): Promise<void>;
+  removeFromIndex(path: TPath): Promise<void>;
   updateIndex(options: IIndexUpdateRequest): Promise<IIndex>;
-  stagePatch(path: string, patchText: string): Promise<void>;
-  discardWorktree(path: string): Promise<void>;
+  stagePatch(path: TPath, patchText: string): Promise<void>;
+  discardWorktree(path: TPath): Promise<void>;
 
   // Stash operations
   listStashes(): Promise<IStash[]>;
-  saveStash(message?: string, includeUntracked?: boolean): Promise<IStash>;
+  saveStash(message?: TCommitMessage, includeUntracked?: boolean): Promise<IStash>;
   applyStash(index?: number): Promise<void>;
   dropStash(index?: number): Promise<void>;
 
   // Diff operations
-  diffCommits(from: string, to: string, options?: any): Promise<IDiff[]>;
-  diffIndex(treeIsh?: string, cached?: boolean): Promise<IDiff[]>;
-  diffWorktree(path?: string): Promise<IDiff[]>;
-  getCommitDiff(sha: string, options?: IGetCommitDiffOptions): Promise<IDiff>;
+  diffCommits(from: TSha, to: TSha, options?: any): Promise<IDiff[]>;
+  diffIndex(treeIsh?: TSha, cached?: boolean): Promise<IDiff[]>;
+  diffWorktree(path?: TPath): Promise<IDiff[]>;
+  getCommitDiff(sha: TSha, options?: IGetCommitDiffOptions): Promise<IDiff>;
 
   // Log operations
   getCommitLog(options?: any): Promise<IPaginatedResponse<ICommitLogEntry>>;
-  getFileHistory(path: string, options?: IGetFileHistoryOptions): Promise<IPaginatedResponse<IFileHistoryEntry>>;
-  blame(path: string, rev?: string): Promise<IBlameInfo>;
+  getFileHistory(path: TPath, options?: IGetFileHistoryOptions): Promise<IPaginatedResponse<IFileHistoryEntry>>;
+  blame(path: TPath, rev?: TSha): Promise<IBlameInfo>;
 
   // Merge/Rebase operations
-  merge(branch: string, options?: IMergeRequest): Promise<IMergeResult | IMergeStatus>;
-  rebase(branch: string, options?: IRebaseRequest): Promise<IRebaseResult | IRebaseStatus>;
-  getMergeStatus(branch: string): Promise<IMergeStatus>;
-  getRebaseStatus(branch: string): Promise<IRebaseStatus>;
-  abortMerge(branch: string): Promise<void>;
-  abortRebase(branch: string): Promise<void>;
+  merge(branch: TBranch, options?: IMergeRequest): Promise<IMergeResult | IMergeStatus>;
+  rebase(branch: TBranch, options?: IRebaseRequest): Promise<IRebaseResult | IRebaseStatus>;
+  getMergeStatus(branch: TBranch): Promise<IMergeStatus>;
+  getRebaseStatus(branch: TBranch): Promise<IRebaseStatus>;
+  abortMerge(branch: TBranch): Promise<void>;
+  abortRebase(branch: TBranch): Promise<void>;
 }
 
 export interface IBackendConfig {

@@ -1,6 +1,6 @@
 import { CONFIG } from "../../config";
+import type { IGitBackend } from "./backend";
 import { ShellBackend } from "./shell";
-import type { IGitBackend } from "./types";
 
 // import { LibGit2Backend } from "./libgit2";
 
