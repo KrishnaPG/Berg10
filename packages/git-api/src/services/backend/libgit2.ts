@@ -1,7 +1,7 @@
 import { join } from "path";
-import { CONFIG } from "../config";
+import { CONFIG } from "../../config";
+import type { IGitBackend } from "../../git/base";
 import type { FileEntry } from "../types";
-import type { IGitBackend } from "./base";
 
 // Stub native addon (compiled with bun build --compile --target=bun-linux-x64)
 declare module "libgit2-addon" {
