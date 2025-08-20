@@ -3,14 +3,14 @@
  * Generated from packages/git-api/api-spec/repository-api.yml
  */
 
-import type { TRepositoryId, TRepositoryName, TUserId } from "./branded.types";
+import type { TBranch, TRepositoryId, TRepositoryName, TUserId } from "./branded.types";
 import type { IPaginatedResponse, IPermissions, IUser } from "./shared.types";
 
 // Request Types
 export interface IRepositoryCreateRequest {
   name: TRepositoryName;
   description?: string;
-  default_branch?: string;
+  default_branch?: TBranch;
   is_private?: boolean;
   initialize_with_readme?: boolean;
   gitignore_template?: string;
@@ -20,7 +20,7 @@ export interface IRepositoryCreateRequest {
 export interface IRepositoryUpdateRequest {
   name?: TRepositoryName;
   description?: string;
-  default_branch?: string;
+  default_branch?: TBranch;
   is_private?: boolean;
   has_issues?: boolean;
   has_wiki?: boolean;
@@ -37,7 +37,7 @@ export interface IRepository {
   id: TRepositoryId;
   name: TRepositoryName;
   description?: string;
-  default_branch: string;
+  default_branch: TBranch;
   is_private: boolean;
   created_at: string;
   updated_at: string;
@@ -81,6 +81,13 @@ export interface IApiError {
     message: string;
     details?: Record<string, any>;
   };
+}
+
+export interface ICloneOptions {
+  bare?: boolean;
+  branch?: TBranch;
+  depth?: number;
+  recursive?: boolean;
 }
 
 // Service Method Return Types

@@ -1,7 +1,6 @@
 import { join } from "path";
-import { CONFIG } from "../config";
-import type { FileEntry } from "../types";
-import type { IGitBackend } from "./base";
+import { CONFIG } from "../../config";
+import type { IGitBackend } from "./types";
 
 async function git(repo: string, args: string[], options?: { stdin?: string }): Promise<string> {
   const process = Bun.spawn({
