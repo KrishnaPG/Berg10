@@ -4,6 +4,7 @@
  */
 
 import type { TRepositoryId, TRepositoryName, TUserId } from "./branded.types";
+import type { IPaginatedResponse, IPermissions, IUser } from "./shared.types";
 
 // Request Types
 export interface IRepositoryCreateRequest {
@@ -24,7 +25,7 @@ export interface IRepositoryUpdateRequest {
   has_issues?: boolean;
   has_wiki?: boolean;
   has_downloads?: boolean;
-  default_merge_style?: 'merge' | 'squash' | 'rebase';
+  default_merge_style?: "merge" | "squash" | "rebase";
   allow_squash_merge?: boolean;
   allow_rebase_merge?: boolean;
   allow_merge_commits?: boolean;
@@ -63,37 +64,13 @@ export interface IRepositoryUpdateResponse extends IRepository {
   updated_at: string;
 }
 
-// Supporting Types
-export interface IUser {
-  id: TUserId;
-  name: string;
-  email: string;
-}
-
-export interface IPermissions {
-  admin: boolean;
-  push: boolean;
-  pull: boolean;
-}
-
-// Pagination Types
-export interface IPaginatedResponse<T> {
-  pagination: {
-    total_items: number;
-    total_pages: number;
-    current_page: number;
-    per_page: number;
-  };
-  items: T[];
-}
-
 // Query Parameters
 export interface IListRepositoriesOptions {
   page?: number;
   per_page?: number;
   sort?: string;
-  order?: 'asc' | 'desc';
-  type?: 'all' | 'owner' | 'member';
+  order?: "asc" | "desc";
+  type?: "all" | "owner" | "member";
   search?: string;
 }
 
