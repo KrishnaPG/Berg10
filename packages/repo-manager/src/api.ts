@@ -1,16 +1,15 @@
 import { yoga } from "@elysiajs/graphql-yoga";
 import { Elysia } from "elysia";
-import type { GraphQLSchema } from "graphql";
 import { buildSchema } from "graphql";
 import { createPubSub } from "graphql-yoga";
 import { SemanticRepoManager } from "./semantic-repo-manager";
-import type { BlobSha256, EntityId, LaneSha, TSemanticGroupConfig } from "./types";
+import type { TBlobSha256, TEntityId, TLaneSha, TSemanticGroupConfig } from "./types";
 
 // ---------- Pub-Sub ----------
 const pubsub = createPubSub<{
-	indexingStarted: [payload: { laneSha: LaneSha; entityId: EntityId }];
+	indexingStarted: [payload: { laneSha: TLaneSha; entityId: TEntityId }];
 	indexingFinished: [
-		payload: { laneSha: LaneSha; entityId: EntityId; success: boolean },
+		payload: { laneSha: TLaneSha; entityId: TEntityId; success: boolean },
 	];
 }>();
 
@@ -26,17 +25,17 @@ const resolvers = {
 		group: async (_: unknown, { name }: { name: string }) =>
 			repo.getGroup(name),
 
-		lanes: async (_: unknown, { laneSha }: { laneSha: LaneSha }) => {
+		lanes: async (_: unknown, { laneSha }: { laneSha: TLaneSha }) => {
 			const entries = await repo.listManifestEntries(laneSha);
 			return { laneSha, entries };
 		},
 
 		entry: async (
 			_: unknown,
-			{ laneSha, entityId }: { laneSha: LaneSha; entityId: EntityId },
+			{ laneSha, entityId }: { laneSha: TLaneSha; entityId: TEntityId },
 		) => repo.readManifestEntry(laneSha, entityId),
 
-		blob: async (_: unknown, { sha256 }: { sha256: BlobSha256 }) => {
+		blob: async (_: unknown, { sha256 }: { sha256: TBlobSha256 }) => {
 			const buffer = await repo.readBlob(sha256);
 			return buffer ? { sha256, size: buffer.length } : null;
 		},
@@ -60,12 +59,12 @@ const resolvers = {
 
 		triggerIndexing: async (
 			_: unknown,
-			{ laneSha, entityId }: { laneSha: LaneSha; entityId: EntityId },
+			{ laneSha, entityId }: { laneSha: TLaneSha; entityId: TEntityId },
 		) => {
 			// 1. Start indexing process
 			pubsub.publish("indexingStarted", {
-				laneSha: laneSha as LaneSha,
-				entityId: entityId as EntityId,
+				laneSha: laneSha as TLaneSha,
+				entityId: entityId as TEntityId,
 			});
 
 			// 2. Perform actual indexing work in background
@@ -102,8 +101,8 @@ const resolvers = {
 
 					// Publish success event
 					pubsub.publish("indexingFinished", {
-						laneSha: laneSha as LaneSha,
-						entityId: entityId as EntityId,
+						laneSha: laneSha as TLaneSha,
+						entityId: entityId as TEntityId,
 						success: true,
 					});
 				} catch (error) {
@@ -111,8 +110,8 @@ const resolvers = {
 					
 					// Publish failure event
 					pubsub.publish("indexingFinished", {
-						laneSha: laneSha as LaneSha,
-						entityId: entityId as EntityId,
+						laneSha: laneSha as TLaneSha,
+						entityId: entityId as TEntityId,
 						success: false,
 					});
 				}
@@ -125,28 +124,28 @@ const resolvers = {
 	Subscription: {
 		indexingStarted: {
 			subscribe: () => pubsub.subscribe("indexingStarted"),
-			resolve: (payload: { laneSha: LaneSha; entityId: EntityId }) => payload,
+			resolve: (payload: { laneSha: TLaneSha; entityId: TEntityId }) => payload,
 		},
 		indexingFinished: {
 			subscribe: () => pubsub.subscribe("indexingFinished"),
-			resolve: (payload: { laneSha: LaneSha; entityId: EntityId; success: boolean }) => payload,
+			resolve: (payload: { laneSha: TLaneSha; entityId: TEntityId; success: boolean }) => payload,
 		},
 	},
 
 	Group: {
 		lanes: async (parent: { lanes: Array<{ sha256: string }> }) => {
 			// parent.lanes is already in config
-			return parent.lanes.map((l) => ({ laneSha: l.sha256 as LaneSha }));
+			return parent.lanes.map((l) => ({ laneSha: l.sha256 as TLaneSha }));
 		},
 	},
 
 	Lane: {
-		entries: async (parent: { laneSha: LaneSha }) =>
+		entries: async (parent: { laneSha: TLaneSha }) =>
 			repo.listManifestEntries(parent.laneSha),
 	},
 
 	ManifestEntry: {
-		blob: async (parent: { blob_sha256: BlobSha256 }) => {
+		blob: async (parent: { blob_sha256: TBlobSha256 }) => {
 			const buffer = await repo.readBlob(parent.blob_sha256);
 			return buffer
 				? { sha256: parent.blob_sha256, size: buffer.length }
