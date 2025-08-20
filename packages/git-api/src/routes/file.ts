@@ -11,7 +11,9 @@ export const fileRoutes = new Elysia({ prefix: "/v1" })
 	})
 	.put(
 		"/repos/:repo/files/:path{.+}",
-		async ({ params: { repo, path }, body }) => {
+		async ({ params, body }) => {
+			const { repo } = params;
+			const path = (params as Record<string, string>)["path{.+}"];
 			await backend.current().stageFile(repo, path, body as string);
 			return { status: "staged", path };
 		},

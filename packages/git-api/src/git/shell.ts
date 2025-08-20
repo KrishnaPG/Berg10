@@ -3,11 +3,20 @@ import { CONFIG } from "../config";
 import type { FileEntry } from "../types";
 import type { IGitBackend } from "./base";
 
-function git(repo: string, args: string[]) {
-  return Bun.spawn({
+async function git(repo: string, args: string[], options?: { stdin?: string }): Promise<string> {
+  const process = Bun.spawn({
     cmd: ["git", "-C", join(CONFIG.REPO_BASE, repo), ...args],
     stdout: "pipe",
-  }).stdout.text();
+    stdin: options?.stdin ? "pipe" : undefined,
+  });
+  
+  if (options?.stdin) {
+    await process.stdin.write(options.stdin);
+    process.stdin.end();
+  }
+  
+  const output = await new Response(process.stdout).text();
+  return output;
 }
 
 export class ShellBackend implements IGitBackend {

@@ -2,7 +2,7 @@
   "name": "git-api",
   "type": "module",
   "scripts": {
-    "dev": "GIT_BACKEND=shell REPO_BASE=./.tmp/repos bun run dev bun --watch src/index.ts",
+    "dev": "GIT_BACKEND=shell REPO_BASE=./.tmp/repos bun --watch src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target bun",
     "start": "bun dist/index.js"
   },

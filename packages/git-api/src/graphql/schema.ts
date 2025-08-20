@@ -24,17 +24,21 @@ export const schema = buildSchema(`
 
 export const resolvers = {
   Query: {
-    files: (_, { repo, rev = "HEAD", path, recursive }) => backend.current().listFiles(repo, rev, path, recursive),
-    diff: (_, { repo, from, to }) => backend.current().diffCommits(repo, from, to),
+    files: (_: any, { repo, rev = "HEAD", path, recursive }: { repo: string; rev?: string; path?: string; recursive?: boolean }) =>
+      backend.current().listFiles(repo, rev, path, recursive),
+    diff: (_: any, { repo, from, to }: { repo: string; from: string; to: string }) =>
+      backend.current().diffCommits(repo, from, to),
   },
   Mutation: {
-    stage: (_, { repo, path, patch }) =>
+    stage: (_: any, { repo, path, patch }: { repo: string; path: string; patch?: string }) =>
       backend
         .current()
         .stageFile(repo, path, patch)
         .then(() => true),
-    stashSave: (_, { repo, message }) => backend.current().stashSave(repo, message),
-    revertCommit: (_, { repo, sha }) => backend.current().revertCommit(repo, sha),
+    stashSave: (_: any, { repo, message }: { repo: string; message?: string }) =>
+      backend.current().stashSave(repo, message),
+    revertCommit: (_: any, { repo, sha }: { repo: string; sha: string }) =>
+      backend.current().revertCommit(repo, sha),
   },
 };
 

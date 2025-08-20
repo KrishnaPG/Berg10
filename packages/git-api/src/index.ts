@@ -6,11 +6,14 @@ import { fileRoutes } from "./routes/file";
 import { repoRoutes } from "./routes/repo";
 
 const app = new Elysia()
-	.use(gQLPlugin)
-	.use(repoRoutes)
-	.use(fileRoutes)
-	.use(commitRoutes)
-	.get("/", ({ redirect }) => redirect("/graphql"))
+	.use(gQLPlugin as any)
+	.use(repoRoutes as any)
+	.use(fileRoutes as any)
+	.use(commitRoutes as any)
+	.get("/", ({ set }) => {
+		set.redirect = "/graphql";
+		return "Redirecting to GraphQL";
+	})
 	.get("/health", () => "ok")
 	.listen(CONFIG.PORT);
 
