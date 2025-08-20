@@ -1,5 +1,14 @@
 import { backend } from "../git/backend";
 import type { IGitBackend } from "../git/base";
+import type {
+  IListStashesOptions,
+  IStashApplyRequest,
+  IStashCreateRequest,
+  TApplyStashResult,
+  TCreateStashResult,
+  TDropStashResult,
+  TListStashesResult,
+} from "./types";
 
 /**
  * Service class for handling stash operations
@@ -21,12 +30,9 @@ export class StashService {
    * @param repo - Repository name or ID
    * @param options - Filtering and pagination options
    */
-  async listStashes(repo: string, options?: {
-    page?: number;
-    perPage?: number;
-  }): Promise<any[]> {
+  async listStashes(repo: string, options?: IListStashesOptions): Promise<TListStashesResult> {
     // Implementation will be added
-    return [];
+    throw new Error("Not implemented");
   }
 
   /**
@@ -34,20 +40,18 @@ export class StashService {
    * @param repo - Repository name or ID
    * @param options - Stash creation options
    */
-  async createStash(repo: string, options?: {
-    message?: string;
-    includeUntracked?: boolean;
-  }): Promise<any> {
-    const result = await this.backend.stashSave(repo, options?.message, options?.includeUntracked);
-    return { id: result };
+  async createStash(repo: string, options?: IStashCreateRequest): Promise<TCreateStashResult> {
+    // Implementation will be added
+    throw new Error("Not implemented");
   }
 
   /**
    * Apply a stash
    * @param repo - Repository name or ID
    * @param stashIndex - Stash index
+   * @param applyOptions - Apply options
    */
-  async applyStash(repo: string, stashIndex: string): Promise<void> {
+  async applyStash(repo: string, stashIndex: string, applyOptions?: IStashApplyRequest): Promise<TApplyStashResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -57,7 +61,7 @@ export class StashService {
    * @param repo - Repository name or ID
    * @param stashIndex - Stash index
    */
-  async dropStash(repo: string, stashIndex: string): Promise<void> {
+  async dropStash(repo: string, stashIndex: string): Promise<TDropStashResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }

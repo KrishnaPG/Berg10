@@ -1,5 +1,15 @@
 import { backend } from "../git/backend";
 import type { IGitBackend } from "../git/base";
+import type {
+  IMergeRequest,
+  IRebaseRequest,
+  TAbortMergeResult,
+  TAbortRebaseResult,
+  TGetMergeStatusResult,
+  TGetRebaseStatusResult,
+  TMergeBranchResult,
+  TRebaseBranchResult,
+} from "./types";
 
 /**
  * Service class for handling merge and rebase operations
@@ -19,12 +29,7 @@ export class MergeService {
    * @param repo - Repository name or ID
    * @param mergeData - Merge parameters
    */
-  async mergeBranch(repo: string, mergeData: {
-    source: string;
-    target: string;
-    message?: string;
-    strategy?: 'merge' | 'squash' | 'rebase';
-  }): Promise<any> {
+  async mergeBranch(repo: string, mergeData: IMergeRequest): Promise<TMergeBranchResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -34,12 +39,7 @@ export class MergeService {
    * @param repo - Repository name or ID
    * @param rebaseData - Rebase parameters
    */
-  async rebaseBranch(repo: string, rebaseData: {
-    source: string;
-    target: string;
-    autosquash?: boolean;
-    autosign?: boolean;
-  }): Promise<any> {
+  async rebaseBranch(repo: string, rebaseData: IRebaseRequest): Promise<TRebaseBranchResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -49,7 +49,7 @@ export class MergeService {
    * @param repo - Repository name or ID
    * @param branch - Branch name
    */
-  async getMergeStatus(repo: string, branch: string): Promise<any> {
+  async getMergeStatus(repo: string, branch: string): Promise<TGetMergeStatusResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -59,7 +59,7 @@ export class MergeService {
    * @param repo - Repository name or ID
    * @param branch - Branch name
    */
-  async getRebaseStatus(repo: string, branch: string): Promise<any> {
+  async getRebaseStatus(repo: string, branch: string): Promise<TGetRebaseStatusResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -69,7 +69,7 @@ export class MergeService {
    * @param repo - Repository name or ID
    * @param branch - Branch name
    */
-  async abortMerge(repo: string, branch: string): Promise<any> {
+  async abortMerge(repo: string, branch: string): Promise<TAbortMergeResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -79,7 +79,7 @@ export class MergeService {
    * @param repo - Repository name or ID
    * @param branch - Branch name
    */
-  async abortRebase(repo: string, branch: string): Promise<any> {
+  async abortRebase(repo: string, branch: string): Promise<TAbortRebaseResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }

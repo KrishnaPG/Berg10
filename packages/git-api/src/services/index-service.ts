@@ -1,5 +1,15 @@
 import { backend } from "../git/backend";
 import type { IGitBackend } from "../git/base";
+import type {
+  IIndex,
+  IIndexAddRequest,
+  IIndexRemoveRequest,
+  IIndexUpdateRequest,
+  TAddToIndexResult,
+  TGetIndexResult,
+  TRemoveFromIndexResult,
+  TUpdateIndexResult,
+} from "./types";
 
 /**
  * Service class for handling index (staging) operations
@@ -21,9 +31,9 @@ export class IndexService {
    * List staged changes in a repository
    * @param repo - Repository name or ID
    */
-  async listStagedChanges(repo: string): Promise<any[]> {
+  async listStagedChanges(repo: string): Promise<TGetIndexResult> {
     // Implementation will be added
-    return [];
+    throw new Error("Not implemented");
   }
 
   /**
@@ -61,6 +71,36 @@ export class IndexService {
    * @param path - File path to discard changes for
    */
   async discardWorktreeChanges(repo: string, path: string): Promise<void> {
+    // Implementation will be added
+    throw new Error("Not implemented");
+  }
+
+  /**
+   * Add files to the index
+   * @param repo - Repository name or ID
+   * @param addRequest - Add request parameters
+   */
+  async addToIndex(repo: string, addRequest: IIndexAddRequest): Promise<TAddToIndexResult> {
+    // Implementation will be added
+    throw new Error("Not implemented");
+  }
+
+  /**
+   * Update files in the index
+   * @param repo - Repository name or ID
+   * @param updateRequest - Update request parameters
+   */
+  async updateIndex(repo: string, updateRequest: IIndexUpdateRequest): Promise<TUpdateIndexResult> {
+    // Implementation will be added
+    throw new Error("Not implemented");
+  }
+
+  /**
+   * Remove files from the index
+   * @param repo - Repository name or ID
+   * @param removeRequest - Remove request parameters
+   */
+  async removeFromIndex(repo: string, removeRequest: IIndexRemoveRequest): Promise<TRemoveFromIndexResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }

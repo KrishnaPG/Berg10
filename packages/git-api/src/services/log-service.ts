@@ -1,5 +1,13 @@
 import { backend } from "../git/backend";
 import type { IGitBackend } from "../git/base";
+import type {
+  IGetBlameInfoOptions,
+  IGetCommitLogOptions,
+  IGetFileHistoryOptions,
+  TGetBlameInfoResult,
+  TGetCommitLogResult,
+  TGetFileHistoryResult,
+} from "./types";
 
 /**
  * Service class for handling log and blame operations
@@ -19,18 +27,9 @@ export class LogService {
    * @param repo - Repository name or ID
    * @param options - Filtering and pagination options
    */
-  async getCommitHistory(repo: string, options?: {
-    ref?: string;
-    path?: string;
-    author?: string;
-    since?: string;
-    until?: string;
-    page?: number;
-    perPage?: number;
-    withStats?: boolean;
-  }): Promise<any[]> {
+  async getCommitHistory(repo: string, options?: IGetCommitLogOptions): Promise<TGetCommitLogResult> {
     // Implementation will be added
-    return [];
+    throw new Error("Not implemented");
   }
 
   /**
@@ -39,16 +38,13 @@ export class LogService {
    * @param path - File path
    * @param options - Filtering and pagination options
    */
-  async getFileHistory(repo: string, path: string, options?: {
-    ref?: string;
-    since?: string;
-    until?: string;
-    page?: number;
-    perPage?: number;
-    withStats?: boolean;
-  }): Promise<any[]> {
+  async getFileHistory(
+    repo: string,
+    path: string,
+    options?: IGetFileHistoryOptions,
+  ): Promise<TGetFileHistoryResult> {
     // Implementation will be added
-    return [];
+    throw new Error("Not implemented");
   }
 
   /**
@@ -57,9 +53,7 @@ export class LogService {
    * @param path - File path
    * @param options - Blame options
    */
-  async getBlameInfo(repo: string, path: string, options?: {
-    ref?: string;
-  }): Promise<any> {
+  async getBlameInfo(repo: string, path: string, options?: IGetBlameInfoOptions): Promise<TGetBlameInfoResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }

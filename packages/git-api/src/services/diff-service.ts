@@ -1,5 +1,13 @@
 import { backend } from "../git/backend";
 import type { IGitBackend } from "../git/base";
+import type {
+  ICompareCommitsOptions,
+  IGetCommitDiffOptions,
+  IGetDiffOptions,
+  TCompareCommitsResult,
+  TGetCommitDiffResult,
+  TGetDiffResult,
+} from "./types";
 
 /**
  * Service class for handling diff operations
@@ -21,12 +29,7 @@ export class DiffService {
    * @param repo - Repository name or ID
    * @param options - Diff options
    */
-  async getDiff(repo: string, options?: {
-    target?: string;
-    path?: string;
-    contextLines?: number;
-    ignoreWhitespace?: boolean;
-  }): Promise<any> {
+  async getDiff(repo: string, options?: IGetDiffOptions): Promise<TGetDiffResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -38,13 +41,14 @@ export class DiffService {
    * @param commit2 - Second commit SHA
    * @param options - Diff options
    */
-  async compareCommits(repo: string, commit1: string, commit2: string, options?: {
-    path?: string;
-    contextLines?: number;
-    ignoreWhitespace?: boolean;
-  }): Promise<any> {
-    const result = await this.backend.diffCommits(repo, commit1, commit2);
-    return { diff: result };
+  async compareCommits(
+    repo: string,
+    commit1: string,
+    commit2: string,
+    options?: ICompareCommitsOptions,
+  ): Promise<TCompareCommitsResult> {
+    // Implementation will be added
+    throw new Error("Not implemented");
   }
 
   /**
@@ -53,11 +57,11 @@ export class DiffService {
    * @param commit - Commit SHA
    * @param options - Diff options
    */
-  async getCommitDiff(repo: string, commit: string, options?: {
-    path?: string;
-    contextLines?: number;
-    ignoreWhitespace?: boolean;
-  }): Promise<any> {
+  async getCommitDiff(
+    repo: string,
+    commit: string,
+    options?: IGetCommitDiffOptions,
+  ): Promise<TGetCommitDiffResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -66,7 +70,7 @@ export class DiffService {
    * Compare index with working tree
    * @param repo - Repository name or ID
    */
-  async diffIndexWithWorkingTree(repo: string): Promise<any> {
+  async diffIndexWithWorkingTree(repo: string): Promise<TGetDiffResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -75,7 +79,7 @@ export class DiffService {
    * Show working tree changes
    * @param repo - Repository name or ID
    */
-  async showWorkingTreeChanges(repo: string): Promise<any> {
+  async showWorkingTreeChanges(repo: string): Promise<TGetDiffResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }

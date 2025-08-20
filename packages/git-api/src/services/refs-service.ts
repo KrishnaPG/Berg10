@@ -1,5 +1,21 @@
 import { backend } from "../git/backend";
 import type { IGitBackend } from "../git/base";
+import type {
+  IBranchCreateRequest,
+  IListBranchesOptions,
+  IListRefsOptions,
+  IListTagsOptions,
+  IRefUpdateRequest,
+  ITagCreateRequest,
+  TCreateBranchResult,
+  TCreateTagResult,
+  TDeleteRefResult,
+  TGetRefResult,
+  TListAllRefsResult,
+  TListBranchesResult,
+  TListTagsResult,
+  TUpdateRefResult,
+} from "./types";
 
 /**
  * Service class for handling reference (branches and tags) operations
@@ -27,15 +43,9 @@ export class RefsService {
    * @param repo - Repository name or ID
    * @param options - Filtering and pagination options
    */
-  async listAllRefs(repo: string, options?: {
-    page?: number;
-    perPage?: number;
-    sort?: string;
-    order?: 'asc' | 'desc';
-    filter?: string;
-  }): Promise<any[]> {
+  async listAllRefs(repo: string, options?: IListRefsOptions): Promise<TListAllRefsResult> {
     // Implementation will be added
-    return [];
+    throw new Error("Not implemented");
   }
 
   /**
@@ -43,15 +53,9 @@ export class RefsService {
    * @param repo - Repository name or ID
    * @param options - Filtering and pagination options
    */
-  async listBranches(repo: string, options?: {
-    page?: number;
-    perPage?: number;
-    sort?: string;
-    order?: 'asc' | 'desc';
-    filter?: string;
-  }): Promise<any[]> {
+  async listBranches(repo: string, options?: IListBranchesOptions): Promise<TListBranchesResult> {
     // Implementation will be added
-    return [];
+    throw new Error("Not implemented");
   }
 
   /**
@@ -59,15 +63,9 @@ export class RefsService {
    * @param repo - Repository name or ID
    * @param options - Filtering and pagination options
    */
-  async listTags(repo: string, options?: {
-    page?: number;
-    perPage?: number;
-    sort?: string;
-    order?: 'asc' | 'desc';
-    filter?: string;
-  }): Promise<any[]> {
+  async listTags(repo: string, options?: IListTagsOptions): Promise<TListTagsResult> {
     // Implementation will be added
-    return [];
+    throw new Error("Not implemented");
   }
 
   /**
@@ -75,7 +73,7 @@ export class RefsService {
    * @param repo - Repository name or ID
    * @param ref - Reference name
    */
-  async getRef(repo: string, ref: string): Promise<any> {
+  async getRef(repo: string, ref: string): Promise<TGetRefResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -85,7 +83,7 @@ export class RefsService {
    * @param repo - Repository name or ID
    * @param branchData - Branch creation data
    */
-  async createBranch(repo: string, branchData: any): Promise<any> {
+  async createBranch(repo: string, branchData: IBranchCreateRequest): Promise<TCreateBranchResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -95,7 +93,7 @@ export class RefsService {
    * @param repo - Repository name or ID
    * @param tagData - Tag creation data
    */
-  async createTag(repo: string, tagData: any): Promise<any> {
+  async createTag(repo: string, tagData: ITagCreateRequest): Promise<TCreateTagResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -105,7 +103,7 @@ export class RefsService {
    * @param repo - Repository name or ID
    * @param ref - Reference name
    */
-  async deleteRef(repo: string, ref: string): Promise<void> {
+  async deleteRef(repo: string, ref: string): Promise<TDeleteRefResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -116,7 +114,7 @@ export class RefsService {
    * @param branch - Branch name
    * @param newName - New branch name
    */
-  async renameBranch(repo: string, branch: string, newName: string): Promise<any> {
+  async renameBranch(repo: string, branch: string, newName: string): Promise<TGetRefResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -137,6 +135,17 @@ export class RefsService {
    * @param branch - Branch name
    */
   async unprotectBranch(repo: string, branch: string): Promise<void> {
+    // Implementation will be added
+    throw new Error("Not implemented");
+  }
+
+  /**
+   * Update a reference
+   * @param repo - Repository name or ID
+   * @param ref - Reference name
+   * @param updateData - Update data
+   */
+  async updateRef(repo: string, ref: string, updateData: IRefUpdateRequest): Promise<TUpdateRefResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }

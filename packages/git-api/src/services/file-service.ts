@@ -1,5 +1,13 @@
 import { backend } from "../git/backend";
 import type { IGitBackend } from "../git/base";
+import type {
+  IFileCreateUpdateRequest,
+  IFileDeleteRequest,
+  TCreateOrUpdateFileResult,
+  TDeleteFileResult,
+  TGetFileContentResult,
+  TMoveFileResult,
+} from "./types";
 
 /**
  * Service class for handling file operations
@@ -26,9 +34,9 @@ export class FileService {
   async listFiles(repo: string, path?: string, options?: {
     ref?: string;
     recursive?: boolean;
-  }): Promise<any[]> {
+  }): Promise<TGetFileContentResult[]> {
     // Implementation will be added
-    return [];
+    throw new Error("Not implemented");
   }
 
   /**
@@ -39,7 +47,7 @@ export class FileService {
    */
   async getFileContent(repo: string, filePath: string, options?: {
     ref?: string;
-  }): Promise<any> {
+  }): Promise<TGetFileContentResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -50,7 +58,11 @@ export class FileService {
    * @param filePath - Path to the file
    * @param fileData - File content and metadata
    */
-  async createOrUpdateFile(repo: string, filePath: string, fileData: any): Promise<any> {
+  async createOrUpdateFile(
+    repo: string,
+    filePath: string,
+    fileData: IFileCreateUpdateRequest,
+  ): Promise<TCreateOrUpdateFileResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -61,7 +73,11 @@ export class FileService {
    * @param filePath - Path to the file
    * @param deleteData - Delete metadata
    */
-  async deleteFile(repo: string, filePath: string, deleteData: any): Promise<any> {
+  async deleteFile(
+    repo: string,
+    filePath: string,
+    deleteData: IFileDeleteRequest,
+  ): Promise<TDeleteFileResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -72,7 +88,7 @@ export class FileService {
    * @param filePath - Current path to the file
    * @param newPath - New path for the file
    */
-  async moveFile(repo: string, filePath: string, newPath: string): Promise<any> {
+  async moveFile(repo: string, filePath: string, newPath: string): Promise<TMoveFileResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }

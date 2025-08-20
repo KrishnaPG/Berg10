@@ -1,5 +1,17 @@
 import { backend } from "../git/backend";
 import type { IGitBackend } from "../git/base";
+import type {
+  ICommit,
+  ICommitCreateRequest,
+  ICommitDetails,
+  ICommitUpdateRequest,
+  IListCommitsOptions,
+  TCreateCommitResult,
+  TGetCommitResult,
+  TListCommitsResult,
+  TRevertCommitResult,
+  TUpdateCommitMessageResult,
+} from "./types";
 
 /**
  * Service class for handling commit operations
@@ -24,17 +36,9 @@ export class CommitService {
    * @param repo - Repository name or ID
    * @param options - Filtering and pagination options
    */
-  async listCommits(repo: string, options?: {
-    sha?: string;
-    path?: string;
-    author?: string;
-    since?: string;
-    until?: string;
-    page?: number;
-    perPage?: number;
-  }): Promise<any[]> {
+  async listCommits(repo: string, options?: IListCommitsOptions): Promise<TListCommitsResult> {
     // Implementation will be added
-    return [];
+    throw new Error("Not implemented");
   }
 
   /**
@@ -42,7 +46,7 @@ export class CommitService {
    * @param repo - Repository name or ID
    * @param sha - Commit SHA
    */
-  async getCommit(repo: string, sha: string): Promise<any> {
+  async getCommit(repo: string, sha: string): Promise<TGetCommitResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -52,7 +56,7 @@ export class CommitService {
    * @param repo - Repository name or ID
    * @param commitData - Commit creation data
    */
-  async createCommit(repo: string, commitData: any): Promise<any> {
+  async createCommit(repo: string, commitData: ICommitCreateRequest): Promise<TCreateCommitResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -62,7 +66,7 @@ export class CommitService {
    * @param repo - Repository name or ID
    * @param sha - Commit SHA to cherry-pick
    */
-  async cherryPickCommit(repo: string, sha: string): Promise<any> {
+  async cherryPickCommit(repo: string, sha: string): Promise<ICommit> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -72,8 +76,9 @@ export class CommitService {
    * @param repo - Repository name or ID
    * @param sha - Commit SHA to revert
    */
-  async revertCommit(repo: string, sha: string): Promise<any> {
-    return await this.backend.revertCommit(repo, sha);
+  async revertCommit(repo: string, sha: string): Promise<TRevertCommitResult> {
+    // Implementation will be added
+    throw new Error("Not implemented");
   }
 
   /**
@@ -82,7 +87,7 @@ export class CommitService {
    * @param sha - Commit SHA to amend
    * @param message - New commit message
    */
-  async amendCommit(repo: string, sha: string, message: string): Promise<any> {
+  async amendCommit(repo: string, sha: string, message: string): Promise<TUpdateCommitMessageResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
