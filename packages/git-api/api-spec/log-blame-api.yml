@@ -1,0 +1,527 @@
+openapi: 3.0.0
+info:
+  title: Git Log/Blame API
+  description: API for managing Git commit logs and blame information
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: https://staging-api.example.com/v1
+    description: Staging server
+
+security:
+  - BearerAuth: []
+  - BasicAuth: []
+  - CookieAuth: []
+  - OidcAuth: []
+  - SamlAuth: []
+
+paths:
+  /repos/{repo}/log:
+    get:
+      tags:
+        - Log/Blame
+      summary: Get commit log
+      description: Retrieves the commit history of a repository
+      operationId: getCommitLog
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: ref
+          in: query
+          description: The name of the commit/branch/tag to start from
+          required: false
+          schema:
+            type: string
+            default: main
+        - name: path
+          in: query
+          description: Only commits containing this file path
+          required: false
+          schema:
+            type: string
+        - name: author
+          in: query
+          description: Only commits by this author
+          required: false
+          schema:
+            type: string
+        - name: since
+          in: query
+          description: Only commits after this date (ISO 8601 format)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: until
+          in: query
+          description: Only commits before this date (ISO 8601 format)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: sort
+          in: query
+          description: Field to sort by
+          required: false
+          schema:
+            type: string
+            enum: [created, updated]
+            default: created
+        - name: order
+          in: query
+          description: Sort order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: with_stats
+          in: query
+          description: Include commit statistics
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CommitLogEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /repos/{repo}/log/{path}:
+    get:
+      tags:
+        - Log/Blame
+      summary: Get file history
+      description: Retrieves the commit history of a specific file
+      operationId: getFileHistory
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: path
+          description: File path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: ref
+          in: query
+          description: The name of the commit/branch/tag to start from
+          required: false
+          schema:
+            type: string
+            default: main
+        - name: since
+          in: query
+          description: Only commits after this date (ISO 8601 format)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: until
+          in: query
+          description: Only commits before this date (ISO 8601 format)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: sort
+          in: query
+          description: Field to sort by
+          required: false
+          schema:
+            type: string
+            enum: [created, updated]
+            default: created
+        - name: order
+          in: query
+          description: Sort order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: with_stats
+          in: query
+          description: Include commit statistics
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FileHistoryEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /repos/{repo}/blame/{path}:
+    get:
+      tags:
+        - Log/Blame
+      summary: Get blame information
+      description: Retrieves blame information for a specific file
+      operationId: getBlameInfo
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: path
+          description: File path
+          required: true
+          schema:
+            type: string
+        - name: ref
+          in: query
+          description: The name of the commit/branch/tag
+          required: false
+          schema:
+            type: string
+            default: main
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlameInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    BasicAuth:
+      type: http
+      scheme: basic
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: session_token
+    OidcAuth:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.example.com/.well-known/openid-configuration
+    SamlAuth:
+      type: apiKey
+      in: header
+      name: X-SAML-Assertion
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Page number for pagination
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPage:
+      name: per_page
+      in: query
+      description: Number of items per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 30
+
+  schemas:
+    CommitLogEntry:
+      type: object
+      properties:
+        sha:
+          type: string
+          description: Commit SHA
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        message:
+          type: string
+          description: Commit message
+          example: "Add new feature"
+        author:
+          $ref: '#/components/schemas/CommitAuthor'
+        committer:
+          $ref: '#/components/schemas/CommitAuthor'
+        timestamp:
+          type: string
+          format: date-time
+          description: Commit timestamp
+          example: "2023-01-01T00:00:00Z"
+        url:
+          type: string
+          description: URL to the commit
+          example: "https://api.example.com/v1/repos/my-repo/commits/abc123def4567890abcdef1234567890abcdef12"
+        html_url:
+          type: string
+          description: HTML URL to the commit
+          example: "https://github.com/user/my-repo/commit/abc123def4567890abcdef1234567890abcdef12"
+        stats:
+          type: object
+          description: Commit statistics (only included if with_stats is true)
+          properties:
+            additions:
+              type: integer
+              description: Number of additions
+              example: 10
+            deletions:
+              type: integer
+              description: Number of deletions
+              example: 5
+            total:
+              type: integer
+              description: Total number of changes
+              example: 15
+            files_changed:
+              type: integer
+              description: Number of files changed
+              example: 3
+
+    FileHistoryEntry:
+      allOf:
+        - $ref: '#/components/schemas/CommitLogEntry'
+        - type: object
+          properties:
+            file:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: File path
+                  example: "src/main.js"
+                status:
+                  type: string
+                  description: File status in this commit
+                  enum: [added, modified, deleted, renamed, copied]
+                  example: "modified"
+                changes:
+                  type: object
+                  properties:
+                    additions:
+                      type: integer
+                      description: Number of additions
+                      example: 5
+                    deletions:
+                      type: integer
+                      description: Number of deletions
+                      example: 2
+                    total:
+                      type: integer
+                      description: Total number of changes
+                      example: 7
+                blob_url:
+                  type: string
+                  description: URL to the blob
+                  example: "https://api.example.com/v1/repos/my-repo/blobs/def456abc7890123def456abc7890123def456ab"
+                raw_url:
+                  type: string
+                  description: URL to the raw file
+                  example: "https://raw.githubusercontent.com/user/my-repo/main/src/main.js"
+
+    BlameInfo:
+      type: object
+      properties:
+        file:
+          type: object
+          properties:
+            path:
+              type: string
+              description: File path
+              example: "src/main.js"
+            size:
+              type: integer
+              description: File size in bytes
+              example: 1024
+            lines:
+              type: integer
+              description: Number of lines in the file
+              example: 50
+        ref:
+          type: string
+          description: Reference name
+          example: "main"
+        ranges:
+          type: array
+          description: Blame ranges
+          items:
+            $ref: '#/components/schemas/BlameRange'
+        commits:
+          type: object
+          description: Commits referenced in the blame
+          additionalProperties:
+            $ref: '#/components/schemas/CommitLogEntry'
+
+    BlameRange:
+      type: object
+      properties:
+        starting_line:
+          type: integer
+          description: Starting line number
+          example: 1
+        ending_line:
+          type: integer
+          description: Ending line number
+          example: 10
+        commit:
+          type: string
+          description: Commit SHA
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        author:
+          $ref: '#/components/schemas/CommitAuthor'
+        committer:
+          $ref: '#/components/schemas/CommitAuthor'
+        message:
+          type: string
+          description: Commit message
+          example: "Add new feature"
+        timestamp:
+          type: string
+          format: date-time
+          description: Commit timestamp
+          example: "2023-01-01T00:00:00Z"
+
+    CommitAuthor:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Author name
+          example: John Doe
+        email:
+          type: string
+          format: email
+          description: Author email
+          example: john.doe@example.com
+        date:
+          type: string
+          format: date-time
+          description: Author date
+          example: "2023-01-01T00:00:00Z"
+
+    PaginatedResponse:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            total_items:
+              type: integer
+              description: Total number of items
+              example: 100
+            total_pages:
+              type: integer
+              description: Total number of pages
+              example: 10
+            current_page:
+              type: integer
+              description: Current page number
+              example: 1
+            per_page:
+              type: integer
+              description: Number of items per page
+              example: 10
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code
+              example: invalid_request
+            message:
+              type: string
+              description: Error message
+              example: The request is malformed or contains invalid parameters
+            details:
+              type: object
+              description: Additional error details
+              example: {}
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

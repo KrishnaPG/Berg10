@@ -1,0 +1,611 @@
+openapi: 3.0.0
+info:
+  title: Git Repository API
+  description: API for managing Git repositories
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: https://staging-api.example.com/v1
+    description: Staging server
+
+security:
+  - BearerAuth: []
+  - BasicAuth: []
+  - CookieAuth: []
+  - OidcAuth: []
+  - SamlAuth: []
+
+paths:
+  /repos:
+    post:
+      tags:
+        - Repository
+      summary: Create repository
+      description: Creates a new Git repository with the specified configuration
+      operationId: createRepository
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepositoryCreateRequest'
+      responses:
+        '201':
+          description: Repository created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repository'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      tags:
+        - Repository
+      summary: List repositories
+      description: Retrieves a list of repositories accessible to the authenticated user
+      operationId: listRepositories
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Order'
+        - name: type
+          in: query
+          description: Repository type
+          required: false
+          schema:
+            type: string
+            enum: [all, owner, member]
+            default: all
+        - name: search
+          in: query
+          description: Search term for filtering repositories
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Repository'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /repos/{repo}:
+    get:
+      tags:
+        - Repository
+      summary: Get repository details
+      description: Retrieves detailed information about a specific repository
+      operationId: getRepository
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryDetails'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Repository
+      summary: Update repository
+      description: Updates repository settings and metadata
+      operationId: updateRepository
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepositoryUpdateRequest'
+      responses:
+        '200':
+          description: Repository updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryUpdateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Repository
+      summary: Delete repository
+      description: Deletes a repository permanently
+      operationId: deleteRepository
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: confirm
+          in: query
+          description: Confirmation text (must match repository name)
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Repository deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Repository deleted successfully
+                  repository_id:
+                    type: string
+                  repository_name:
+                    type: string
+        '400':
+          description: Invalid confirmation text
+          content:
+            application/json:
+              $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    BasicAuth:
+      type: http
+      scheme: basic
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: session_token
+    OidcAuth:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.example.com/.well-known/openid-configuration
+    SamlAuth:
+      type: apiKey
+      in: header
+      name: X-SAML-Assertion
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Page number for pagination
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPage:
+      name: per_page
+      in: query
+      description: Number of items per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 30
+    Sort:
+      name: sort
+      in: query
+      description: Field to sort by
+      required: false
+      schema:
+        type: string
+        default: created_at
+    Order:
+      name: order
+      in: query
+      description: Sort order
+      required: false
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+
+  schemas:
+    RepositoryCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Repository name
+          example: my-awesome-repo
+        description:
+          type: string
+          description: Repository description
+          example: An awesome repository for my project
+        default_branch:
+          type: string
+          description: Default branch name
+          default: main
+          example: main
+        is_private:
+          type: boolean
+          description: Whether repository is private
+          default: false
+          example: true
+        initialize_with_readme:
+          type: boolean
+          description: Initialize with README file
+          default: false
+          example: true
+        gitignore_template:
+          type: string
+          description: Gitignore template name
+          example: Node
+        license_template:
+          type: string
+          description: License template name
+          example: MIT
+
+    RepositoryUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: New repository name
+          example: new-repo-name
+        description:
+          type: string
+          description: Repository description
+          example: Updated repository description
+        default_branch:
+          type: string
+          description: Default branch name
+          example: main
+        is_private:
+          type: boolean
+          description: Whether repository is private
+          example: true
+        has_issues:
+          type: boolean
+          description: Enable issues
+          example: true
+        has_wiki:
+          type: boolean
+          description: Enable wiki
+          example: true
+        has_downloads:
+          type: boolean
+          description: Enable downloads
+          example: true
+        default_merge_style:
+          type: string
+          description: Default merge style
+          enum: [merge, squash, rebase]
+          example: merge
+        allow_squash_merge:
+          type: boolean
+          description: Allow squash merge
+          example: true
+        allow_rebase_merge:
+          type: boolean
+          description: Allow rebase merge
+          example: true
+        allow_merge_commits:
+          type: boolean
+          description: Allow merge commits
+          example: true
+        archived:
+          type: boolean
+          description: Archive the repository
+          example: false
+
+    Repository:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Repository ID
+          example: repo_123456
+        name:
+          type: string
+          description: Repository name
+          example: my-awesome-repo
+        description:
+          type: string
+          description: Repository description
+          example: An awesome repository for my project
+        default_branch:
+          type: string
+          description: Default branch name
+          example: main
+        is_private:
+          type: boolean
+          description: Whether repository is private
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: 2023-01-01T00:00:00Z
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: 2023-01-01T00:00:00Z
+        clone_url:
+          type: string
+          description: HTTPS clone URL
+          example: https://github.com/user/my-awesome-repo.git
+        ssh_url:
+          type: string
+          description: SSH clone URL
+          example: git@github.com:user/my-awesome-repo.git
+        size:
+          type: integer
+          description: Repository size in KB
+          example: 1024
+        owner:
+          $ref: '#/components/schemas/User'
+
+    RepositoryDetails:
+      allOf:
+        - $ref: '#/components/schemas/Repository'
+        - type: object
+          properties:
+            disk_usage:
+              type: integer
+              description: Disk usage in bytes
+              example: 1048576
+            languages:
+              type: array
+              description: Programming languages used in the repository
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: JavaScript
+                  percentage:
+                    type: number
+                    format: float
+                    example: 75.5
+            contributors_count:
+              type: integer
+              description: Number of contributors
+              example: 5
+            branches_count:
+              type: integer
+              description: Number of branches
+              example: 3
+            tags_count:
+              type: integer
+              description: Number of tags
+              example: 2
+            commits_count:
+              type: integer
+              description: Number of commits
+              example: 42
+            permissions:
+              $ref: '#/components/schemas/Permissions'
+
+    RepositoryUpdateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Repository ID
+          example: repo_123456
+        name:
+          type: string
+          description: Repository name
+          example: new-repo-name
+        description:
+          type: string
+          description: Repository description
+          example: Updated repository description
+        default_branch:
+          type: string
+          description: Default branch name
+          example: main
+        is_private:
+          type: boolean
+          description: Whether repository is private
+          example: true
+        has_issues:
+          type: boolean
+          description: Enable issues
+          example: true
+        has_wiki:
+          type: boolean
+          description: Enable wiki
+          example: true
+        has_downloads:
+          type: boolean
+          description: Enable downloads
+          example: true
+        default_merge_style:
+          type: string
+          description: Default merge style
+          example: merge
+        allow_squash_merge:
+          type: boolean
+          description: Allow squash merge
+          example: true
+        allow_rebase_merge:
+          type: boolean
+          description: Allow rebase merge
+          example: true
+        allow_merge_commits:
+          type: boolean
+          description: Allow merge commits
+          example: true
+        archived:
+          type: boolean
+          description: Archive the repository
+          example: false
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+          example: 2023-01-01T00:00:00Z
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: User ID
+          example: user_123456
+        name:
+          type: string
+          description: User name
+          example: John Doe
+        email:
+          type: string
+          format: email
+          description: User email
+          example: john.doe@example.com
+
+    Permissions:
+      type: object
+      properties:
+        admin:
+          type: boolean
+          description: Admin permission
+          example: true
+        push:
+          type: boolean
+          description: Push permission
+          example: true
+        pull:
+          type: boolean
+          description: Pull permission
+          example: true
+
+    PaginatedResponse:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            total_items:
+              type: integer
+              description: Total number of items
+              example: 100
+            total_pages:
+              type: integer
+              description: Total number of pages
+              example: 10
+            current_page:
+              type: integer
+              description: Current page number
+              example: 1
+            per_page:
+              type: integer
+              description: Number of items per page
+              example: 10
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code
+              example: invalid_request
+            message:
+              type: string
+              description: Error message
+              example: The request is malformed or contains invalid parameters
+            details:
+              type: object
+              description: Additional error details
+              example: {}
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

@@ -1,0 +1,568 @@
+openapi: 3.0.0
+info:
+  title: Git Stash API
+  description: API for managing Git stashes
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: https://staging-api.example.com/v1
+    description: Staging server
+
+security:
+  - BearerAuth: []
+  - BasicAuth: []
+  - CookieAuth: []
+  - OidcAuth: []
+  - SamlAuth: []
+
+paths:
+  /repos/{repo}/stash:
+    get:
+      tags:
+        - Stash
+      summary: List stashes
+      description: Retrieves a list of stashes in a repository
+      operationId: listStashes
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: sort
+          in: query
+          description: Field to sort by
+          required: false
+          schema:
+            type: string
+            enum: [created, updated]
+            default: created
+        - name: order
+          in: query
+          description: Sort order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Stash'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Stash
+      summary: Create stash
+      description: Creates a new stash from the current working directory and index
+      operationId: createStash
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StashCreateRequest'
+      responses:
+        '201':
+          description: Stash created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stash'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /repos/{repo}/stash/{stash_id}:
+    get:
+      tags:
+        - Stash
+      summary: Get stash
+      description: Retrieves detailed information about a specific stash
+      operationId: getStash
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: stash_id
+          in: path
+          description: Stash ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StashDetails'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /repos/{repo}/stash/{stash_id}/apply:
+    post:
+      tags:
+        - Stash
+      summary: Apply stash
+      description: Applies a stash to the working directory without removing it from the stash list
+      operationId: applyStash
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: stash_id
+          in: path
+          description: Stash ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StashApplyRequest'
+      responses:
+        '200':
+          description: Stash applied successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Stash applied successfully"
+                  stash:
+                    $ref: '#/components/schemas/Stash'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /repos/{repo}/stash/{stash_id}/pop:
+    post:
+      tags:
+        - Stash
+      summary: Pop stash
+      description: Applies a stash to the working directory and removes it from the stash list
+      operationId: popStash
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: stash_id
+          in: path
+          description: Stash ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StashApplyRequest'
+      responses:
+        '200':
+          description: Stash popped successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Stash popped successfully"
+                  stash:
+                    $ref: '#/components/schemas/Stash'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /repos/{repo}/stash/{stash_id}:
+    delete:
+      tags:
+        - Stash
+      summary: Drop stash
+      description: Removes a stash from the stash list without applying it
+      operationId: dropStash
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: stash_id
+          in: path
+          description: Stash ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Stash dropped successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    BasicAuth:
+      type: http
+      scheme: basic
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: session_token
+    OidcAuth:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.example.com/.well-known/openid-configuration
+    SamlAuth:
+      type: apiKey
+      in: header
+      name: X-SAML-Assertion
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Page number for pagination
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPage:
+      name: per_page
+      in: query
+      description: Number of items per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 30
+
+  schemas:
+    StashCreateRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Stash message
+          example: "WIP: Feature implementation"
+        include_untracked:
+          type: boolean
+          description: Include untracked files in the stash
+          default: false
+          example: false
+        include_ignored:
+          type: boolean
+          description: Include ignored files in the stash
+          default: false
+          example: false
+        keep_index:
+          type: boolean
+          description: Keep the index intact while stashing
+          default: false
+          example: false
+
+    StashApplyRequest:
+      type: object
+      properties:
+        reinstate_index:
+          type: boolean
+          description: Reinstate the index state when applying the stash
+          default: false
+          example: false
+        quiet:
+          type: boolean
+          description: Suppress output messages
+          default: false
+          example: false
+
+    Stash:
+      type: object
+      required:
+        - id
+        - message
+        - created_at
+      properties:
+        id:
+          type: string
+          description: Stash ID
+          example: "stash@{0}"
+        message:
+          type: string
+          description: Stash message
+          example: "WIP: Feature implementation"
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2023-01-01T00:00:00Z"
+        branch:
+          type: string
+          description: Branch name where the stash was created
+          example: "main"
+        stats:
+          type: object
+          properties:
+            files_changed:
+              type: integer
+              description: Number of files changed in the stash
+              example: 3
+            insertions:
+              type: integer
+              description: Number of insertions in the stash
+              example: 15
+            deletions:
+              type: integer
+              description: Number of deletions in the stash
+              example: 5
+        url:
+          type: string
+          description: URL to the stash
+          example: "https://api.example.com/v1/repos/my-repo/stash/stash@{0}"
+
+    StashDetails:
+      allOf:
+        - $ref: '#/components/schemas/Stash'
+        - type: object
+          properties:
+            commit:
+              $ref: '#/components/schemas/CommitSummary'
+            files:
+              type: array
+              description: Files in the stash
+              items:
+                $ref: '#/components/schemas/StashFile'
+
+    StashFile:
+      type: object
+      properties:
+        path:
+          type: string
+          description: File path
+          example: "src/main.js"
+        status:
+          type: string
+          description: File status in the stash
+          enum: [added, modified, deleted, renamed, copied]
+          example: "modified"
+        changes:
+          type: object
+          properties:
+            additions:
+              type: integer
+              description: Number of additions
+              example: 5
+            deletions:
+              type: integer
+              description: Number of deletions
+              example: 2
+            total:
+              type: integer
+              description: Total number of changes
+              example: 7
+        diff:
+          type: string
+          description: Diff of changes
+          example: "@@ -1,5 +1,6 @@\n function hello() {\n-  console.log('Hello');\n+  console.log('Hello World');\n }\n"
+        blob_url:
+          type: string
+          description: URL to the blob
+          example: "https://api.example.com/v1/repos/my-repo/blobs/def456abc7890123def456abc7890123def456ab"
+
+    CommitSummary:
+      type: object
+      properties:
+        sha:
+          type: string
+          description: Commit SHA
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        message:
+          type: string
+          description: Commit message
+          example: "WIP: Feature implementation"
+        author:
+          $ref: '#/components/schemas/CommitAuthor'
+        committer:
+          $ref: '#/components/schemas/CommitAuthor'
+        timestamp:
+          type: string
+          format: date-time
+          description: Commit timestamp
+          example: "2023-01-01T00:00:00Z"
+        url:
+          type: string
+          description: URL to the commit
+          example: "https://api.example.com/v1/repos/my-repo/commits/abc123def4567890abcdef1234567890abcdef12"
+
+    CommitAuthor:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Author name
+          example: John Doe
+        email:
+          type: string
+          format: email
+          description: Author email
+          example: john.doe@example.com
+        date:
+          type: string
+          format: date-time
+          description: Author date
+          example: "2023-01-01T00:00:00Z"
+
+    PaginatedResponse:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            total_items:
+              type: integer
+              description: Total number of items
+              example: 5
+            total_pages:
+              type: integer
+              description: Total number of pages
+              example: 1
+            current_page:
+              type: integer
+              description: Current page number
+              example: 1
+            per_page:
+              type: integer
+              description: Number of items per page
+              example: 30
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code
+              example: invalid_request
+            message:
+              type: string
+              description: Error message
+              example: The request is malformed or contains invalid parameters
+            details:
+              type: object
+              description: Additional error details
+              example: {}
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

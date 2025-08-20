@@ -1,0 +1,558 @@
+openapi: 3.0.0
+info:
+  title: Git Commit API
+  description: API for managing Git commits
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: https://staging-api.example.com/v1
+    description: Staging server
+
+security:
+  - BearerAuth: []
+  - BasicAuth: []
+  - CookieAuth: []
+  - OidcAuth: []
+  - SamlAuth: []
+
+paths:
+  /repos/{repo}/commits:
+    get:
+      tags:
+        - Commit
+      summary: List commits
+      description: Retrieves a list of commits in a repository
+      operationId: listCommits
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+        - name: sha
+          in: query
+          description: SHA or branch to start listing commits from
+          required: false
+          schema:
+            type: string
+        - name: path
+          in: query
+          description: Only commits containing this file path
+          required: false
+          schema:
+            type: string
+        - name: author
+          in: query
+          description: Only commits by this author
+          required: false
+          schema:
+            type: string
+        - name: since
+          in: query
+          description: Only commits after this date (ISO 8601 format)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: until
+          in: query
+          description: Only commits before this date (ISO 8601 format)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: sort
+          in: query
+          description: Field to sort by
+          required: false
+          schema:
+            type: string
+            enum: [created, updated]
+            default: created
+        - name: order
+          in: query
+          description: Sort order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Commit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Commit
+      summary: Create commit
+      description: Creates a new commit in the repository
+      operationId: createCommit
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitCreateRequest'
+      responses:
+        '201':
+          description: Commit created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Commit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /repos/{repo}/commits/{commit}:
+    get:
+      tags:
+        - Commit
+      summary: Get commit details
+      description: Retrieves detailed information about a specific commit
+      operationId: getCommit
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: commit
+          in: path
+          description: Commit SHA
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitDetails'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Commit
+      summary: Update commit message
+      description: Updates the commit message (only for the most recent commit or with force flag)
+      operationId: updateCommitMessage
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: commit
+          in: path
+          description: Commit SHA
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitUpdateRequest'
+      responses:
+        '200':
+          description: Commit message updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Commit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags:
+        - Commit
+      summary: Revert commit
+      description: Reverts a commit by creating a new commit that undoes the changes
+      operationId: revertCommit
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: commit
+          in: path
+          description: Commit SHA
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Commit reverted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Commit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    BasicAuth:
+      type: http
+      scheme: basic
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: session_token
+    OidcAuth:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.example.com/.well-known/openid-configuration
+    SamlAuth:
+      type: apiKey
+      in: header
+      name: X-SAML-Assertion
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Page number for pagination
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPage:
+      name: per_page
+      in: query
+      description: Number of items per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 30
+
+  schemas:
+    CommitCreateRequest:
+      type: object
+      required:
+        - message
+        - tree
+      properties:
+        message:
+          type: string
+          description: Commit message
+          example: "Add new feature"
+        tree:
+          type: string
+          description: SHA of the tree object this commit points to
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        parents:
+          type: array
+          description: SHAs of the parent commits
+          items:
+            type: string
+          example: ["def456abc7890123def456abc7890123def456ab"]
+        author:
+          $ref: '#/components/schemas/CommitAuthor'
+        committer:
+          $ref: '#/components/schemas/CommitAuthor'
+
+    CommitUpdateRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: New commit message
+          example: "Updated commit message"
+        force:
+          type: boolean
+          description: Force update even if not the most recent commit
+          default: false
+          example: false
+
+    Commit:
+      type: object
+      required:
+        - sha
+        - message
+        - author
+        - committer
+      properties:
+        sha:
+          type: string
+          description: Commit SHA
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        message:
+          type: string
+          description: Commit message
+          example: "Add new feature"
+        author:
+          $ref: '#/components/schemas/CommitAuthor'
+        committer:
+          $ref: '#/components/schemas/CommitAuthor'
+        tree:
+          type: object
+          properties:
+            sha:
+              type: string
+              description: Tree SHA
+              example: "def456abc7890123def456abc7890123def456ab"
+            url:
+              type: string
+              description: URL to the tree
+              example: "https://api.example.com/v1/repos/my-repo/trees/def456abc7890123def456abc7890123def456ab"
+        parents:
+          type: array
+          description: Parent commits
+          items:
+            type: object
+            properties:
+              sha:
+                type: string
+                description: Parent commit SHA
+                example: "ghi789jkl0123456ghi789jkl0123456ghi789jk"
+              url:
+                type: string
+                description: URL to the parent commit
+                example: "https://api.example.com/v1/repos/my-repo/commits/ghi789jkl0123456ghi789jkl0123456ghi789jk"
+        url:
+          type: string
+          description: URL to the commit
+          example: "https://api.example.com/v1/repos/my-repo/commits/abc123def4567890abcdef1234567890abcdef12"
+        html_url:
+          type: string
+          description: HTML URL to the commit
+          example: "https://github.com/user/my-repo/commit/abc123def4567890abcdef1234567890abcdef12"
+        comments_url:
+          type: string
+          description: URL to the commit comments
+          example: "https://api.example.com/v1/repos/my-repo/commits/abc123def4567890abcdef1234567890abcdef12/comments"
+
+    CommitDetails:
+      allOf:
+        - $ref: '#/components/schemas/Commit'
+        - type: object
+          properties:
+            files:
+              type: array
+              description: Files changed in this commit
+              items:
+                $ref: '#/components/schemas/CommitFile'
+            stats:
+              type: object
+              properties:
+                additions:
+                  type: integer
+                  description: Number of additions
+                  example: 10
+                deletions:
+                  type: integer
+                  description: Number of deletions
+                  example: 5
+                total:
+                  type: integer
+                  description: Total number of changes
+                  example: 15
+
+    CommitFile:
+      type: object
+      properties:
+        filename:
+          type: string
+          description: File name
+          example: "src/main.js"
+        status:
+          type: string
+          description: File status
+          enum: [added, modified, removed, renamed, copied]
+          example: "modified"
+        additions:
+          type: integer
+          description: Number of additions
+          example: 5
+        deletions:
+          type: integer
+          description: Number of deletions
+          example: 2
+        changes:
+          type: integer
+          description: Total number of changes
+          example: 7
+        blob_url:
+          type: string
+          description: URL to the blob
+          example: "https://api.example.com/v1/repos/my-repo/blobs/def456abc7890123def456abc7890123def456ab"
+        raw_url:
+          type: string
+          description: URL to the raw file
+          example: "https://raw.githubusercontent.com/user/my-repo/main/src/main.js"
+        contents_url:
+          type: string
+          description: URL to the file contents
+          example: "https://api.example.com/v1/repos/my-repo/contents/src/main.js?ref=abc123def4567890abcdef1234567890abcdef12"
+        patch:
+          type: string
+          description: Patch of changes
+          example: "@@ -1,5 +1,6 @@\n function hello() {\n-  console.log('Hello');\n+  console.log('Hello World');\n }\n"
+
+    CommitAuthor:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Author name
+          example: John Doe
+        email:
+          type: string
+          format: email
+          description: Author email
+          example: john.doe@example.com
+        date:
+          type: string
+          format: date-time
+          description: Author date
+          example: 2023-01-01T00:00:00Z
+
+    PaginatedResponse:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            total_items:
+              type: integer
+              description: Total number of items
+              example: 100
+            total_pages:
+              type: integer
+              description: Total number of pages
+              example: 10
+            current_page:
+              type: integer
+              description: Current page number
+              example: 1
+            per_page:
+              type: integer
+              description: Number of items per page
+              example: 10
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code
+              example: invalid_request
+            message:
+              type: string
+              description: Error message
+              example: The request is malformed or contains invalid parameters
+            details:
+              type: object
+              description: Additional error details
+              example: {}
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

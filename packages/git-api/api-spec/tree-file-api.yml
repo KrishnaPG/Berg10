@@ -1,0 +1,757 @@
+openapi: 3.0.0
+info:
+  title: Git Tree/File API
+  description: API for managing Git trees, blobs, and file contents
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: https://staging-api.example.com/v1
+    description: Staging server
+
+security:
+  - BearerAuth: []
+  - BasicAuth: []
+  - CookieAuth: []
+  - OidcAuth: []
+  - SamlAuth: []
+
+paths:
+  /repos/{repo}/trees/{tree_sha}:
+    get:
+      tags:
+        - Tree/File
+      summary: Get tree
+      description: Retrieves a tree object from a repository
+      operationId: getTree
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: tree_sha
+          in: path
+          description: Tree SHA
+          required: true
+          schema:
+            type: string
+        - name: recursive
+          in: query
+          description: Get tree recursively
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tree'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /repos/{repo}/trees:
+    post:
+      tags:
+        - Tree/File
+      summary: Create tree
+      description: Creates a new tree object
+      operationId: createTree
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TreeCreateRequest'
+      responses:
+        '201':
+          description: Tree created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tree'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /repos/{repo}/blobs/{blob_sha}:
+    get:
+      tags:
+        - Tree/File
+      summary: Get blob
+      description: Retrieves a blob object from a repository
+      operationId: getBlob
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: blob_sha
+          in: path
+          description: Blob SHA
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /repos/{repo}/blobs:
+    post:
+      tags:
+        - Tree/File
+      summary: Create blob
+      description: Creates a new blob object
+      operationId: createBlob
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlobCreateRequest'
+      responses:
+        '201':
+          description: Blob created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blob'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /repos/{repo}/contents/{path}:
+    get:
+      tags:
+        - Tree/File
+      summary: Get file contents
+      description: Retrieves the contents of a file or directory in a repository
+      operationId: getFileContents
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: path
+          description: File path
+          required: true
+          schema:
+            type: string
+        - name: ref
+          in: query
+          description: The name of the commit/branch/tag
+          required: false
+          schema:
+            type: string
+            default: main
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/FileContent'
+                  - $ref: '#/components/schemas/DirectoryContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Tree/File
+      summary: Create/update file
+      description: Creates a new file or replaces an existing file in a repository
+      operationId: createOrUpdateFile
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: path
+          description: File path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileCreateUpdateRequest'
+      responses:
+        '200':
+          description: File updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileContent'
+        '201':
+          description: File created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileContent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags:
+        - Tree/File
+      summary: Delete file
+      description: Deletes a file in a repository
+      operationId: deleteFile
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: path
+          in: path
+          description: File path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileDeleteRequest'
+      responses:
+        '200':
+          description: File deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  commit:
+                    $ref: '#/components/schemas/Commit'
+                  content:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        example: README.md
+                      path:
+                        type: string
+                        example: README.md
+                      sha:
+                        type: string
+                        example: abc123def4567890abcdef1234567890abcdef12
+                      size:
+                        type: integer
+                        example: 120
+                      url:
+                        type: string
+                        example: https://api.example.com/v1/repos/my-repo/contents/README.md
+                      html_url:
+                        type: string
+                        example: https://github.com/user/my-repo/blob/main/README.md
+                      git_url:
+                        type: string
+                        example: https://api.example.com/v1/repos/my-repo/git/blobs/abc123def4567890abcdef1234567890abcdef12
+                      download_url:
+                        type: string
+                        example: https://raw.githubusercontent.com/user/my-repo/main/README.md
+                      type:
+                        type: string
+                        example: file
+                      _links:
+                        type: object
+                        properties:
+                          git:
+                            type: string
+                            example: https://api.example.com/v1/repos/my-repo/git/blobs/abc123def4567890abcdef1234567890abcdef12
+                          self:
+                            type: string
+                            example: https://api.example.com/v1/repos/my-repo/contents/README.md
+                          html:
+                            type: string
+                            example: https://github.com/user/my-repo/blob/main/README.md
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    BasicAuth:
+      type: http
+      scheme: basic
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: session_token
+    OidcAuth:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.example.com/.well-known/openid-configuration
+    SamlAuth:
+      type: apiKey
+      in: header
+      name: X-SAML-Assertion
+
+  schemas:
+    TreeCreateRequest:
+      type: object
+      required:
+        - tree
+      properties:
+        base_tree:
+          type: string
+          description: SHA of the base tree
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        tree:
+          type: array
+          description: Tree entries
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: Path of the file
+                example: "src/main.js"
+              mode:
+                type: string
+                description: File mode
+                example: "100644"
+              type:
+                type: string
+                description: Type of the object
+                enum: [blob, tree]
+                example: "blob"
+              sha:
+                type: string
+                description: SHA of the object
+                example: "def456abc7890123def456abc7890123def456ab"
+
+    Tree:
+      type: object
+      required:
+        - sha
+        - tree
+      properties:
+        sha:
+          type: string
+          description: Tree SHA
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        url:
+          type: string
+          description: URL to the tree
+          example: "https://api.example.com/v1/repos/my-repo/trees/abc123def4567890abcdef1234567890abcdef12"
+        tree:
+          type: array
+          description: Tree entries
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: Path of the file
+                example: "src/main.js"
+              mode:
+                type: string
+                description: File mode
+                example: "100644"
+              type:
+                type: string
+                description: Type of the object
+                enum: [blob, tree]
+                example: "blob"
+              size:
+                type: integer
+                description: Size of the object (for blobs)
+                example: 1024
+              sha:
+                type: string
+                description: SHA of the object
+                example: "def456abc7890123def456abc7890123def456ab"
+              url:
+                type: string
+                description: URL to the object
+                example: "https://api.example.com/v1/repos/my-repo/blobs/def456abc7890123def456abc7890123def456ab"
+        truncated:
+          type: boolean
+          description: Whether the tree is truncated
+          example: false
+
+    BlobCreateRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: Content of the blob
+          example: "console.log('Hello World');"
+        encoding:
+          type: string
+          description: Encoding of the content
+          enum: [utf-8, base64]
+          default: utf-8
+          example: "utf-8"
+
+    Blob:
+      type: object
+      required:
+        - sha
+        - content
+      properties:
+        sha:
+          type: string
+          description: Blob SHA
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        content:
+          type: string
+          description: Content of the blob
+          example: "console.log('Hello World');"
+        encoding:
+          type: string
+          description: Encoding of the content
+          example: "utf-8"
+        size:
+          type: integer
+          description: Size of the blob in bytes
+          example: 23
+        url:
+          type: string
+          description: URL to the blob
+          example: "https://api.example.com/v1/repos/my-repo/blobs/abc123def4567890abcdef1234567890abcdef12"
+
+    FileCreateUpdateRequest:
+      type: object
+      required:
+        - message
+        - content
+      properties:
+        message:
+          type: string
+          description: Commit message
+          example: "Update README"
+        content:
+          type: string
+          description: Content of the file
+          example: "# My Project\n\nThis is my project."
+        encoding:
+          type: string
+          description: Encoding of the content
+          enum: [utf-8, base64]
+          default: utf-8
+          example: "utf-8"
+        branch:
+          type: string
+          description: Branch name
+          default: main
+          example: "main"
+        sha:
+          type: string
+          description: SHA of the file being replaced (required for updates)
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        author:
+          $ref: '#/components/schemas/CommitAuthor'
+        committer:
+          $ref: '#/components/schemas/CommitAuthor'
+
+    FileDeleteRequest:
+      type: object
+      required:
+        - message
+        - sha
+      properties:
+        message:
+          type: string
+          description: Commit message
+          example: "Delete obsolete file"
+        sha:
+          type: string
+          description: SHA of the file to delete
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        branch:
+          type: string
+          description: Branch name
+          default: main
+          example: "main"
+        author:
+          $ref: '#/components/schemas/CommitAuthor'
+        committer:
+          $ref: '#/components/schemas/CommitAuthor'
+
+    FileContent:
+      type: object
+      properties:
+        name:
+          type: string
+          description: File name
+          example: "README.md"
+        path:
+          type: string
+          description: File path
+          example: "README.md"
+        sha:
+          type: string
+          description: File SHA
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        size:
+          type: integer
+          description: File size in bytes
+          example: 1024
+        url:
+          type: string
+          description: URL to the file
+          example: "https://api.example.com/v1/repos/my-repo/contents/README.md"
+        html_url:
+          type: string
+          description: HTML URL to the file
+          example: "https://github.com/user/my-repo/blob/main/README.md"
+        git_url:
+          type: string
+          description: Git URL to the file
+          example: "https://api.example.com/v1/repos/my-repo/git/blobs/abc123def4567890abcdef1234567890abcdef12"
+        download_url:
+          type: string
+          description: Download URL for the file
+          example: "https://raw.githubusercontent.com/user/my-repo/main/README.md"
+        type:
+          type: string
+          description: Type of the object
+          example: "file"
+        content:
+          type: string
+          description: Content of the file (base64 encoded)
+          example: "IyBNeSBQcm9qZWN0CgpUaGlzIGlzIG15IHByb2plY3Qu"
+        encoding:
+          type: string
+          description: Encoding of the content
+          example: "base64"
+        _links:
+          type: object
+          properties:
+            git:
+              type: string
+              example: "https://api.example.com/v1/repos/my-repo/git/blobs/abc123def4567890abcdef1234567890abcdef12"
+            self:
+              type: string
+              example: "https://api.example.com/v1/repos/my-repo/contents/README.md"
+            html:
+              type: string
+              example: "https://github.com/user/my-repo/blob/main/README.md"
+
+    DirectoryContent:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Directory name
+          example: "src"
+        path:
+          type: string
+          description: Directory path
+          example: "src"
+        sha:
+          type: string
+          description: Directory SHA
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        size:
+          type: integer
+          description: Directory size in bytes
+          example: 0
+        url:
+          type: string
+          description: URL to the directory
+          example: "https://api.example.com/v1/repos/my-repo/contents/src"
+        html_url:
+          type: string
+          description: HTML URL to the directory
+          example: "https://github.com/user/my-repo/tree/main/src"
+        git_url:
+          type: string
+          description: Git URL to the directory
+          example: "https://api.example.com/v1/repos/my-repo/git/trees/abc123def4567890abcdef1234567890abcdef12"
+        download_url:
+          type: string
+          description: Download URL for the directory
+          example: null
+        type:
+          type: string
+          description: Type of the object
+          example: "dir"
+        _links:
+          type: object
+          properties:
+            git:
+              type: string
+              example: "https://api.example.com/v1/repos/my-repo/git/trees/abc123def4567890abcdef1234567890abcdef12"
+            self:
+              type: string
+              example: "https://api.example.com/v1/repos/my-repo/contents/src"
+            html:
+              type: string
+              example: "https://github.com/user/my-repo/tree/main/src"
+
+    CommitAuthor:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Author name
+          example: John Doe
+        email:
+          type: string
+          format: email
+          description: Author email
+          example: john.doe@example.com
+        date:
+          type: string
+          format: date-time
+          description: Author date
+          example: 2023-01-01T00:00:00Z
+
+    Commit:
+      type: object
+      properties:
+        sha:
+          type: string
+          description: Commit SHA
+          example: "abc123def4567890abcdef1234567890abcdef12"
+        message:
+          type: string
+          description: Commit message
+          example: "Update README"
+        author:
+          $ref: '#/components/schemas/CommitAuthor'
+        committer:
+          $ref: '#/components/schemas/CommitAuthor'
+        url:
+          type: string
+          description: URL to the commit
+          example: "https://api.example.com/v1/repos/my-repo/commits/abc123def4567890abcdef1234567890abcdef12"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code
+              example: invalid_request
+            message:
+              type: string
+              description: Error message
+              example: The request is malformed or contains invalid parameters
+            details:
+              type: object
+              description: Additional error details
+              example: {}
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

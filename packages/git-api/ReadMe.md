@@ -49,6 +49,8 @@
   - Merge(branch, fastForward, message)  
   - Rebase(branch, onto, interactive)
 
+Detailed API spec for the above are available in the [api-spec](./api-spec/) folder.
+
 ---
 1. Data + Compute Layer
 

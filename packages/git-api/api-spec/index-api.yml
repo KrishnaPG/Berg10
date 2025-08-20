@@ -1,0 +1,409 @@
+openapi: 3.0.0
+info:
+  title: Git Index API
+  description: API for managing Git index (staging area)
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: https://staging-api.example.com/v1
+    description: Staging server
+
+security:
+  - BearerAuth: []
+  - BasicAuth: []
+  - CookieAuth: []
+  - OidcAuth: []
+  - SamlAuth: []
+
+paths:
+  /repos/{repo}/index:
+    get:
+      tags:
+        - Index
+      summary: Get index
+      description: Retrieves the current index (staging area) of a repository
+      operationId: getIndex
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+        - name: ref
+          in: query
+          description: The name of the commit/branch/tag
+          required: false
+          schema:
+            type: string
+            default: main
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Index'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Index
+      summary: Add to index
+      description: Adds files to the index (staging area)
+      operationId: addToIndex
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndexAddRequest'
+      responses:
+        '200':
+          description: Files added to index successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Index'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Index
+      summary: Update index
+      description: Updates files in the index (staging area)
+      operationId: updateIndex
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndexUpdateRequest'
+      responses:
+        '200':
+          description: Index updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Index'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - Index
+      summary: Remove from index
+      description: Removes files from the index (staging area)
+      operationId: removeFromIndex
+      parameters:
+        - name: repo
+          in: path
+          description: Repository name or ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndexRemoveRequest'
+      responses:
+        '200':
+          description: Files removed from index successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Index'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    BasicAuth:
+      type: http
+      scheme: basic
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: session_token
+    OidcAuth:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.example.com/.well-known/openid-configuration
+    SamlAuth:
+      type: apiKey
+      in: header
+      name: X-SAML-Assertion
+
+  schemas:
+    IndexAddRequest:
+      type: object
+      required:
+        - paths
+      properties:
+        paths:
+          type: array
+          description: Paths of files to add to the index
+          items:
+            type: string
+          example: ["src/main.js", "README.md"]
+        pattern:
+          type: string
+          description: Pattern of files to add to the index (alternative to paths)
+          example: "*.js"
+        update:
+          type: boolean
+          description: Update files already in the index
+          default: true
+          example: true
+        add_all:
+          type: boolean
+          description: Add all files to the index
+          default: false
+          example: false
+
+    IndexUpdateRequest:
+      type: object
+      required:
+        - updates
+      properties:
+        updates:
+          type: array
+          description: Updates to apply to the index
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: Path of the file to update
+                example: "src/main.js"
+              content:
+                type: string
+                description: New content of the file
+                example: "console.log('Hello World');"
+              encoding:
+                type: string
+                description: Encoding of the content
+                enum: [utf-8, base64]
+                default: utf-8
+                example: "utf-8"
+              mode:
+                type: string
+                description: File mode
+                example: "100644"
+
+    IndexRemoveRequest:
+      type: object
+      required:
+        - paths
+      properties:
+        paths:
+          type: array
+          description: Paths of files to remove from the index
+          items:
+            type: string
+          example: ["src/old-file.js"]
+        pattern:
+          type: string
+          description: Pattern of files to remove from the index (alternative to paths)
+          example: "*.tmp"
+        cached:
+          type: boolean
+          description: Remove only from the index, not from the working directory
+          default: false
+          example: false
+        recursive:
+          type: boolean
+          description: Remove directories recursively
+          default: false
+          example: false
+
+    Index:
+      type: object
+      properties:
+        repo:
+          type: string
+          description: Repository name or ID
+          example: "my-repo"
+        ref:
+          type: string
+          description: Reference name
+          example: "main"
+        entries:
+          type: array
+          description: Index entries
+          items:
+            $ref: '#/components/schemas/IndexEntry'
+        stats:
+          type: object
+          properties:
+            staged_files:
+              type: integer
+              description: Number of staged files
+              example: 5
+            staged_additions:
+              type: integer
+              description: Number of staged additions
+              example: 3
+            staged_modifications:
+              type: integer
+              description: Number of staged modifications
+              example: 2
+            staged_deletions:
+              type: integer
+              description: Number of staged deletions
+              example: 0
+        tree:
+          type: object
+          properties:
+            sha:
+              type: string
+              description: SHA of the tree object
+              example: "abc123def4567890abcdef1234567890abcdef12"
+            url:
+              type: string
+              description: URL to the tree object
+              example: "https://api.example.com/v1/repos/my-repo/trees/abc123def4567890abcdef1234567890abcdef12"
+
+    IndexEntry:
+      type: object
+      properties:
+        path:
+          type: string
+          description: Path of the file
+          example: "src/main.js"
+        mode:
+          type: string
+          description: File mode
+          example: "100644"
+        blob:
+          type: object
+          properties:
+            sha:
+              type: string
+              description: SHA of the blob object
+              example: "def456abc7890123def456abc7890123def456ab"
+            size:
+              type: integer
+              description: Size of the blob in bytes
+              example: 1024
+            url:
+              type: string
+              description: URL to the blob object
+              example: "https://api.example.com/v1/repos/my-repo/blobs/def456abc7890123def456abc7890123def456ab"
+        status:
+          type: string
+          description: Status of the file in the index
+          enum: [added, modified, deleted, renamed, copied, unmodified]
+          example: "modified"
+        changes:
+          type: object
+          properties:
+            additions:
+              type: integer
+              description: Number of additions
+              example: 5
+            deletions:
+              type: integer
+              description: Number of deletions
+              example: 2
+            total:
+              type: integer
+              description: Total number of changes
+              example: 7
+        diff:
+          type: string
+          description: Diff of changes
+          example: "@@ -1,5 +1,6 @@\n function hello() {\n-  console.log('Hello');\n+  console.log('Hello World');\n }\n"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code
+              example: invalid_request
+            message:
+              type: string
+              description: Error message
+              example: The request is malformed or contains invalid parameters
+            details:
+              type: object
+              description: Additional error details
+              example: {}
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
