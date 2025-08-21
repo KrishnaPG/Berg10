@@ -1,6 +1,7 @@
 import { CONFIG } from "../../config";
 import type { IGitBackend, TGitBackendType } from "./backend";
 import { createCachedBackend } from "./cached-backend";
+import { ISOGitBackend } from "./isogit";
 import { LibGit2Backend } from "./libgit2";
 import { ShellBackend } from "./shell";
 
@@ -8,7 +9,9 @@ const backends: Record<TGitBackendType, IGitBackend> = {};
 const getCachedBackend = (kind: TGitBackendType): IGitBackend => {
   const cachedBackend = backends[kind];
   if (!cachedBackend)
-    backends[kind] = createCachedBackend(kind === "libgit2" ? new LibGit2Backend() : new ShellBackend());
+    backends[kind] = createCachedBackend(
+      kind === "isogit" ? new ISOGitBackend() : kind === "libgit2" ? new LibGit2Backend() : new ShellBackend(),
+    );
   return backends[kind];
 };
 

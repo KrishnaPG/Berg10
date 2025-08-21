@@ -1,5 +1,5 @@
 import { Readable } from "node:stream";
-import type { IListCommitsOptions, TCommitMessage, TSha } from "../../types";
+import type { ICommit, IListCommitsOptions, TCommitMessage, TSha } from "../../types";
 import { gitStream } from "./helpers";
 
 // ---------- streaming with cursor ----------
@@ -12,7 +12,9 @@ export interface IListCommitsStreamOptions extends IListCommitsOptions {
  * Async generator that never buffers the whole list.
  * `after` is interpreted as “commits *older* than this SHA”.
  */
-export async function* listCommitsStream(opts: IListCommitsStreamOptions = {}) {
+export async function* listCommitsStream(
+  opts: IListCommitsStreamOptions = {},
+): AsyncGenerator<ICommit | { _cursor: TSha }, void, unknown> {
   const args = ["log", "--format=%H|%s|%an|%ae|%ad|%cn|%ce|%cd|%P|%T", "--date=iso"];
 
   if (opts.after) args.push(`${opts.after}..HEAD`);

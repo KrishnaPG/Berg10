@@ -60,7 +60,7 @@ export interface IRepositoryConfig {
   // Add other repository configuration properties as needed
 }
 
-export type TGitBackendType = "libgit2" | "shell";
+export type TGitBackendType = "libgit2" | "shell" | "isogit";
 
 export interface IGitBackend {
   // Repository operations
