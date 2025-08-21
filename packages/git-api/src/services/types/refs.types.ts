@@ -79,6 +79,8 @@ export interface IListTagsOptions {
   filter?: string;
 }
 
+export type TRefKind = "branch" | "tag";
+
 // Service Method Return Types
 export type TListAllRefsResult = IPaginatedResponse<IRef>;
 export type TListBranchesResult = IPaginatedResponse<IBranch>;

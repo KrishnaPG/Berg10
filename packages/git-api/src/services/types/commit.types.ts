@@ -3,7 +3,7 @@
  * Generated from packages/git-api/api-spec/commit-api.yml
  */
 
-import type { TAuthor, TBranch, TCommitMessage, TPath, TSha } from "./branded.types";
+import type { TAuthor, TCommitMessage, TPath, TSha } from "./branded.types";
 import type { ICommitAuthor, IPaginatedResponse } from "./shared.types";
 
 // Request Types
@@ -48,9 +48,11 @@ export interface ICommitDetails extends ICommit {
   };
 }
 
+export type TCommitFileStatus = "added" | "modified" | "removed" | "renamed" | "copied";
+
 export interface ICommitFile {
   filename: string;
-  status: "added" | "modified" | "removed" | "renamed" | "copied";
+  status: TCommitFileStatus;
   additions: number;
   deletions: number;
   changes: number;
@@ -72,6 +74,8 @@ export interface IListCommitsOptions {
   sort?: "created" | "updated";
   order?: "asc" | "desc";
 }
+
+export type TResetMode = "soft" | "mixed" | "hard";
 
 // Service Method Return Types
 export type TListCommitsResult = IPaginatedResponse<ICommit>;

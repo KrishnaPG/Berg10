@@ -1,15 +1,23 @@
 import { CONFIG } from "../../config";
-import type { IGitBackend } from "./backend";
+import type { IGitBackend, TGitBackendType } from "./backend";
+import { createCachedBackend } from "./cached-backend";
+import { LibGit2Backend } from "./libgit2";
 import { ShellBackend } from "./shell";
 
-// import { LibGit2Backend } from "./libgit2";
+const backends: Record<TGitBackendType, IGitBackend> = {};
+const getCachedBackend = (kind: TGitBackendType): IGitBackend => {
+  const cachedBackend = backends[kind];
+  if (!cachedBackend)
+    backends[kind] = createCachedBackend(kind === "libgit2" ? new LibGit2Backend() : new ShellBackend());
+  return backends[kind];
+};
 
-const active: IGitBackend = new ShellBackend(); //CONFIG.GIT_BACKEND === "libgit2" ? new LibGit2Backend() : new ShellBackend();
+let active: IGitBackend = getCachedBackend(CONFIG.GIT_BACKEND);
 
 export const backend = {
   current: () => active,
-  // TODO: implement switching later
-  // switch: (kind: BackendKind) => {
-  //   active = kind === "libgit2" ? new LibGit2Backend() : new ShellBackend();
-  // },
+  switch: (kind: TGitBackendType) => {
+    active = getCachedBackend(kind);
+    return active;
+  },
 };

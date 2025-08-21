@@ -46,6 +46,8 @@ import type {
   TBranch,
   TCommitMessage,
   TPath,
+  TRefKind,
+  TResetMode,
   TSha,
   TTagName,
 } from "../types";
@@ -58,7 +60,7 @@ export interface IRepositoryConfig {
   // Add other repository configuration properties as needed
 }
 
-export type GitBackendType = "libgit2" | "shell";
+export type TGitBackendType = "libgit2" | "shell";
 
 export interface IGitBackend {
   // Repository operations
@@ -72,13 +74,12 @@ export interface IGitBackend {
   deleteRepository(): Promise<void>;
 
   // Backend switching
-  switchBackend(to: GitBackendType): void;
-  getCurrentBackend(): GitBackendType;
+  getCurrentBackend(): TGitBackendType;
 
   // Ref operations
-  listRefs(type?: "branch" | "tag" | "all"): Promise<IRef[]>;
+  listRefs(type?: TRefKind | "all"): Promise<IRef[]>;
   getRef(name: string): Promise<IRef | null>;
-  createRef(name: string, sha: TSha, type: "branch" | "tag"): Promise<void>;
+  createRef(name: string, sha: TSha, type: TRefKind): Promise<void>;
   deleteRef(name: string): Promise<void>;
   renameRef(oldName: string, newName: string): Promise<void>;
   createBranch(name: TBranch, ref: TSha, startPoint?: TSha): Promise<IBranch>;
@@ -91,7 +92,7 @@ export interface IGitBackend {
   createCommit(options: ICommitCreateRequest): Promise<ICommit>;
   updateCommitMessage(sha: TSha, message: TCommitMessage, force?: boolean): Promise<ICommit>;
   revert(sha: TSha): Promise<ICommit>;
-  reset(target: TSha, mode: "soft" | "mixed" | "hard"): Promise<void>;
+  reset(target: TSha, mode: TResetMode): Promise<void>;
 
   // Tree operations
   listFiles(treeIsh: TSha, path?: TPath, recursive?: boolean): Promise<ITree>;
@@ -137,26 +138,26 @@ export interface IGitBackend {
 }
 
 export interface IBackendConfig {
-  type: GitBackendType;
+  type: TGitBackendType;
   options?: Record<string, any>;
 }
 
 export interface IBackendSwitchRequest {
-  to: GitBackendType;
+  to: TGitBackendType;
   graceful?: boolean;
   timeout?: number;
 }
 
 export interface IBackendSwitchResponse {
   success: boolean;
-  from: GitBackendType;
-  to: GitBackendType;
+  from: TGitBackendType;
+  to: TGitBackendType;
   switchedAt: Date;
 }
 
 export interface IBackendStatus {
-  current: GitBackendType;
-  available: GitBackendType[];
+  current: TGitBackendType;
+  available: TGitBackendType[];
   healthy: boolean;
   lastSwitch?: Date;
   metrics?: {
