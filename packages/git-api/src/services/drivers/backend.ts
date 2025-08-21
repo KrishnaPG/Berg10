@@ -126,7 +126,7 @@ export interface IGitBackend {
   // Log operations
   getCommitLog(options?: IGetCommitLogOptions): Promise<IPaginatedResponse<ICommitLogEntry>>;
   getFileHistory(path: TPath, options?: IGetFileHistoryOptions): Promise<IPaginatedResponse<IFileHistoryEntry>>;
-  blame(path: TPath, rev?: TSha): Promise<IBlameInfo>;
+  blame(path: TPath, rev?: TBranch): Promise<IBlameInfo>;
 
   // Merge/Rebase operations
   merge(branch: TBranch, options?: IMergeRequest): Promise<IMergeResult | IMergeStatus>;

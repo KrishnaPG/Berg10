@@ -1,6 +1,6 @@
 import { join } from "path";
-import { CONFIG } from "../../config";
-import type { TBranch, TCommitMessage, TPath, TRefKind, TRepositoryName, TSha, TTagName } from "../types";
+import type { Readable } from "stream";
+import { CONFIG } from "../../../config";
 import type {
   IBlameInfo,
   IBlob,
@@ -20,7 +20,7 @@ import type {
   IGetCommitLogOptions,
   IGetFileContentOptions,
   IGetFileHistoryOptions,
-  IGitBackend,
+  IIndex,
   IIndexEntry,
   IIndexUpdateRequest,
   IListCommitsOptions,
@@ -42,28 +42,18 @@ import type {
   ITagCreateRequest,
   ITree,
   ITreeCreateRequest,
-  TGitBackendType,
-} from "./backend";
-
-async function git(repo: string, args: string[], options?: { stdin?: string }): Promise<string> {
-  const process = Bun.spawn({
-    cmd: ["git", "-C", join(CONFIG.REPO_BASE, repo), ...args],
-    stdout: "pipe",
-    stdin: options?.stdin ? "pipe" : undefined,
-  });
-
-  if (options?.stdin) {
-    await process.stdin.write(options.stdin);
-    process.stdin.end();
-  }
-
-  const output = await new Response(process.stdout).text();
-  return output;
-}
+  TBranch,
+  TCommitMessage,
+  TPath,
+  TRefKind,
+  TRepositoryName,
+  TSha,
+  TTagName,
+} from "../../types";
+import type { IGitBackend, TGitBackendType } from "../backend";
+import { git, gitStream, parseRefLines } from "./helpers";
 
 export class ShellBackend implements IGitBackend {
-  kind: "shell" = "shell";
-
   // Repository operations
   async init(
     repoPath: TPath,
@@ -119,33 +109,35 @@ export class ShellBackend implements IGitBackend {
   }
 
   getCurrentBackend(): TGitBackendType {
-    return this.kind;
+    return "shell";
   }
 
   // Ref operations
   async listRefs(type?: TRefKind | "all"): Promise<IRef[]> {
     const args = ["for-each-ref", "--format=%(refname:short) %(objectname) %(objecttype)"];
+
     if (type === "branch") args.push("refs/heads/");
     else if (type === "tag") args.push("refs/tags/");
     else args.push("refs/heads/", "refs/tags/");
 
-    const out = await git(".", args);
-    return out
-      .trim()
-      .split("\n")
-      .filter((line) => line.length > 0)
-      .map((line) => {
-        const [name, sha, type] = line.split(" ");
-        return {
+    const refs: IRef[] = [];
+    let chunk = "";
+    for await (const data of gitStream(".", args)) {
+      chunk += data;
+      const lastNL = chunk.lastIndexOf("\n");
+      if (lastNL === -1) continue;
+
+      for (const [name, sha, type] of parseRefLines(chunk.slice(0, lastNL))) {
+        refs.push({
           name,
           ref: sha as TSha,
-          object: {
-            type,
-            sha: sha as TSha,
-          },
+          object: { type, sha: sha as TSha },
           url: "",
-        };
-      });
+        });
+      }
+      chunk = chunk.slice(lastNL + 1);
+    }
+    return refs;
   }
 
   async getRef(name: string): Promise<IRef | null> {
@@ -263,48 +255,45 @@ export class ShellBackend implements IGitBackend {
   }
 
   // Commit operations
-  async listCommits(options?: IListCommitsOptions): Promise<ICommit[]> {
-    const args = ["log", "--format=%H|%s|%an|%ae|%ad|%cn|%ce|%cd", "--date=iso"];
+  async listCommits(opts?: IListCommitsOptions): Promise<ICommit[]> {
+    const args = ["log", "--format=%H|%s|%an|%ae|%ad|%cn|%ce|%cd|%P", "--date=iso"];
 
-    if (options?.sha) args.push(options.sha);
-    if (options?.path) args.push("--", options.path);
-    if (options?.author) args.push("--author", options.author);
-    if (options?.since) args.push("--since", options.since);
-    if (options?.until) args.push("--until", options.until);
-    if (options?.per_page) args.push(`-n${options.per_page}`);
-    else args.push("-n30"); // Default limit
+    if (opts?.sha) args.push(opts.sha);
+    if (opts?.path) args.push("--", opts.path);
+    if (opts?.author) args.push("--author", opts.author);
+    if (opts?.since) args.push("--since", opts.since);
+    if (opts?.until) args.push("--until", opts.until);
+    if (opts?.per_page) args.push(`-n${opts.per_page}`);
+    else args.push("-n256"); // tuned for high-throughput
 
-    const out = await git(".", args);
-    return out
-      .trim()
-      .split("\n")
-      .filter((line) => line.length > 0)
-      .map((line) => {
-        const [sha, message, authorName, authorEmail, authorDate, committerName, committerEmail, committerDate] =
-          line.split("|");
-        return {
+    const commits: ICommit[] = [];
+    let buf = "";
+    for await (const data of gitStream(".", args)) {
+      buf += data;
+      let idx: number;
+      while ((idx = buf.indexOf("\n")) !== -1) {
+        const line = buf.slice(0, idx);
+        const parts = line.split("|");
+        const [sha, msg, an, ae, ad, cn, ce, cd, parents] = parts;
+
+        commits.push({
           sha: sha as TSha,
-          message: message as TCommitMessage,
-          author: {
-            name: authorName,
-            email: authorEmail,
-            date: authorDate,
-          },
-          committer: {
-            name: committerName,
-            email: committerEmail,
-            date: committerDate,
-          },
-          tree: {
-            sha: "" as TSha, // Would need separate git command to get tree sha
-            url: "",
-          },
-          parents: [], // Would need separate git command to get parents
+          message: msg as TCommitMessage,
+          author: { name: an, email: ae, date: ad },
+          committer: { name: cn, email: ce, date: cd },
+          tree: { sha: "" as TSha, url: "" },
+          parents: parents
+            .split(" ")
+            .filter(Boolean)
+            .map((p) => ({ sha: p as TSha, url: "" })),
           url: "",
           html_url: "",
           comments_url: "",
-        };
-      });
+        });
+        buf = buf.slice(idx + 1);
+      }
+    }
+    return commits;
   }
 
   async getCommit(sha: TSha): Promise<ICommit> {
@@ -824,7 +813,7 @@ export class ShellBackend implements IGitBackend {
     else args.push("-n30"); // Default limit
 
     const out = await git(".", args);
-    const items = out
+    const items: IFileHistoryEntry[] = out
       .trim()
       .split("\n")
       .filter((line) => line.length > 0)
@@ -872,7 +861,7 @@ export class ShellBackend implements IGitBackend {
     };
   }
 
-  async blame(path: TPath, rev?: TSha): Promise<IBlameInfo> {
+  async blame(path: TPath, rev?: TBranch): Promise<IBlameInfo> {
     const args = ["blame", "--porcelain", path];
     if (rev) args.unshift(rev);
 
@@ -884,7 +873,7 @@ export class ShellBackend implements IGitBackend {
         size: 0, // Would need separate command to get file size
         lines: 0, // Would need to count lines
       },
-      ref: rev || ("HEAD" as TSha),
+      ref: rev || ("HEAD" as TBranch),
       ranges: [],
       commits: {},
     };

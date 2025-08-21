@@ -22,7 +22,8 @@
       },
       "recommended": true,
       "suspicious": {
-        "noArrayIndexKey": "warn"
+        "noArrayIndexKey": "warn",
+        "noAssignInExpressions": "off"
       },
       "style": {
         "noNonNullAssertion": "off"
