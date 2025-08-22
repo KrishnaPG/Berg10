@@ -3,11 +3,12 @@ import { CONFIG } from "../../../config";
 import { TPath } from "../../types";
 
 // git shell execution method
-export async function git(repoPath: TPath, args: string[], options?: { stdin?: string }): Promise<string> {
+export async function git(repoPath: TPath, args: string[], options?: { stdin?: string }) {
   const process = Bun.spawn({
     cmd: ["git", "-C", repoPath, ...args],
     stdout: "pipe",
     stdin: options?.stdin ? "pipe" : undefined,
+    stderr: "pipe"
   });
 
   if (options?.stdin) {
@@ -15,8 +16,11 @@ export async function git(repoPath: TPath, args: string[], options?: { stdin?: s
     process.stdin.end();
   }
 
-  const output = await new Response(process.stdout).text();
-  return output;
+  const output = await new Response(process.stdout).text(); new ReadableStream(process.stderr)
+  const errors: string = await Bun.readableStreamToText(process.stderr);
+  const exitCode = await process.exited;
+
+  return { output, errors, exitCode };
 }
 
 // stream helpers

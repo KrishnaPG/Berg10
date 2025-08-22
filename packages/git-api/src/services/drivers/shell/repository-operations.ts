@@ -1,5 +1,3 @@
-import { join } from "path";
-import { CONFIG } from "../../../config";
 import type {
   ICloneOptions,
   IRepository,
@@ -11,6 +9,7 @@ import type {
 import os from "os";
 import type { TGitBackendType } from "../backend";
 import { git } from "./helpers";
+import { CONFIG } from "../../../config";
 
 export class RepositoryOperations {
   // Repository operations
@@ -19,15 +18,17 @@ export class RepositoryOperations {
     config?: { defaultBranch?: string; isPrivate?: boolean; description?: string },
   ): Promise<void> {
     // Check if the directory is already a git repository
-    try {
-      const out = await git(repoPath, ["status"]); console.log("out: ", out);
-      throw new Error(`Repository already exists at ${repoPath}`);
-    } catch (error) {
-      // If git rev-parse fails, it means this is not a git repository, so we can proceed
-      console.error(error);
+    {
+      const result = await git(repoPath, ["status"]);
+      if (result.exitCode)
+        throw new Error(`init [${repoPath}]: ${result.errors}`);      
     }
-    
-    await git(repoPath, ["init"]);
+    // init the repo
+    {
+      const result = await git(repoPath, ["init"]);
+      if (result.errors) throw new Error(`init [${repoPath}]: ${result.errors}`);
+    }
+    // switch to the given branch, if any
     if (config?.defaultBranch) {
       await git(repoPath, ["checkout", "-b", config.defaultBranch]);
     }
@@ -39,9 +40,9 @@ export class RepositoryOperations {
     if (options?.branch) args.push("--branch", options.branch);
     if (options?.depth) args.push("--depth", options.depth.toString());
     if (options?.recursive) args.push("--recursive");
-    args.push(url, join(CONFIG.REPO_BASE, path));
+    args.push(url, path);
     await git(os.tmpdir() as TPath, args);
- }
+  }
 
   async open(repoPath: TPath): Promise<void> {
     // In shell backend, we don't need to explicitly open repositories
@@ -70,20 +71,20 @@ export class RepositoryOperations {
     // Repository-level updates like name, description, etc. are typically
     // handled at a higher level (e.g., in a database or service layer)
     // For git-specific settings, we could update config values
-    
+
     // For now, let's return a basic response
     const repoDetails = await this.getRepository();
     const updatedRepo: IRepositoryUpdateResponse = {
       ...repoDetails,
       updated_at: new Date().toISOString(),
     };
-    
+
     // If there are git-specific settings to update, we would do it here
     // For example:
     // if (options.default_branch) {
     //   await git(repoPath, ["symbolic-ref", "HEAD", `refs/heads/${options.default_branch}`]);
     // }
-    
+
     return updatedRepo;
   }
 

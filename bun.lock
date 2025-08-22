@@ -4,6 +4,7 @@
     "": {
       "name": "berg10",
       "devDependencies": {
+        "@biomejs/biome": "2.2.0",
         "@types/bun": "latest",
       },
       "peerDependencies": {
