@@ -23,7 +23,8 @@
       "recommended": true,
       "suspicious": {
         "noArrayIndexKey": "warn",
-        "noAssignInExpressions": "off"
+        "noAssignInExpressions": "off",
+        "noConfusingVoidType": "off"
       },
       "style": {
         "noNonNullAssertion": "off"

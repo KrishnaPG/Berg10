@@ -52,6 +52,14 @@ import type {
   TTagName,
 } from "../types";
 
+// used by shell backend
+export interface IGitCmdResult {
+  output: string;
+  errors: string;
+  exitCode: number;
+  cmd: string[];
+}
+
 // Repository configuration type
 export interface IRepositoryConfig {
   defaultBranch?: string;
@@ -64,14 +72,14 @@ export type TGitBackendType = "libgit2" | "shell" | "isogit";
 
 export interface IGitBackend {
   // Repository operations
-  init(repoPath: TPath, config?: IRepositoryConfig): Promise<void>;
-  clone(url: string, path: TPath, options?: ICloneOptions): Promise<void>;
-  open(repoPath: TPath): Promise<void>;
-  close(): Promise<void>;
+  init(repoPath: TPath, config?: IRepositoryConfig): Promise<void | IGitCmdResult>;
+  clone(url: string, path: TPath, options?: ICloneOptions): Promise<void | IGitCmdResult>;
+  open(repoPath: TPath): Promise<void | IGitCmdResult>;
+  close(): Promise<void | IGitCmdResult>;
   listRepositories(): Promise<IRepository[]>;
   getRepository(): Promise<IRepositoryDetails>;
   updateRepository(options: IRepositoryUpdateRequest): Promise<IRepositoryUpdateResponse>;
-  deleteRepository(): Promise<void>;
+  deleteRepository(): Promise<void | IGitCmdResult>;
 
   // Backend switching
   getCurrentBackend(): TGitBackendType;
@@ -79,9 +87,9 @@ export interface IGitBackend {
   // Ref operations
   listRefs(type?: TRefKind | "all"): Promise<IRef[]>;
   getRef(name: string): Promise<IRef | null>;
-  createRef(name: string, sha: TSha, type: TRefKind): Promise<void>;
-  deleteRef(name: string): Promise<void>;
-  renameRef(oldName: string, newName: string): Promise<void>;
+  createRef(name: string, sha: TSha, type: TRefKind): Promise<void | IGitCmdResult>;
+  deleteRef(name: string): Promise<void | IGitCmdResult>;
+  renameRef(oldName: string, newName: string): Promise<void | IGitCmdResult>;
   createBranch(name: TBranch, ref: TSha, startPoint?: TSha): Promise<IBranch>;
   createTag(name: TTagName, ref: TSha, options?: ITagCreateRequest): Promise<ITag>;
   updateRef(ref: string, options: IRefUpdateRequest): Promise<IRef>;
@@ -92,7 +100,7 @@ export interface IGitBackend {
   createCommit(options: ICommitCreateRequest): Promise<ICommit>;
   updateCommitMessage(sha: TSha, message: TCommitMessage, force?: boolean): Promise<ICommit>;
   revert(sha: TSha): Promise<ICommit>;
-  reset(target: TSha, mode: TResetMode): Promise<void>;
+  reset(target: TSha, mode: TResetMode): Promise<void | IGitCmdResult>;
 
   // Tree operations
   listFiles(treeIsh: TSha, path?: TPath, recursive?: boolean): Promise<ITree>;
@@ -101,21 +109,21 @@ export interface IGitBackend {
   createBlob(content: string, encoding?: "utf-8" | "base64"): Promise<IBlob>;
   getFileContents(path: TPath, options?: IGetFileContentOptions): Promise<IFileContent | IDirectoryContent>;
   createOrUpdateFile(path: TPath, options: IFileCreateUpdateRequest): Promise<IFileContent>;
-  deleteFile(path: TPath, options: IFileDeleteRequest): Promise<void>;
+  deleteFile(path: TPath, options: IFileDeleteRequest): Promise<void | IGitCmdResult>;
 
   // Index operations
-  getIndex(): Promise<IIndexEntry[]>;
-  addToIndex(path: TPath): Promise<void>;
-  removeFromIndex(path: TPath): Promise<void>;
-  updateIndex(options: IIndexUpdateRequest): Promise<IIndex>;
-  stagePatch(path: TPath, patchText: string): Promise<void>;
-  discardWorktree(path: TPath): Promise<void>;
+  getIndex(repo: TPath): Promise<IIndexEntry[]>;
+  addToIndex(repo: TPath, path: TPath): Promise<void | IGitCmdResult>;
+  removeFromIndex(repo: TPath, path: TPath): Promise<void | IGitCmdResult>;
+  updateIndex(repo: TPath, options: IIndexUpdateRequest): Promise<IIndex>;
+  stagePatch(repo: TPath, path: TPath, patchText: string): Promise<void | IGitCmdResult>;
+  discardWorktree(repo: TPath, path?: TPath): Promise<IGitCmdResult | void>;
 
   // Stash operations
   listStashes(): Promise<IStash[]>;
   saveStash(message?: TCommitMessage, includeUntracked?: boolean): Promise<IStash>;
-  applyStash(index?: number): Promise<void>;
-  dropStash(index?: number): Promise<void>;
+  applyStash(index?: number): Promise<void | IGitCmdResult>;
+  dropStash(index?: number): Promise<void | IGitCmdResult>;
 
   // Diff operations
   diffCommits(from: TSha, to: TSha, options?: ICompareCommitsOptions): Promise<IDiff[]>;
@@ -133,8 +141,8 @@ export interface IGitBackend {
   rebase(branch: TBranch, options?: IRebaseRequest): Promise<IRebaseResult | IRebaseStatus>;
   getMergeStatus(branch: TBranch): Promise<IMergeStatus>;
   getRebaseStatus(branch: TBranch): Promise<IRebaseStatus>;
-  abortMerge(branch: TBranch): Promise<void>;
-  abortRebase(branch: TBranch): Promise<void>;
+  abortMerge(branch: TBranch): Promise<void | IGitCmdResult>;
+  abortRebase(branch: TBranch): Promise<void | IGitCmdResult>;
 }
 
 export interface IBackendConfig {

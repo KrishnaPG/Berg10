@@ -1,15 +1,10 @@
-import type {
-  IIndex,
-  IIndexEntry,
-  IIndexUpdateRequest,
-  TPath,
-} from "../../types";
-import { git } from "./helpers";
+import type { IIndex, IIndexEntry, IIndexUpdateRequest, TPath } from "../../types";
+import { git, type IGitCmdResult, okGit } from "./helpers";
 
 export class IndexOperations {
   // Index operations
-  async getIndex(): Promise<IIndexEntry[]> {
-    const out = await git(".", ["diff", "--cached", "--name-status", "-z"]);
+  async getIndex(repo: TPath): Promise<IIndexEntry[]> {
+    const { output: out } = await okGit(repo, ["diff", "--cached", "--name-status", "-z"]);
     return out
       .trim()
       .split("\0")
@@ -34,28 +29,28 @@ export class IndexOperations {
       });
   }
 
-  async addToIndex(path: TPath): Promise<void> {
-    await git(".", ["add", path]);
+  async addToIndex(repo: TPath, path: TPath): Promise<void> {
+    await okGit(repo, ["add", path]);
   }
 
-  async removeFromIndex(path: TPath): Promise<void> {
-    await git(".", ["rm", "--cached", path]);
+  async removeFromIndex(repo: TPath, path: TPath): Promise<void> {
+    await okGit(repo, ["rm", "--cached", path]);
   }
 
-  async updateIndex(options: IIndexUpdateRequest): Promise<IIndex> {
+  async updateIndex(repo: TPath, options: IIndexUpdateRequest): Promise<IIndex> {
     // Update index with the provided content
     for (const update of options.updates) {
       // Write the content to the file
       // Note: This is a simplified implementation that would need filesystem access
       // In a real implementation, we would write the content to the file system
       // and then add it to the index
-      
+
       // For now, we'll just add the file to the index
-      await git(".", ["add", update.path]);
+      await okGit(repo, ["add", update.path]);
     }
-    
+
     // Return the updated index
-    const entries = await this.getIndex();
+    const entries = await this.getIndex(repo);
     return {
       repo: "",
       ref: "",
@@ -73,11 +68,14 @@ export class IndexOperations {
     };
   }
 
-  async stagePatch(path: TPath, patchText: string): Promise<void> {
-    await git(".", ["apply", "--cached"], { stdin: patchText });
+  async stagePatch(repo: TPath, path: TPath, patchText: string): Promise<void> {
+    await git(repo, ["apply", "--cached"], { stdin: Buffer.from(patchText) });
   }
 
-  async discardWorktree(path: TPath): Promise<void> {
-    await git(".", ["checkout", "--", path]);
+  async discardWorktree(repo: TPath, path?: TPath): Promise<void | IGitCmdResult> {
+    // if a single file needs to be reverted back to its HEAD commit state
+    if (path) return okGit(repo, ["checkout", "--", path]);
+    // discard all the local changes
+    okGit(repo, ["switch", "--discard-changes", "--recurse-submodules"]);
   }
 }

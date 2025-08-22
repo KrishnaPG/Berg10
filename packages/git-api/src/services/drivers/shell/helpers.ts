@@ -1,26 +1,50 @@
+import type { SpawnOptions } from "bun";
+import os from "os";
 import { join } from "path";
 import { CONFIG } from "../../../config";
-import { TPath } from "../../types";
+import type { TPath } from "../../types";
+import type { IGitCmdResult } from "../backend";
 
-// git shell execution method
-export async function git(repoPath: TPath, args: string[], options?: { stdin?: string }) {
+// Global cwd controller
+export class WorkingDir {
+  constructor(protected _cwd: TPath = os.tmpdir() as TPath) {}
+  set(dir: TPath) {
+    return (this._cwd = dir);
+  }
+  get cwd() {
+    return this._cwd;
+  }
+}
+export const gWorkingDir = new WorkingDir();
+
+// git shell execution helper method
+export async function git<
+  const _In extends SpawnOptions.Writable = "ignore",
+  const Out extends SpawnOptions.Readable = "pipe",
+  const Err extends SpawnOptions.Readable = "inherit",
+>(repoPath: TPath, args: string[], options?: SpawnOptions.OptionsObject<_In, Out, Err>): Promise<IGitCmdResult> {
+  const cmd = ["git", "-C", repoPath, ...args];
+
   const process = Bun.spawn({
-    cmd: ["git", "-C", repoPath, ...args],
+    cwd: options?.cwd || gWorkingDir.cwd,
+    cmd,
     stdout: "pipe",
-    stdin: options?.stdin ? "pipe" : undefined,
-    stderr: "pipe"
+    stdin: options?.stdin,
+    stderr: "pipe",
   });
 
-  if (options?.stdin) {
-    await process.stdin.write(options.stdin);
-    process.stdin.end();
-  }
+  // if (options?.stdin) {
+  //   await process.stdin.write(options.stdin);
+  //   process.stdin.flush();
+  //   process.stdin.end();
+  // }
 
-  const output = await new Response(process.stdout).text(); new ReadableStream(process.stderr)
+  const output = await new Response(process.stdout).text();
+  new ReadableStream(process.stderr);
   const errors: string = await Bun.readableStreamToText(process.stderr);
   const exitCode = await process.exited;
 
-  return { output, errors, exitCode };
+  return { output, errors, exitCode, cmd };
 }
 
 // stream helpers
@@ -82,4 +106,17 @@ export function* parseRefLines(lines: string): Generator<[string, string, string
       start = i + 1;
     }
   }
+}
+
+// git shell execution method with error handler
+export function okGit<
+  const _In extends SpawnOptions.Writable = "ignore",
+  const Out extends SpawnOptions.Readable = "pipe",
+  const Err extends SpawnOptions.Readable = "inherit",
+>(repoPath: TPath, args: string[], options?: SpawnOptions.OptionsObject<_In, Out, Err>) {
+  return git(repoPath, args, options).then((result) => {
+    if (result.exitCode)
+      throw new Error(`\ncmd: '${result.cmd.join(" ")}'\nResult: ${result.errors}Exit Code: ${result.exitCode}`);
+    return result;
+  });
 }

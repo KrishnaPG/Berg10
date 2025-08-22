@@ -1,3 +1,5 @@
+import os from "os";
+import { CONFIG } from "../../../config";
 import type {
   ICloneOptions,
   IRepository,
@@ -6,42 +8,33 @@ import type {
   IRepositoryUpdateResponse,
   TPath,
 } from "../../types";
-import os from "os";
 import type { TGitBackendType } from "../backend";
-import { git } from "./helpers";
-import { CONFIG } from "../../../config";
+import { git, okGit } from "./helpers";
 
 export class RepositoryOperations {
   // Repository operations
-  async init(
-    repoPath: TPath,
-    config?: { defaultBranch?: string; isPrivate?: boolean; description?: string },
-  ): Promise<void> {
-    // Check if the directory is already a git repository
-    {
-      const result = await git(repoPath, ["status"]);
-      if (result.exitCode)
-        throw new Error(`init [${repoPath}]: ${result.errors}`);      
-    }
-    // init the repo
-    {
-      const result = await git(repoPath, ["init"]);
-      if (result.errors) throw new Error(`init [${repoPath}]: ${result.errors}`);
-    }
-    // switch to the given branch, if any
-    if (config?.defaultBranch) {
-      await git(repoPath, ["checkout", "-b", config.defaultBranch]);
-    }
+  async init(repoPath: TPath, config?: { defaultBranch?: string; isPrivate?: boolean; description?: string }) {
+    return git(repoPath, ["status"]) // Check if the directory is already a git repository
+      .then((result) => {
+        if (!result.exitCode && !result.errors) throw new Error(`repo init [${repoPath}]: already initialized`);
+        return okGit(repoPath, ["init"]); // init the git repo if fresh
+      })
+      .then(() => {
+        // switch to the given branch, if any
+        if (config?.defaultBranch) {
+          return okGit(repoPath, ["checkout", "-b", config.defaultBranch]);
+        }
+      });
   }
 
-  async clone(url: string, path: TPath, options?: ICloneOptions): Promise<void> {
+  clone(url: string, path: TPath, options?: ICloneOptions) {
     const args = ["clone"];
     if (options?.bare) args.push("--bare");
     if (options?.branch) args.push("--branch", options.branch);
     if (options?.depth) args.push("--depth", options.depth.toString());
     if (options?.recursive) args.push("--recursive");
     args.push(url, path);
-    await git(os.tmpdir() as TPath, args);
+    return okGit(os.tmpdir() as TPath, args);
   }
 
   async open(repoPath: TPath): Promise<void> {
