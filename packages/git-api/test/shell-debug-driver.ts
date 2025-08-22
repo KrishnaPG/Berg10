@@ -5,14 +5,15 @@
 
 import { ShellBackend } from '../src/services/drivers/shell';
 import { mkdir, rm, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { resolve } from 'path';
 import { asSha, asBranch, asPath, asCommitMessage } from '../src/services/types/branded.types';
+import os from "os";
 
 async function runDebug() {
   console.log('Starting ShellBackend debug session...');
   
   // Create test directory
-  const testDir = join(process.cwd(), '.tmp', 'shell-debug-test');
+  const testDir = resolve(os.tmpdir(), 'shell-debug-test');
   console.log(`Creating test directory: ${testDir}`);
   
   try {
@@ -47,7 +48,7 @@ async function runDebug() {
     
     // Test 4: Create a file and add to index
     console.log('\n--- Test 4: Create file and add to index ---');
-    const testFile = join(testDir, 'test.txt');
+    const testFile = resolve(testDir, 'test.txt');
     await writeFile(testFile, 'Hello, World!');
     console.log('Test file created');
     

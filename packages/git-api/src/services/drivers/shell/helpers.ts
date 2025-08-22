@@ -1,10 +1,11 @@
 import { join } from "path";
 import { CONFIG } from "../../../config";
+import { TPath } from "../../types";
 
 // git shell execution method
-export async function git(repo: string, args: string[], options?: { stdin?: string }): Promise<string> {
+export async function git(repoPath: TPath, args: string[], options?: { stdin?: string }): Promise<string> {
   const process = Bun.spawn({
-    cmd: ["git", "-C", join(CONFIG.REPO_BASE, repo), ...args],
+    cmd: ["git", "-C", repoPath, ...args],
     stdout: "pipe",
     stdin: options?.stdin ? "pipe" : undefined,
   });

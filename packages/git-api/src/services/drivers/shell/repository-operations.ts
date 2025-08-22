@@ -8,6 +8,7 @@ import type {
   IRepositoryUpdateResponse,
   TPath,
 } from "../../types";
+import os from "os";
 import type { TGitBackendType } from "../backend";
 import { git } from "./helpers";
 
@@ -17,6 +18,15 @@ export class RepositoryOperations {
     repoPath: TPath,
     config?: { defaultBranch?: string; isPrivate?: boolean; description?: string },
   ): Promise<void> {
+    // Check if the directory is already a git repository
+    try {
+      const out = await git(repoPath, ["status"]); console.log("out: ", out);
+      throw new Error(`Repository already exists at ${repoPath}`);
+    } catch (error) {
+      // If git rev-parse fails, it means this is not a git repository, so we can proceed
+      console.error(error);
+    }
+    
     await git(repoPath, ["init"]);
     if (config?.defaultBranch) {
       await git(repoPath, ["checkout", "-b", config.defaultBranch]);
@@ -30,7 +40,7 @@ export class RepositoryOperations {
     if (options?.depth) args.push("--depth", options.depth.toString());
     if (options?.recursive) args.push("--recursive");
     args.push(url, join(CONFIG.REPO_BASE, path));
-    await git(".", args);
+    await git(os.tmpdir() as TPath, args);
  }
 
   async open(repoPath: TPath): Promise<void> {
