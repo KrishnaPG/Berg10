@@ -1,4 +1,5 @@
 import type { ICommit, ICommitCreateRequest, IListCommitsOptions, TCommitMessage, TSha } from "../../types";
+import type { IGitCmdResult } from "../backend";
 import { gitStream, IRepoBase, okGit } from "./helpers";
 
 export class CommitOperations extends IRepoBase {
@@ -98,21 +99,14 @@ export class CommitOperations extends IRepoBase {
     };
   }
 
-  async createCommit(options: ICommitCreateRequest): Promise<ICommit> {
+  async createCommit(options: ICommitCreateRequest): Promise<IGitCmdResult> {
     // For a shell-based implementation that matches the API:
     // 1. Create a tree object from the provided tree SHA
     // 2. Create the commit object with git commit-tree
     // 3. Update the HEAD reference to point to the new commit
 
     // First, let's create the commit using git commit-tree
-    const args = ["commit-tree", options.tree];
-
-    // Add parent commits if provided
-    if (options.parents) {
-      for (const parent of options.parents) {
-        args.push("-p", parent);
-      }
-    }
+    const args = ["commit", "-m", options.message];
 
     // Add author if specified
     if (options.author) {
@@ -120,13 +114,7 @@ export class CommitOperations extends IRepoBase {
     }
 
     // Execute commit-tree with message from stdin
-    const { output: commitSha } = await okGit(this.repoPath, args, { stdin: Buffer.from(options.message) });
-
-    // Update HEAD to point to the new commit
-    await okGit(this.repoPath, ["update-ref", "HEAD", commitSha.trim()]);
-
-    // Return the commit details
-    return this.getCommit(commitSha as TSha);
+    return okGit(this.repoPath, args, { stdin: Buffer.from(options.message) });
   }
 
   async updateCommitMessage(sha: TSha, message: TCommitMessage, force?: boolean): Promise<ICommit> {

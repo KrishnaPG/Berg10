@@ -92,13 +92,13 @@ export interface IGitRepo {
   deleteRef(name: string): Promise<void | IGitCmdResult>;
   renameRef(oldName: string, newName: string): Promise<void | IGitCmdResult>;
   createBranch(name: TBranch, ref: TSha, startPoint?: TSha): Promise<IBranch>;
-  createTag(name: TTagName, ref: TSha, options?: ITagCreateRequest): Promise<ITag>;
+  createTag(name: TTagName, ref: TSha, options?: ITagCreateRequest): Promise<IGitCmdResult>;
   updateRef(ref: string, options: IRefUpdateRequest): Promise<IRef>;
 
   // Commit operations
   listCommits(options?: IListCommitsOptions): Promise<ICommit[]>;
   getCommit(sha: TSha): Promise<ICommit>;
-  createCommit(options: ICommitCreateRequest): Promise<ICommit>;
+  createCommit(options: ICommitCreateRequest): Promise<IGitCmdResult>;
   updateCommitMessage(sha: TSha, message: TCommitMessage, force?: boolean): Promise<ICommit>;
   revert(sha: TSha): Promise<ICommit>;
   reset(target: TSha, mode: TResetMode): Promise<void | IGitCmdResult>;

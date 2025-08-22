@@ -9,7 +9,7 @@ import type { ICommitAuthor, IPaginatedResponse } from "./shared.types";
 // Request Types
 export interface ICommitCreateRequest {
   message: TCommitMessage;
-  tree: TSha;
+  tree?: TSha;
   parents?: TSha[];
   author?: ICommitAuthor;
   committer?: ICommitAuthor;

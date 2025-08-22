@@ -7,7 +7,7 @@ import { mkdir, rm, writeFile } from "fs/promises";
 import os from "os";
 import { resolve } from "path";
 import { ShellBackend } from "../src/services/drivers/shell";
-import { asBranch, asPath, asSha, type TPath } from "../src/services/types/branded.types";
+import { asBranch, asPath, asSha, type TCommitMessage, type TPath } from "../src/services/types/branded.types";
 
 async function runDebug() {
   console.log("Starting ShellBackend debug session...");
@@ -29,19 +29,27 @@ async function runDebug() {
     const repo = await backend.init(testDir, { defaultBranch: "main" });
     console.log("Repository initialized");
 
-    // Test 3: Get repository details
-    console.log("\n--- Test 3: Get repository details ---");
+    // Test 2: Get repository details
+    console.log("\n--- Test 2: Get repository details ---");
     const repoDetails = await repo.getInfo();
     console.log("Repository details:", repoDetails);
 
-    // Test 4: Create a file and add to index
-    console.log("\n--- Test 4: Create file and add to index ---");
+    // Test 3: Create a file and add to index
+    console.log("\n--- Test 3: Create file and add to index ---");
     const testFile = resolve(testDir, "test.txt");
     await writeFile(testFile, "Hello, World!");
     console.log("Test file created");
 
     await repo.addToIndex("test.txt" as TPath);
     console.log("File added to index");
+
+    // Test 4: Commit !!
+    console.log("\n--- Test 4: Commit the changes ---");
+    const result = await repo.createCommit({
+      message: "initial import" as TCommitMessage,
+      author: { name: "TestBot", email: "bot@skynet.com", date: Date.now().toLocaleString() },
+    });
+    console.log("Commit Result:", result);
 
     // Test 5: List refs (branches)
     console.log("\n--- Test 5: List branches ---");
@@ -58,8 +66,8 @@ async function runDebug() {
     // Test 6: Create branch
     console.log("\n--- Test 6: Create branch ---");
     try {
-      await repo.createBranch(asBranch("feature-branch"), asSha("HEAD"));
-      console.log("Branch created");
+      const result = await repo.createBranch(asBranch("feature-branch"), asSha("HEAD"));
+      console.log("Branch creation result: ", result);
     } catch (error) {
       console.log("createBranch error:", (error as Error).message);
     }

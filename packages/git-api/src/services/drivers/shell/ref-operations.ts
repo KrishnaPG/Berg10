@@ -9,6 +9,7 @@ import type {
   TSha,
   TTagName,
 } from "../../types";
+import type { IGitCmdResult } from "../backend";
 import { gitStream, IRepoBase, okGit, parseRefLines } from "./helpers";
 
 export class RefOperations extends IRepoBase {
@@ -110,7 +111,7 @@ export class RefOperations extends IRepoBase {
     };
   }
 
-  async createTag(name: TTagName, ref: TSha, options?: ITagCreateRequest): Promise<ITag> {
+  async createTag(name: TTagName, ref: TSha, options?: ITagCreateRequest): Promise<IGitCmdResult> {
     const args = ["tag"];
     if (options?.message) {
       args.push("-m", options.message);
@@ -119,26 +120,7 @@ export class RefOperations extends IRepoBase {
       args.push("-a");
     }
     args.push(name, ref);
-    await okGit(this.repoPath, args);
-
-    return {
-      name,
-      ref,
-      object: {
-        type: "commit",
-        sha: ref,
-      },
-      url: "",
-      type: "tag",
-      commit: {
-        sha: ref,
-        message: options?.message || "",
-        author: { name: "", email: "", date: "" },
-        committer: { name: "", email: "", date: "" },
-        timestamp: "",
-        url: "",
-      },
-    };
+    return okGit(this.repoPath, args);
   }
 
   async updateRef(ref: string, options: IRefUpdateRequest): Promise<IRef> {
