@@ -1,19 +1,13 @@
-import type {
-  ICompareCommitsOptions,
-  IDiff,
-  IGetCommitDiffOptions,
-  TPath,
-  TSha,
-} from "../../types";
-import { git } from "./helpers";
+import type { ICompareCommitsOptions, IDiff, IGetCommitDiffOptions, TPath, TSha } from "../../types";
+import { IRepoBase, okGit } from "./helpers";
 
-export class DiffOperations {
+export class DiffOperations extends IRepoBase {
   // Diff operations
   async diffCommits(from: TSha, to: TSha, options?: ICompareCommitsOptions): Promise<IDiff[]> {
     const args = ["diff", `${from}..${to}`];
     if (options?.path) args.push("--", options.path);
 
-    const out = await git(".", args);
+    const { output: out } = await okGit(this.repoPath, args);
     // Simplified parsing - in reality this would need more complex parsing
     return [
       {
@@ -38,7 +32,7 @@ export class DiffOperations {
     if (cached) args.push("--cached");
     if (treeIsh) args.push(treeIsh);
 
-    const out = await git(".", args);
+    const { output: out } = await okGit(this.repoPath, args);
     // Simplified parsing
     return [
       {
@@ -62,7 +56,7 @@ export class DiffOperations {
     const args = ["diff"];
     if (path) args.push("--", path);
 
-    const out = await git(".", args);
+    const { output: out } = await okGit(this.repoPath, args);
     // Simplified parsing
     return [
       {
@@ -86,7 +80,7 @@ export class DiffOperations {
     const args = ["show", sha];
     if (options?.path) args.push("--", options.path);
 
-    const out = await git(".", args);
+    const { output: out } = await okGit(this.repoPath, args);
     // Simplified parsing
     return {
       repo: "",

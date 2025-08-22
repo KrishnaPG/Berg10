@@ -1,14 +1,10 @@
-import type {
-  IStash,
-  TCommitMessage,
-  TBranch,
-} from "../../types";
-import { git } from "./helpers";
+import type { IStash, TBranch, TCommitMessage } from "../../types";
+import { IRepoBase, okGit } from "./helpers";
 
-export class StashOperations {
- // Stash operations
+export class StashOperations extends IRepoBase {
+  // Stash operations
   async listStashes(): Promise<IStash[]> {
-    const out = await git(".", ["stash", "list", "--format=%gd|%s|%an|%ae|%ad"]);
+    const { output: out } = await okGit(this.repoPath, ["stash", "list", "--format=%gd|%s|%an|%ae|%ad"]);
     return out
       .trim()
       .split("\n")
@@ -35,7 +31,7 @@ export class StashOperations {
     if (message) args.push("-m", message);
     if (includeUntracked) args.push("-u");
 
-    const out = await git(".", args);
+    const { output: out } = await okGit(this.repoPath, args);
     const sha = out.trim();
 
     return {
@@ -55,12 +51,12 @@ export class StashOperations {
   async applyStash(index?: number): Promise<void> {
     const args = ["stash", "apply"];
     if (index !== undefined) args.push(`stash@{${index}}`);
-    await git(".", args);
+    await okGit(this.repoPath, args);
   }
 
   async dropStash(index?: number): Promise<void> {
     const args = ["stash", "drop"];
     if (index !== undefined) args.push(`stash@{${index}}`);
-    await git(".", args);
+    await okGit(this.repoPath, args);
   }
 }

@@ -34,8 +34,8 @@ import type {
   IRebaseStatus,
   IRef,
   IRefUpdateRequest,
+  IRepoInfo,
   IRepository,
-  IRepositoryDetails,
   IRepositoryUpdateRequest,
   IRepositoryUpdateResponse,
   IStash,
@@ -71,18 +71,19 @@ export interface IRepositoryConfig {
 export type TGitBackendType = "libgit2" | "shell" | "isogit";
 
 export interface IGitBackend {
-  // Repository operations
-  init(repoPath: TPath, config?: IRepositoryConfig): Promise<void | IGitCmdResult>;
+  init(repoPath: TPath, config?: IRepositoryConfig): Promise<IGitRepo>;
   clone(url: string, path: TPath, options?: ICloneOptions): Promise<void | IGitCmdResult>;
-  open(repoPath: TPath): Promise<void | IGitCmdResult>;
-  close(): Promise<void | IGitCmdResult>;
   listRepositories(): Promise<IRepository[]>;
-  getRepository(): Promise<IRepositoryDetails>;
   updateRepository(options: IRepositoryUpdateRequest): Promise<IRepositoryUpdateResponse>;
   deleteRepository(): Promise<void | IGitCmdResult>;
 
   // Backend switching
   getCurrentBackend(): TGitBackendType;
+}
+
+export interface IGitRepo {
+  getInfo(): Promise<IRepoInfo>;
+  close(): Promise<void | IGitCmdResult>;
 
   // Ref operations
   listRefs(type?: TRefKind | "all"): Promise<IRef[]>;
@@ -112,12 +113,12 @@ export interface IGitBackend {
   deleteFile(path: TPath, options: IFileDeleteRequest): Promise<void | IGitCmdResult>;
 
   // Index operations
-  getIndex(repo: TPath): Promise<IIndexEntry[]>;
-  addToIndex(repo: TPath, path: TPath): Promise<void | IGitCmdResult>;
-  removeFromIndex(repo: TPath, path: TPath): Promise<void | IGitCmdResult>;
-  updateIndex(repo: TPath, options: IIndexUpdateRequest): Promise<IIndex>;
-  stagePatch(repo: TPath, path: TPath, patchText: string): Promise<void | IGitCmdResult>;
-  discardWorktree(repo: TPath, path?: TPath): Promise<IGitCmdResult | void>;
+  getIndex(): Promise<IIndexEntry[]>;
+  addToIndex(path: TPath): Promise<void | IGitCmdResult>;
+  removeFromIndex(path: TPath): Promise<void | IGitCmdResult>;
+  updateIndex(options: IIndexUpdateRequest): Promise<IIndex>;
+  stagePatch(path: TPath, patchText: string): Promise<void | IGitCmdResult>;
+  discardWorktree(path?: TPath): Promise<IGitCmdResult | void>;
 
   // Stash operations
   listStashes(): Promise<IStash[]>;

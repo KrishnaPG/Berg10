@@ -11,16 +11,16 @@ import type {
   TPath,
   TSha,
 } from "../../types";
-import { git } from "./helpers";
+import { IRepoBase, okGit } from "./helpers";
 
-export class TreeOperations {
+export class TreeOperations extends IRepoBase {
   // Tree operations
   async listFiles(treeIsh: TSha, path?: TPath, recursive?: boolean): Promise<ITree> {
     const args = ["ls-tree", recursive ? "-r" : "", treeIsh];
     if (path) args.push(path);
 
-    const out = await git(
-      ".",
+    const { output: out } = await okGit(
+      this.repoPath,
       args.filter((arg) => arg !== ""),
     );
     const entries = out
@@ -49,18 +49,18 @@ export class TreeOperations {
   }
 
   async getBlob(treeIsh: TSha, path: TPath): Promise<Buffer> {
-    const content = await git(".", ["show", `${treeIsh}:${path}`]);
+    const { output: content } = await okGit(this.repoPath, ["show", `${treeIsh}:${path}`]);
     return Buffer.from(content, "utf-8");
   }
 
   async createTree(tree: ITreeCreateRequest): Promise<ITree> {
     // Creating a tree object in git requires using git mktree or similar low-level commands
     // This is a simplified implementation that would need to be expanded for full functionality
-    
+
     // For each entry in the tree, we would need to:
     // 1. Ensure the object (blob or tree) exists
     // 2. Create the tree object using git mktree
-    
+
     // This is a complex operation that would require significant implementation
     // For now, let's return a basic structure
     throw new Error("Tree creation is not fully implemented in the shell backend");
@@ -87,15 +87,12 @@ export class TreeOperations {
     };
   }
 
-  async getFileContents(
-    path: TPath,
-    options?: IGetFileContentOptions,
-  ): Promise<IFileContent | IDirectoryContent> {
+  async getFileContents(path: TPath, options?: IGetFileContentOptions): Promise<IFileContent | IDirectoryContent> {
     const ref = options?.ref || "HEAD";
 
     // Check if it's a directory
     try {
-      const out = await git(".", ["ls-tree", ref, path]);
+      const { output: out } = await okGit(this.repoPath, ["ls-tree", ref, path]);
       if (
         out
           .trim()
@@ -126,8 +123,8 @@ export class TreeOperations {
     }
 
     // It's a file
-    const content = await git(".", ["show", `${ref}:${path}`]);
-    const sha = await git(".", ["rev-parse", `${ref}:${path}`]);
+    const { output: content } = await okGit(this.repoPath, ["show", `${ref}:${path}`]);
+    const { output: sha } = await okGit(this.repoPath, ["rev-parse", `${ref}:${path}`]);
 
     return {
       name: path.split("/").pop() || path,
@@ -164,7 +161,7 @@ export class TreeOperations {
     const sha = await new Response(process.stdout).text();
 
     // Stage the file
-    await git(".", ["update-index", "--add", "--cacheinfo", "100644", sha.trim(), path]);
+    await okGit(this.repoPath, ["update-index", "--add", "--cacheinfo", "100644", sha.trim(), path]);
 
     // Commit if message is provided
     if (options.message) {
@@ -172,7 +169,7 @@ export class TreeOperations {
       if (options.author) {
         commitArgs.push("--author", `${options.author.name} <${options.author.email}>`);
       }
-      await git(".", commitArgs);
+      await okGit(this.repoPath, commitArgs);
     }
 
     return {
@@ -197,7 +194,7 @@ export class TreeOperations {
 
   async deleteFile(path: TPath, options: IFileDeleteRequest): Promise<void> {
     // Remove from index
-    await git(".", ["rm", "--cached", path]);
+    await okGit(this.repoPath, ["rm", "--cached", path]);
 
     // Commit if message is provided
     if (options.message) {
@@ -205,7 +202,7 @@ export class TreeOperations {
       if (options.author) {
         commitArgs.push("--author", `${options.author.name} <${options.author.email}>`);
       }
-      await git(".", commitArgs);
+      await okGit(this.repoPath, commitArgs);
     }
   }
 }

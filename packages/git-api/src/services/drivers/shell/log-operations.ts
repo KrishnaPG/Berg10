@@ -1,17 +1,17 @@
 import type {
   IBlameInfo,
- ICommitLogEntry,
+  ICommitLogEntry,
   IFileHistoryEntry,
   IGetCommitLogOptions,
   IGetFileHistoryOptions,
   IPaginatedResponse,
-  TPath,
   TBranch,
+  TPath,
   TSha,
 } from "../../types";
-import { git } from "./helpers";
+import { IRepoBase, okGit } from "./helpers";
 
-export class LogOperations {
+export class LogOperations extends IRepoBase {
   // Log operations
   async getCommitLog(options?: IGetCommitLogOptions): Promise<IPaginatedResponse<ICommitLogEntry>> {
     const args = ["log", "--format=%H|%s|%an|%ae|%ad|%cn|%ce|%cd", "--date=iso"];
@@ -24,7 +24,7 @@ export class LogOperations {
     if (options?.per_page) args.push(`-n${options.per_page}`);
     else args.push("-n30"); // Default limit
 
-    const out = await git(".", args);
+    const { output: out } = await okGit(this.repoPath, args);
     const items = out
       .trim()
       .split("\n")
@@ -71,7 +71,7 @@ export class LogOperations {
     if (options?.per_page) args.push(`-n${options.per_page}`);
     else args.push("-n30"); // Default limit
 
-    const out = await git(".", args);
+    const { output: out } = await okGit(this.repoPath, args);
     const items: IFileHistoryEntry[] = out
       .trim()
       .split("\n")
@@ -124,7 +124,7 @@ export class LogOperations {
     const args = ["blame", "--porcelain", path];
     if (rev) args.unshift(rev);
 
-    const out = await git(".", args);
+    const { output: out } = await okGit(this.repoPath, args);
     // Simplified parsing - in reality this would need complex parsing of porcelain format
     return {
       file: {

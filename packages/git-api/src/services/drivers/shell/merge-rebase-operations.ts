@@ -8,9 +8,9 @@ import type {
   TBranch,
   TSha,
 } from "../../types";
-import { git } from "./helpers";
+import { IRepoBase, okGit } from "./helpers";
 
-export class MergeRebaseOperations {
+export class MergeRebaseOperations extends IRepoBase {
   // Merge/Rebase operations
   async merge(branch: TBranch, options?: IMergeRequest): Promise<IMergeResult | IMergeStatus> {
     const args = ["merge"];
@@ -19,9 +19,9 @@ export class MergeRebaseOperations {
     args.push(branch);
 
     try {
-      const out = await git(".", args);
+      const { output: out } = await okGit(this.repoPath, args);
       // Parse output to determine if merge was successful
-      const sha = await git(".", ["rev-parse", "HEAD"]);
+      const { output: sha } = await okGit(this.repoPath, ["rev-parse", "HEAD"]);
       return {
         sha: sha.trim() as TSha,
         merged: true,
@@ -50,7 +50,7 @@ export class MergeRebaseOperations {
     if (options?.autosquash) args.push("--autosquash");
 
     try {
-      const out = await git(".", args);
+      const { output: out } = await okGit(this.repoPath, args);
       return {
         rebased: true,
         message: out.trim(),
@@ -69,7 +69,7 @@ export class MergeRebaseOperations {
   async getMergeStatus(branch: TBranch): Promise<IMergeStatus> {
     // Check if there's an ongoing merge
     try {
-      await git(".", ["rev-parse", "MERGE_HEAD"]);
+      await okGit(this.repoPath, ["rev-parse", "MERGE_HEAD"]);
       return {
         status: "in_progress",
         message: "Merge in progress",
@@ -85,7 +85,7 @@ export class MergeRebaseOperations {
   async getRebaseStatus(branch: TBranch): Promise<IRebaseStatus> {
     // Check if there's an ongoing rebase
     try {
-      await git(".", ["rev-parse", "REBASE_HEAD"]);
+      await okGit(this.repoPath, ["rev-parse", "REBASE_HEAD"]);
       return {
         status: "in_progress",
         message: "Rebase in progress",
@@ -99,10 +99,10 @@ export class MergeRebaseOperations {
   }
 
   async abortMerge(branch: TBranch): Promise<void> {
-    await git(".", ["merge", "--abort"]);
+    await okGit(this.repoPath, ["merge", "--abort"]);
   }
 
   async abortRebase(branch: TBranch): Promise<void> {
-    await git(".", ["rebase", "--abort"]);
+    await okGit(this.repoPath, ["rebase", "--abort"]);
   }
 }

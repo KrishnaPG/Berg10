@@ -47,17 +47,16 @@ export interface IRepository {
   owner: IUser;
 }
 
-export interface IRepositoryDetails extends IRepository {
-  disk_usage: number;
-  languages: Array<{
-    name: string;
-    percentage: number;
-  }>;
-  contributors_count: number;
-  branches_count: number;
-  tags_count: number;
-  commits_count: number;
-  permissions: IPermissions;
+export interface IRepoInfo {
+  head: string; // full commit SHA
+  branch: string; // branch or short SHA
+  remote?: string; // origin url
+  author: string;
+  email: string;
+  date: string; // ISO
+  subject: string;
+  clean: boolean;
+  tag?: string;
 }
 
 export interface IRepositoryUpdateResponse extends IRepository {

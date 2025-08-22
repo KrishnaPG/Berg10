@@ -5,6 +5,10 @@ import { CONFIG } from "../../../config";
 import type { TPath } from "../../types";
 import type { IGitCmdResult } from "../backend";
 
+export class IRepoBase {
+  constructor(protected repoPath: TPath) {}
+}
+
 // Global cwd controller
 export class WorkingDir {
   constructor(protected _cwd: TPath = os.tmpdir() as TPath) {}
@@ -64,8 +68,8 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 /** git stream based shell execution */
-export async function* gitStream(repo: string, args: string[], stdin?: Uint8Array): AsyncGenerator<string> {
-  const cmd = ["git", "-C", join(CONFIG.REPO_BASE, repo), ...args];
+export async function* gitStream(repoPath: string, args: string[], stdin?: Uint8Array): AsyncGenerator<string> {
+  const cmd = ["git", "-C", repoPath, ...args];
 
   const proc = Bun.spawn({
     cmd,

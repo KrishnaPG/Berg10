@@ -4,17 +4,17 @@ import type {
   IRefUpdateRequest,
   ITag,
   ITagCreateRequest,
+  TBranch,
   TRefKind,
   TSha,
-  TBranch,
   TTagName,
 } from "../../types";
-import { git, gitStream, parseRefLines } from "./helpers";
+import { gitStream, IRepoBase, okGit, parseRefLines } from "./helpers";
 
-export class RefOperations {
+export class RefOperations extends IRepoBase {
   // Ref operations
   async listRefs(type?: TRefKind | "all"): Promise<IRef[]> {
-    const args = ["for-each-ref", "--format=%(refname:short) %(objectname) %(objecttype)"];
+    const args = ["for-each-ref", '--format="%(refname:short) %(objectname) %(objecttype)"'];
 
     if (type === "branch") args.push("refs/heads/");
     else if (type === "tag") args.push("refs/tags/");
@@ -22,7 +22,7 @@ export class RefOperations {
 
     const refs: IRef[] = [];
     let chunk = "";
-    for await (const data of gitStream(".", args)) {
+    for await (const data of gitStream(this.repoPath, args)) {
       chunk += data;
       const lastNL = chunk.lastIndexOf("\n");
       if (lastNL === -1) continue;
@@ -42,7 +42,7 @@ export class RefOperations {
 
   async getRef(name: string): Promise<IRef | null> {
     try {
-      const out = await git(".", ["rev-parse", name]);
+      const { output: out } = await okGit(this.repoPath, ["rev-parse", name]);
       const sha = out.trim() as TSha;
       return {
         name,
@@ -60,9 +60,9 @@ export class RefOperations {
 
   async createRef(name: string, sha: TSha, type: TRefKind): Promise<void> {
     if (type === "branch") {
-      await git(".", ["branch", name, sha]);
+      await okGit(this.repoPath, ["branch", name, sha]);
     } else {
-      await git(".", ["tag", name, sha]);
+      await okGit(this.repoPath, ["tag", name, sha]);
     }
   }
 
@@ -70,26 +70,26 @@ export class RefOperations {
     // Determine if it's a branch or tag
     if (name.startsWith("refs/heads/") || !name.includes("/")) {
       const branchName = name.replace("refs/heads/", "");
-      await git(".", ["branch", "-D", branchName]);
+      await okGit(this.repoPath, ["branch", "-D", branchName]);
     } else if (name.startsWith("refs/tags/")) {
       const tagName = name.replace("refs/tags/", "");
-      await git(".", ["tag", "-d", tagName]);
+      await okGit(this.repoPath, ["tag", "-d", tagName]);
     } else {
       // Try branch first, then tag
       try {
-        await git(".", ["branch", "-D", name]);
+        await okGit(this.repoPath, ["branch", "-D", name]);
       } catch {
-        await git(".", ["tag", "-d", name]);
+        await okGit(this.repoPath, ["tag", "-d", name]);
       }
     }
   }
 
   async renameRef(oldName: string, newName: string): Promise<void> {
-    await git(".", ["branch", "-m", oldName, newName]);
- }
+    await okGit(this.repoPath, ["branch", "-m", oldName, newName]);
+  }
 
   async createBranch(name: TBranch, ref: TSha, startPoint?: TSha): Promise<IBranch> {
-    await git(".", ["branch", name, startPoint || ref]);
+    await okGit(this.repoPath, ["branch", name, startPoint || ref]);
     return {
       name,
       ref,
@@ -119,7 +119,7 @@ export class RefOperations {
       args.push("-a");
     }
     args.push(name, ref);
-    await git(".", args);
+    await okGit(this.repoPath, args);
 
     return {
       name,
@@ -141,8 +141,8 @@ export class RefOperations {
     };
   }
 
- async updateRef(ref: string, options: IRefUpdateRequest): Promise<IRef> {
-    await git(".", ["update-ref", ref, options.ref]);
+  async updateRef(ref: string, options: IRefUpdateRequest): Promise<IRef> {
+    await okGit(this.repoPath, ["update-ref", ref, options.ref]);
     return {
       name: ref,
       ref: options.ref,
@@ -153,8 +153,8 @@ export class RefOperations {
       url: "",
     };
   }
-  
+
   async switchBranch(name: TBranch): Promise<void> {
-    await git(".", ["checkout", name]);
+    await okGit(this.repoPath, ["checkout", name]);
   }
 }
