@@ -34,10 +34,18 @@ Tests create temporary repositories in the `.tmp/test-repos` directory, which is
 
 ## Debugging
 
-For manual debugging, you can use the debug driver:
+For manual debugging, you can use the debug drivers:
 
+### ISOGit Backend Debugging
 ```bash
 bun run test/debug-driver.ts
 ```
 
 This will run through all the major functionality of the ISOGitBackend step by step, allowing you to debug any issues.
+
+### Shell Backend Debugging
+```bash
+bun run test/shell-debug-driver.ts
+```
+
+This will run through all the major functionality of the ShellBackend step by step, allowing you to debug any issues.
