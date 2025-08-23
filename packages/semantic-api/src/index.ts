@@ -1,75 +1,20 @@
-import { type Static, t as T } from "elysia";
 import fs from "fs-extra";
 import os from "os";
 import path from "path";
 import type { TPath } from "../../git-api/src/services/types";
-
-// Create a branded type utility
-declare const __brand: unique symbol;
-type Brand<B> = { readonly [__brand]: B };
-type Branded<K, T> = K & Brand<T>;
-
-// Branded types for Semantic-Repo values
-export type TB58String = Branded<string, "B58String">;
-
-// Custom schemas
-const TB58Schema = T.Unsafe<TB58String>(
-  T.String({
-    pattern: "^[1-9A-HJ-NP-Za-km-z]+$", // Base58 character set
-    description: "Base58 encoded string",
-  }),
-);
-
-// Group Info Defn.
-export const GroupInfoSchema = T.Object({
-  n: T.String({ maxLength: 32 }), // name
-  d: T.String({ maxLength: 1024 }), // desc
-  c: T.Date({ default: Date.now() }), // created_At
-  u: T.Date({ default: Date.now() }), // updated_At
-});
-export type TGroupInfo = Static<typeof GroupInfoSchema>;
-
-// GroupID schemas
-const TLocalGroupIDSchema = T.String({ ...TB58Schema, maxLength: 25 });
-const TGlobalGroupIDSchema = T.String({ ...TB58Schema, maxLength: 45 });
-const TGroupIDSchema = T.Union([TLocalGroupIDSchema, TGlobalGroupIDSchema]);
-
-export type TLocalGroupID = Static<typeof TLocalGroupIDSchema>;
-export type TGlobalGroupID = Static<typeof TGlobalGroupIDSchema>;
-export type TGroupID = TLocalGroupID | TGlobalGroupID;
-
-// The Groups record
-export type TGroups = Record<TGroupID, TGroupInfo>;
-export type TGroupChildren = Array<TGroupID>;
-export type TGroupHierarchy = Record<TGroupID, TGroupChildren>;
-
-// returns a local group id (shorter length < 25 chars)
-const newLocalGroupID = (i: number, r = Math.random(), t = Date.now()): TLocalGroupID =>
-  r.toString(36).slice(2, 8) + i.toString(36) + t.toString(36);
-
-const sRootName = ".berg10";
-
-export const initSemanticRepo = async (repoPath: TPath) => {
-  const target = path.resolve(repoPath, sRootName);
-  // check if a semantic repo already exists at the destination;
-  const alreadyExists = await fs
-    .access(target)
-    .then(() => true)
-    .catch(() => false);
-  if (alreadyExists) throw new Error(`initSemanticRepo: [${target}] already exists.`);
-
-  // destination folder does not exist,  copy the template folder (../template) to destination
-  const desiredMode = 0o2775;
-  return fs.ensureDir(repoPath, desiredMode).then(() => {
-    return fs.copy(path.resolve(__dirname, "..", "template"), repoPath);
-  });
-};
+import { generateBuiltInGroups } from "../tools/gen-builtin-groups";
+import { getGroupsManifestPaths, getRootFolderPath } from "./repo-paths";
+import type { TGroupChildren, TGroupHierarchy, TGroupID, TGroupInfo, TGroups } from "./types";
 
 class SemanticRepo {
   constructor(
+    protected _repoPath: TPath,
     protected _groups: TGroups,
     protected _hier: TGroupHierarchy,
   ) {}
+  get RepoPath() {
+    return this._repoPath;
+  }
   get Groups() {
     return this._groups;
   }
@@ -82,13 +27,51 @@ class SemanticRepo {
   children(grpId: TGroupID): TGroupChildren | undefined {
     return this._hier[grpId];
   }
+  // saves the data structures to disk, but not committed yet.
+  save() {
+    const [infoJsonPath, hierJsonPath] = getGroupsManifestPaths(this._repoPath);
+    return Promise.all([
+      Bun.write(infoJsonPath as string, JSON.stringify(this._groups, null, 2)),
+      Bun.write(hierJsonPath as string, JSON.stringify(this._hier, null, 2)),
+    ]);
+  }
 }
+
+const textDecoder = new TextDecoder("utf-8");
 
 /**
  * @param repoPath the folder that contains `.berg10` folder
  */
-export const openSemanticRepo = (repoPath: TPath) => {
-  return Promise.all([Bun.file(path.resolve(repoPath, sRootName, "groups", "info.json")).arrayBuffer()]).then(() => {});
+export const openSemanticRepo = (repoPath: TPath): Promise<SemanticRepo> => {
+  return Promise.all(getGroupsManifestPaths(repoPath).map((p) => Bun.file(p).arrayBuffer()))
+    .then((arrayBuffers) => arrayBuffers.map((ab) => JSON.parse(textDecoder.decode(ab))))
+    .then(([groups, hier]) => new SemanticRepo(repoPath, groups, hier));
 };
 
-initSemanticRepo(os.tmpdir() as TPath).catch((ex) => console.error((ex as Error).message));
+// Converts a given bare folder into a semantic repo and
+// returns a Semantic Repo object for the converted repo.
+export const initSemanticRepo = async (repoPath: TPath): Promise<SemanticRepo> => {
+  const rootFolder = getRootFolderPath(repoPath);
+  // check if a semantic repo already exists at the destination;
+  const alreadyExists = await fs
+    .access(rootFolder)
+    .then(() => true)
+    .catch(() => false);
+  if (alreadyExists) return openSemanticRepo(repoPath);
+
+  // destination folder does not exist,  copy the template folder (../template) to destination
+  const desiredMode = 0o2775;
+  return fs
+    .ensureDir(repoPath, desiredMode)
+    .then(() => {
+      return fs.copy(path.resolve(__dirname, "..", "template"), repoPath);
+    })
+    .then(() => openSemanticRepo(repoPath));
+};
+
+initSemanticRepo(os.tmpdir() as TPath)
+  .then((sRepo) => {
+    generateBuiltInGroups(sRepo.Groups);
+    return sRepo.save();
+  })
+  .catch((ex) => console.error((ex as Error).message));
