@@ -4,19 +4,21 @@
  */
 
 // Create a branded type utility
-type Brand<K, T> = K & { __brand: T };
+declare const __brand: unique symbol;
+type Brand<B> = { readonly [__brand]: B };
+type Branded<K, T> = K & Brand<T>;
 
 // Branded types for Git-specific values
-export type TSha = Brand<string, "Sha">;
-export type TBranch = Brand<string, "Branch">;
-export type TPath = Brand<string, "Path">;
-export type TAuthor = Brand<string, "Author">;
-export type TEmail = Brand<string, "Email">;
-export type TCommitMessage = Brand<string, "CommitMessage">;
-export type TTagName = Brand<string, "TagName">;
-export type TRepositoryName = Brand<string, "RepositoryName">;
-export type TRepositoryId = Brand<string, "RepositoryId">;
-export type TUserId = Brand<string, "UserId">;
+export type TSha = Branded<string, "Sha">;
+export type TBranch = Branded<string, "Branch">;
+export type TPath = Branded<string, "Path">;
+export type TAuthor = Branded<string, "Author">;
+export type TEmail = Branded<string, "Email">;
+export type TCommitMessage = Branded<string, "CommitMessage">;
+export type TTagName = Branded<string, "TagName">;
+export type TRepositoryName = Branded<string, "RepositoryName">;
+export type TRepositoryId = Branded<string, "RepositoryId">;
+export type TUserId = Branded<string, "UserId">;
 
 // Utility functions to create branded types (for runtime validation)
 export const asSha = (sha: string): TSha => sha as TSha;
