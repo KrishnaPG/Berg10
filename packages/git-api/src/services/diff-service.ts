@@ -1,5 +1,5 @@
-import { backend } from "../git/backend";
-import type { IGitBackend } from "../git/base";
+import { backend, type IGitBackend } from "../services/drivers";
+
 import type {
   ICompareCommitsOptions,
   IGetCommitDiffOptions,
@@ -18,11 +18,6 @@ import type {
  * - GET    /v1/repos/:repo/diff/:id      # Format diff output
  */
 export class DiffService {
-  private backend: IGitBackend;
-
-  constructor() {
-    this.backend = backend.current();
-  }
 
   /**
    * Get diff between commits or working tree

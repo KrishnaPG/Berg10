@@ -9,9 +9,9 @@ const backends: Partial<Record<TGitBackendType, IGitBackend>> = {};
 const getCachedBackend = (kind: TGitBackendType): IGitBackend => {
   const cachedBackend = backends[kind];
   if (!cachedBackend)
-    return backends[kind] = createCachedBackend(
+    return (backends[kind] = createCachedBackend(
       kind === "isogit" ? new ISOGitBackend() : kind === "libgit2" ? new LibGit2Backend() : new ShellBackend(),
-    );
+    ));
   return cachedBackend;
 };
 
@@ -24,3 +24,5 @@ export const backend = {
     return active;
   },
 };
+
+export { type IGitBackend, ISOGitBackend };

@@ -1,5 +1,5 @@
-import { backend } from "../git/backend";
-import type { IGitBackend } from "../git/base";
+import { backend, type IGitBackend } from "../services/drivers";
+
 import type {
   IGetBlameInfoOptions,
   IGetCommitLogOptions,
@@ -16,12 +16,6 @@ import type {
  * - GET    /v1/repos/:repo/blame/:path   # Annotate file with commit info
  */
 export class LogService {
-  private backend: IGitBackend;
-
-  constructor() {
-    this.backend = backend.current();
-  }
-
   /**
    * Get commit history
    * @param repo - Repository name or ID

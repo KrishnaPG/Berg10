@@ -1,5 +1,5 @@
-import { backend } from "../git/backend";
-import type { IGitBackend } from "../git/base";
+import { backend, type IGitBackend } from "../services/drivers";
+
 import type {
   IBranchCreateRequest,
   IListBranchesOptions,
@@ -32,12 +32,6 @@ import type {
  * - DELETE /v1/repos/:repo/branches/:branch/protect # Unprotect branch
  */
 export class RefsService {
-  private backend: IGitBackend;
-
-  constructor() {
-    this.backend = backend.current();
-  }
-
   /**
    * List all references (branches and tags) in a repository
    * @param repo - Repository name or ID

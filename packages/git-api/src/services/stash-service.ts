@@ -1,5 +1,5 @@
-import { backend } from "../git/backend";
-import type { IGitBackend } from "../git/base";
+import { backend, type IGitBackend } from "../services/drivers";
+
 import type {
   IListStashesOptions,
   IStashApplyRequest,
@@ -19,11 +19,6 @@ import type {
  * - DELETE /v1/repos/:repo/stashes/:index # Drop stash
  */
 export class StashService {
-  private backend: IGitBackend;
-
-  constructor() {
-    this.backend = backend.current();
-  }
 
   /**
    * List stashes in a repository

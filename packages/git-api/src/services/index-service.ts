@@ -1,5 +1,5 @@
-import { backend } from "../git/backend";
-import type { IGitBackend } from "../git/base";
+import { backend, type IGitBackend } from "../services/drivers";
+
 import type {
   IIndex,
   IIndexAddRequest,
@@ -21,12 +21,6 @@ import type {
  * - POST   /v1/repos/:repo/index/:path/discard # Discard worktree changes
  */
 export class IndexService {
-  private backend: IGitBackend;
-
-  constructor() {
-    this.backend = backend.current();
-  }
-
   /**
    * List staged changes in a repository
    * @param repo - Repository name or ID

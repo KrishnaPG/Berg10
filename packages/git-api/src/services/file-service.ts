@@ -1,5 +1,4 @@
-import { backend } from "../git/backend";
-import type { IGitBackend } from "../git/base";
+import { backend, type IGitBackend } from "../services/drivers";
 import type {
   IFileCreateUpdateRequest,
   IFileDeleteRequest,
@@ -19,22 +18,20 @@ import type {
  * - PUT    /v1/repos/:repo/files/:path/move # Move/rename file
  */
 export class FileService {
-  private backend: IGitBackend;
-
-  constructor() {
-    this.backend = backend.current();
-  }
-
   /**
    * List files in a repository
    * @param repo - Repository name or ID
    * @param path - Path to list files in
    * @param options - Listing options
    */
-  async listFiles(repo: string, path?: string, options?: {
-    ref?: string;
-    recursive?: boolean;
-  }): Promise<TGetFileContentResult[]> {
+  async listFiles(
+    repo: string,
+    path?: string,
+    options?: {
+      ref?: string;
+      recursive?: boolean;
+    },
+  ): Promise<TGetFileContentResult[]> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -45,9 +42,13 @@ export class FileService {
    * @param filePath - Path to the file
    * @param options - File retrieval options
    */
-  async getFileContent(repo: string, filePath: string, options?: {
-    ref?: string;
-  }): Promise<TGetFileContentResult> {
+  async getFileContent(
+    repo: string,
+    filePath: string,
+    options?: {
+      ref?: string;
+    },
+  ): Promise<TGetFileContentResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }
@@ -73,11 +74,7 @@ export class FileService {
    * @param filePath - Path to the file
    * @param deleteData - Delete metadata
    */
-  async deleteFile(
-    repo: string,
-    filePath: string,
-    deleteData: IFileDeleteRequest,
-  ): Promise<TDeleteFileResult> {
+  async deleteFile(repo: string, filePath: string, deleteData: IFileDeleteRequest): Promise<TDeleteFileResult> {
     // Implementation will be added
     throw new Error("Not implemented");
   }

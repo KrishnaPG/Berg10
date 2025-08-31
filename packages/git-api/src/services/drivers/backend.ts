@@ -131,7 +131,7 @@ export interface IGitRepo {
 
   // Diff operations
   diffCommits(from: TSha, to: TSha, options?: ICompareCommitsOptions): Promise<IDiff[]>;
-  diffIndex(treeIsh?: TSha, cached?: boolean): Promise<IDiff[]>;
+  diffIndex(treeIsh?: TSha, options?: ICompareCommitsOptions): Promise<IDiff[]>;
   diffWorktree(path?: TPath): Promise<IDiff[]>;
   getCommitDiff(sha: TSha, options?: IGetCommitDiffOptions): Promise<IDiff>;
 

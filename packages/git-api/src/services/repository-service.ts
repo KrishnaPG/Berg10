@@ -1,5 +1,5 @@
-import { backend } from "../git/backend";
-import type { IGitBackend } from "../git/base";
+import { backend, type IGitBackend } from "../services/drivers";
+
 import type {
   IListRepositoriesOptions,
   IRepository,
@@ -29,12 +29,6 @@ import type {
  * - PUT    /v1/repos/:repo/config       # Set repository config
  */
 export class RepositoryService {
-  private backend: IGitBackend;
-
-  constructor() {
-    this.backend = backend.current();
-  }
-
   /**
    * Create a new repository
    * @param name - Repository name

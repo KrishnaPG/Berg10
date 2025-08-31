@@ -1,5 +1,5 @@
-import { backend } from "../git/backend";
-import type { IGitBackend } from "../git/base";
+import { backend, type IGitBackend } from "../services/drivers";
+
 import type {
   IMergeRequest,
   IRebaseRequest,
@@ -18,12 +18,6 @@ import type {
  * - POST   /v1/repos/:repo/rebase        # Rebase branch
  */
 export class MergeService {
-  private backend: IGitBackend;
-
-  constructor() {
-    this.backend = backend.current();
-  }
-
   /**
    * Merge a branch
    * @param repo - Repository name or ID
