@@ -21,12 +21,15 @@ export class DiffOperations extends IRepoBase {
     return [diff];
   }
 
-  async diffIndex(treeish: TSha, options?: ICompareCommitsOptions): Promise<IDiff[]> {
-    const args = ["diff", "--numstat", "--summary", treeish];
+  async diffIndex(treeIsh?: TSha, options?: ICompareCommitsOptions): Promise<IDiff[]> {
+    const args = ["diff", "--numstat", "--summary"];
+    if (treeIsh) {
+      args.push(treeIsh);
+    }
     if (options?.path) args.push("--", options.path);
 
     const out = await okGit(this.repoPath, args);
-    const diff = await this.parseDiffOutput(out, treeish, "HEAD" as TSha);
+    const diff = await this.parseDiffOutput(out, treeIsh || "HEAD" as TSha, "index" as TSha);
     return [diff];
   }
 
@@ -45,14 +48,6 @@ export class DiffOperations extends IRepoBase {
 
     const out = await okGit(this.repoPath, args);
     return this.parseDiffOutput(out, `${sha}^` as TSha, sha);
-  }
-
-  async getStagedDiff(options?: ICompareCommitsOptions): Promise<IDiff> {
-    const args = ["diff", "--cached", "--numstat", "--summary"];
-    if (options?.path) args.push("--", options.path);
-
-    const out = await okGit(this.repoPath, args);
-    return this.parseDiffOutput(out, "HEAD" as TSha, "index" as TSha);
   }
 
   private async parseDiffOutput(output: string, from: TSha, to: TSha): Promise<IDiff> {
