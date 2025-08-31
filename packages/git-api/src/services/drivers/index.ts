@@ -1,5 +1,5 @@
 import { CONFIG } from "../../config";
-import type { IGitBackend, TGitBackendType } from "./backend";
+import type { IGitBackend, IGitRepo, TGitBackendType } from "./backend";
 import { createCachedBackend } from "./cached-backend";
 import { ISOGitBackend } from "./isogit";
 import { LibGit2Backend } from "./libgit2";
@@ -25,4 +25,4 @@ export const backend = {
   },
 };
 
-export { type IGitBackend, ISOGitBackend };
+export { type IGitBackend, ISOGitBackend, type IGitRepo };
