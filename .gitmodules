@@ -1,0 +1,3 @@
+[submodule "apps/ducklake-fs-indexer"]
+	path = apps/ducklake-fs-indexer
+	url = git@github.com:KrishnaPG/fs-ducklake-index.git
