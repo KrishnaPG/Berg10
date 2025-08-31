@@ -1,5 +1,6 @@
 import type { IRepoInfo } from "../../types";
-import { git, IRepoBase } from "./helpers";
+import type { IGitCmdResult, IShellOutput } from "../backend";
+import { git, IRepoBase, okGit } from "./helpers";
 
 export class RepositoryOperations extends IRepoBase {
   async getInfo(): Promise<IRepoInfo> {
@@ -15,7 +16,7 @@ export class RepositoryOperations extends IRepoBase {
     const [head, branch, remote, log, diff, tag] = await Promise.allSettled(tasks);
 
     // helper to get stdout or empty string
-    const val = (p: PromiseSettledResult<any>) => (p.status === "fulfilled" ? p.value.output.trim() : "");
+    const val = (p: PromiseSettledResult<IGitCmdResult>) => (p.status === "fulfilled" ? p.value.output.trim() : "");
 
     // parse log line
     const [sha, author, email, date, subject] = val(log).split("|");

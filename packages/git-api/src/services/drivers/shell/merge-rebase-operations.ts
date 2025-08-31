@@ -19,9 +19,9 @@ export class MergeRebaseOperations extends IRepoBase {
     args.push(branch);
 
     try {
-      const { output: out } = await okGit(this.repoPath, args);
+      const out  = await okGit(this.repoPath, args);
       // Parse output to determine if merge was successful
-      const { output: sha } = await okGit(this.repoPath, ["rev-parse", "HEAD"]);
+      const sha  = await okGit(this.repoPath, ["rev-parse", "HEAD"]);
       return {
         sha: sha.trim() as TSha,
         merged: true,
@@ -50,7 +50,7 @@ export class MergeRebaseOperations extends IRepoBase {
     if (options?.autosquash) args.push("--autosquash");
 
     try {
-      const { output: out } = await okGit(this.repoPath, args);
+      const  out = await okGit(this.repoPath, args);
       return {
         rebased: true,
         message: out.trim(),
@@ -98,11 +98,11 @@ export class MergeRebaseOperations extends IRepoBase {
     }
   }
 
-  async abortMerge(branch: TBranch): Promise<void> {
-    await okGit(this.repoPath, ["merge", "--abort"]);
+  abortMerge(branch: TBranch) {
+    return okGit(this.repoPath, ["merge", "--abort"]);
   }
 
-  async abortRebase(branch: TBranch): Promise<void> {
-    await okGit(this.repoPath, ["rebase", "--abort"]);
+  abortRebase(branch: TBranch) {
+    return okGit(this.repoPath, ["rebase", "--abort"]);
   }
 }

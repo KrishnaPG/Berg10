@@ -43,7 +43,7 @@ export class RefOperations extends IRepoBase {
 
   async getRef(name: string): Promise<IRef | null> {
     try {
-      const { output: out } = await okGit(this.repoPath, ["rev-parse", name]);
+      const out = await okGit(this.repoPath, ["rev-parse", name]);
       const sha = out.trim() as TSha;
       return {
         name,
@@ -59,11 +59,11 @@ export class RefOperations extends IRepoBase {
     }
   }
 
-  async createRef(name: string, sha: TSha, type: TRefKind): Promise<void> {
+  async createRef(name: string, sha: TSha, type: TRefKind) {
     if (type === "branch") {
-      await okGit(this.repoPath, ["branch", name, sha]);
+      return okGit(this.repoPath, ["branch", name, sha]);
     } else {
-      await okGit(this.repoPath, ["tag", name, sha]);
+      return okGit(this.repoPath, ["tag", name, sha]);
     }
   }
 
@@ -111,7 +111,7 @@ export class RefOperations extends IRepoBase {
     };
   }
 
-  async createTag(name: TTagName, ref: TSha, options?: ITagCreateRequest): Promise<IGitCmdResult> {
+  async createTag(name: TTagName, ref: TSha, options?: ITagCreateRequest) {
     const args = ["tag"];
     if (options?.message) {
       args.push("-m", options.message);

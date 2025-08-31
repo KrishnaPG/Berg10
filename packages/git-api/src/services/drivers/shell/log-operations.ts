@@ -24,7 +24,7 @@ export class LogOperations extends IRepoBase {
     if (options?.per_page) args.push(`-n${options.per_page}`);
     else args.push("-n30"); // Default limit
 
-    const { output: out } = await okGit(this.repoPath, args);
+    const out = await okGit(this.repoPath, args);
     const items = out
       .trim()
       .split("\n")
@@ -71,7 +71,7 @@ export class LogOperations extends IRepoBase {
     if (options?.per_page) args.push(`-n${options.per_page}`);
     else args.push("-n30"); // Default limit
 
-    const { output: out } = await okGit(this.repoPath, args);
+    const out = await okGit(this.repoPath, args);
     const items: IFileHistoryEntry[] = out
       .trim()
       .split("\n")
@@ -124,7 +124,7 @@ export class LogOperations extends IRepoBase {
     const args = ["blame", "--porcelain", path];
     if (rev) args.unshift(rev);
 
-    const { output: out } = await okGit(this.repoPath, args);
+    const out = await okGit(this.repoPath, args);
     // Simplified parsing - in reality this would need complex parsing of porcelain format
     return {
       file: {

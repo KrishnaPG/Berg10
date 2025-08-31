@@ -169,27 +169,6 @@ async function runDebug() {
     } catch (error) {
       console.log("abortRebase error:", (error as Error).message);
     }
-
-    // Test 17: Update repository
-    console.log("\n--- Test 17: Update repository ---");
-    try {
-      const updateResult = await backend.updateRepository({
-        description: "Updated description",
-      });
-      console.log("Repository updated:", updateResult);
-    } catch (error) {
-      console.log("updateRepository not implemented yet:", (error as Error).message);
-    }
-
-    // Test 18: Delete repository
-    console.log("\n--- Test 18: Delete repository ---");
-    try {
-      await backend.deleteRepository();
-      console.log("Repository deleted");
-    } catch (error) {
-      console.log("deleteRepository not implemented yet:", (error as Error).message);
-    }
-
     // Test 19: Close backend
     console.log("\n--- Test 19: Close backend ---");
     await repo.close();

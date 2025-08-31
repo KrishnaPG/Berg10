@@ -46,7 +46,7 @@ export class CommitOperations extends IRepoBase {
   }
 
   async getCommit(sha: TSha): Promise<ICommit> {
-    const { output: out } = await okGit(this.repoPath, [
+    const out = await okGit(this.repoPath, [
       "show",
       "--format=%H|%s|%an|%ae|%ad|%cn|%ce|%cd|%T",
       "--no-patch",
@@ -65,7 +65,7 @@ export class CommitOperations extends IRepoBase {
     ] = out.trim().split("|");
 
     // Get parents
-    const { output: parentsOut } = await okGit(this.repoPath, ["rev-list", "--parents", "-n1", sha]);
+    const parentsOut = await okGit(this.repoPath, ["rev-list", "--parents", "-n1", sha]);
     const parents = parentsOut
       .trim()
       .split(" ")
@@ -99,7 +99,7 @@ export class CommitOperations extends IRepoBase {
     };
   }
 
-  async createCommit(options: ICommitCreateRequest): Promise<IGitCmdResult> {
+  async createCommit(options: ICommitCreateRequest) {
     // For a shell-based implementation that matches the API:
     // 1. Create a tree object from the provided tree SHA
     // 2. Create the commit object with git commit-tree
@@ -123,11 +123,11 @@ export class CommitOperations extends IRepoBase {
     // For a more general solution, we would need to use git filter-branch or similar
 
     // For now, let's implement a simple version that works for HEAD
-    const { output: headSha } = await okGit(this.repoPath, ["rev-parse", "HEAD"]);
+    const headSha = await okGit(this.repoPath, ["rev-parse", "HEAD"]);
     if (headSha.trim() === sha) {
       // Amend the HEAD commit
       await okGit(this.repoPath, ["commit", "--amend", "-m", message]);
-      const { output: newSha } = await okGit(this.repoPath, ["rev-parse", "HEAD"]);
+      const newSha = await okGit(this.repoPath, ["rev-parse", "HEAD"]);
       return this.getCommit(newSha.trim() as TSha);
     } else {
       // For non-HEAD commits, this is more complex
@@ -137,13 +137,13 @@ export class CommitOperations extends IRepoBase {
   }
 
   async revert(sha: TSha): Promise<ICommit> {
-    const { output: out } = await okGit(this.repoPath, ["revert", "--no-edit", sha]);
+    const out = await okGit(this.repoPath, ["revert", "--no-edit", sha]);
     // Parse the output to get the new commit details
-    const { output: newSha } = await okGit(this.repoPath, ["rev-parse", "HEAD"]);
+    const newSha = await okGit(this.repoPath, ["rev-parse", "HEAD"]);
     return this.getCommit(newSha.trim() as TSha);
   }
 
-  async reset(target: TSha, mode: "soft" | "mixed" | "hard"): Promise<void> {
-    await okGit(this.repoPath, ["reset", `--${mode}`, target]);
+  reset(target: TSha, mode: "soft" | "mixed" | "hard") {
+    return okGit(this.repoPath, ["reset", `--${mode}`, target]);
   }
 }

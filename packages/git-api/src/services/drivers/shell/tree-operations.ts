@@ -19,7 +19,7 @@ export class TreeOperations extends IRepoBase {
     const args = ["ls-tree", recursive ? "-r" : "", treeIsh];
     if (path) args.push(path);
 
-    const { output: out } = await okGit(
+    const out = await okGit(
       this.repoPath,
       args.filter((arg) => arg !== ""),
     );
@@ -49,7 +49,7 @@ export class TreeOperations extends IRepoBase {
   }
 
   async getBlob(treeIsh: TSha, path: TPath): Promise<Buffer> {
-    const { output: content } = await okGit(this.repoPath, ["show", `${treeIsh}:${path}`]);
+    const content = await okGit(this.repoPath, ["show", `${treeIsh}:${path}`]);
     return Buffer.from(content, "utf-8");
   }
 
@@ -68,16 +68,8 @@ export class TreeOperations extends IRepoBase {
 
   async createBlob(content: string, encoding?: "utf-8" | "base64"): Promise<IBlob> {
     const args = ["hash-object", "-w", "--stdin"];
-    const process = Bun.spawn({
-      cmd: ["git", "-C", CONFIG.REPO_BASE, ...args],
-      stdout: "pipe",
-      stdin: "pipe",
-    });
+    const sha = await okGit(this.repoPath, args, { stdin: Buffer.from(content)});
 
-    await process.stdin.write(content);
-    process.stdin.end();
-
-    const sha = await new Response(process.stdout).text();
     return {
       sha: sha.trim() as TSha,
       content,
@@ -92,14 +84,14 @@ export class TreeOperations extends IRepoBase {
 
     // Check if it's a directory
     try {
-      const { output: out } = await okGit(this.repoPath, ["ls-tree", ref, path]);
+      const out = await okGit(this.repoPath, ["ls-tree", ref, path]);
       if (
         out
           .trim()
           .split("\n")
           .some((line) => line.includes(" tree "))
       ) {
-        // It's a directory
+        // It's a directory; TODO: use stream/async iterators instead of buffered calls
         const entries = await this.listFiles(ref as TSha, path, false);
         return {
           name: path.split("/").pop() || path,
@@ -123,8 +115,8 @@ export class TreeOperations extends IRepoBase {
     }
 
     // It's a file
-    const { output: content } = await okGit(this.repoPath, ["show", `${ref}:${path}`]);
-    const { output: sha } = await okGit(this.repoPath, ["rev-parse", `${ref}:${path}`]);
+    const content = await okGit(this.repoPath, ["show", `${ref}:${path}`]);
+    const sha = await okGit(this.repoPath, ["rev-parse", `${ref}:${path}`]);
 
     return {
       name: path.split("/").pop() || path,

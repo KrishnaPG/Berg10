@@ -1,41 +1,41 @@
 import type { IIndex, IIndexEntry, IIndexUpdateRequest, TPath } from "../../types";
-import type { IGitCmdResult } from "../backend";
 import { git, IRepoBase, okGit } from "./helpers";
 
 export class IndexOperations extends IRepoBase {
   // Index operations
   async getIndex(): Promise<IIndexEntry[]> {
-    const { output: out } = await okGit(this.repoPath, ["diff", "--cached", "--name-status", "-z"]);
-    return out
-      .trim()
-      .split("\0")
-      .filter((line) => line.length > 0)
-      .map((line) => {
-        const [status, filePath] = line.split("\t");
-        return {
-          path: filePath as TPath,
-          mode: "", // Would need separate command to get mode
-          blob: {
-            sha: "", // Would need separate command to get sha
-            size: 0,
-            url: "",
-          },
-          status: status as any,
-          changes: {
-            additions: 0,
-            deletions: 0,
-            total: 0,
-          },
-        };
-      });
+    return okGit(this.repoPath, ["diff", "--cached", "--name-status", "-z"]).then((out) =>
+      out
+        .trim()
+        .split("\0")
+        .filter((line) => line.length > 0)
+        .map((line) => {
+          const [status, filePath] = line.split("\t");
+          return {
+            path: filePath as TPath,
+            mode: "", // Would need separate command to get mode
+            blob: {
+              sha: "", // Would need separate command to get sha
+              size: 0,
+              url: "",
+            },
+            status: status as any,
+            changes: {
+              additions: 0,
+              deletions: 0,
+              total: 0,
+            },
+          };
+        }),
+    );
   }
 
-  async addToIndex(path: TPath): Promise<void> {
-    await okGit(this.repoPath, ["add", path]);
+  addToIndex(path: TPath) {
+    return okGit(this.repoPath, ["add", path]);
   }
 
-  async removeFromIndex(path: TPath): Promise<void> {
-    await okGit(this.repoPath, ["rm", "--cached", path]);
+  removeFromIndex(path: TPath) {
+    return okGit(this.repoPath, ["rm", "--cached", path]);
   }
 
   async updateIndex(options: IIndexUpdateRequest): Promise<IIndex> {
@@ -69,14 +69,14 @@ export class IndexOperations extends IRepoBase {
     };
   }
 
-  async stagePatch(path: TPath, patchText: string): Promise<void> {
-    await git(this.repoPath, ["apply", "--cached"], { stdin: Buffer.from(patchText) });
+  stagePatch(path: TPath, patchText: string) {
+    return git(this.repoPath, ["apply", "--cached"], { stdin: Buffer.from(patchText) });
   }
 
-  async discardWorktree(path?: TPath): Promise<void | IGitCmdResult> {
+  discardWorktree(path?: TPath) {
     // if a single file needs to be reverted back to its HEAD commit state
     if (path) return okGit(this.repoPath, ["checkout", "--", path]);
     // discard all the local changes
-    okGit(this.repoPath, ["switch", "--discard-changes", "--recurse-submodules"]);
+    return okGit(this.repoPath, ["switch", "--discard-changes", "--recurse-submodules"]);
   }
 }

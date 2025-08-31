@@ -3,7 +3,7 @@ import os from "os";
 import { join } from "path";
 import { CONFIG } from "../../../config";
 import type { TPath } from "../../types";
-import type { IGitCmdResult } from "../backend";
+import type { IGitCmdResult, IShellOutput } from "../backend";
 
 export class IRepoBase {
   constructor(protected repoPath: TPath) {}
@@ -36,12 +36,6 @@ export async function git<
     stdin: options?.stdin,
     stderr: "pipe",
   });
-
-  // if (options?.stdin) {
-  //   await process.stdin.write(options.stdin);
-  //   process.stdin.flush();
-  //   process.stdin.end();
-  // }
 
   const output = await new Response(process.stdout).text();
   new ReadableStream(process.stderr);
@@ -118,10 +112,10 @@ export function okGit<
   const _In extends SpawnOptions.Writable = "ignore",
   const Out extends SpawnOptions.Readable = "pipe",
   const Err extends SpawnOptions.Readable = "inherit",
->(repoPath: TPath, args: string[], options?: SpawnOptions.OptionsObject<_In, Out, Err>) {
+>(repoPath: TPath, args: string[], options?: SpawnOptions.OptionsObject<_In, Out, Err>): Promise<IShellOutput> {
   return git(repoPath, args, options).then((result) => {
     if (result.exitCode)
       throw new Error(`\ncmd: '${result.cmd.join(" ")}'\nResult: ${result.errors}Exit Code: ${result.exitCode}`);
-    return result;
+    return result.output;
   });
 }

@@ -1,9 +1,6 @@
 import os from "os";
 import type {
   ICloneOptions,
-  IRepository,
-  IRepositoryUpdateRequest,
-  IRepositoryUpdateResponse,
   TPath,
 } from "../../types";
 import type { IGitBackend, IGitRepo, TGitBackendType } from "../backend";
@@ -130,42 +127,6 @@ export class ShellBackend implements IGitBackend {
       abortMerge: mergeRebaseOps.abortMerge.bind(mergeRebaseOps),
       abortRebase: mergeRebaseOps.abortRebase.bind(mergeRebaseOps),
     };
-  }
-
-  async listRepositories(): Promise<IRepository[]> {
-    // This would require scanning the REPO_BASE directory
-    // For now, returning empty array as this is typically handled at a higher level
-    return [];
-  }
-
-  async updateRepository(options: IRepositoryUpdateRequest): Promise<IRepositoryUpdateResponse> {
-    throw new Error("Not Implemented");
-    // Repository-level updates like name, description, etc. are typically
-    // handled at a higher level (e.g., in a database or service layer)
-    // For git-specific settings, we could update config values
-
-    // For now, let's return a basic response
-    // const repoDetails = await this.getRepository();
-    // const updatedRepo: IRepositoryUpdateResponse = {
-    //   ...repoDetails,
-    //   updated_at: new Date().toISOString(),
-    // };
-
-    // If there are git-specific settings to update, we would do it here
-    // For example:
-    // if (options.default_branch) {
-    //   await git(repoPath, ["symbolic-ref", "HEAD", `refs/heads/${options.default_branch}`]);
-    // }
-
-    // return updatedRepo;
-  }
-
-  async deleteRepository(): Promise<void> {
-    // In a shell backend, deleting a repository would typically involve
-    // filesystem operations to remove the directory
-    // However, since we don't have access to the filesystem operations here
-    // and this is typically handled at a higher level, we'll leave this as a placeholder
-    throw new Error("Repository deletion is not implemented in the shell backend");
   }
 
   getCurrentBackend(): TGitBackendType {
