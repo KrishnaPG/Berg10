@@ -68,19 +68,20 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 /** git stream based shell execution */
-export async function* gitStream(repoPath: string, args: string[], stdin?: Uint8Array): AsyncGenerator<string> {
+export async function* gitStream<
+const _In extends SpawnOptions.Writable = "ignore",
+const Out extends SpawnOptions.Readable = "pipe",
+const Err extends SpawnOptions.Readable = "inherit",
+>(repoPath: string, args: string[], options?: SpawnOptions.OptionsObject<_In, Out, Err>): AsyncGenerator<string> {
   const cmd = ["git", "-C", repoPath, ...args];
 
   const proc = Bun.spawn({
+    cwd: options?.cwd || gWorkingDir.cwd,
     cmd,
+    stderr: "pipe",
     stdout: "pipe",
-    stdin: stdin ? "pipe" : undefined,
+    stdin: options?.stdin,
   });
-
-  if (stdin) {
-    await proc.stdin.write(stdin);
-    proc.stdin.end();
-  }
 
   const buf = alloc();
   const reader = proc.stdout.getReader();

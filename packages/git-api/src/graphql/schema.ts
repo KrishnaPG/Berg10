@@ -1,7 +1,7 @@
 import { yoga } from "@elysiajs/graphql-yoga";
 import { buildSchema } from "graphql";
 import { createPubSub } from "graphql-yoga";
-import { backend } from "../git/backend";
+import { backend } from "../services/drivers";
 
 export const schema = buildSchema(`
   type File {
