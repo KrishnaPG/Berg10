@@ -3,10 +3,7 @@
  * These provide stricter type safety by creating unique types for semantically different strings
  */
 
-// Create a branded type utility
-declare const __brand: unique symbol;
-type Brand<B> = { readonly [__brand]: B };
-type Branded<K, T> = K & Brand<T>;
+import type {Branded} from "../../../../shared/types";
 
 // Branded types for Git-specific values
 export type TSha = Branded<string, "Sha">;
