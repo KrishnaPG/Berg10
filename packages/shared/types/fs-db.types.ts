@@ -2,15 +2,9 @@
  * The file-system DB Types
  */
 
-import type { Branded, TFilePath, TFolderPath, TName } from "./branded.types";
+import type { Branded, TFilePath, TFolderPath, TName } from "./branded.types";// DB File types
 
-// DB File types
+// TFsDBRootPath is equivalent to TDuckLakeRootPath, and 
+// contains {TDuckLakeMetaFilePath, TDuckLakeDataFilesFolder};
+// A single TFsDBRootPath might contain multiple tables, metadata files inside it.
 export type TFsDBRootPath = Branded<TFolderPath, "FsDBRoot">;
-
-
-// DuckLake types
-export type TDLMetaFilePath = Branded<TFilePath, "DL Metadata File">;
-export type TDLDBFilesRootPath = Branded<TFolderPath, "DL DB Files Root Folder">;
-
-export type TDLTableName = Branded<TName, "DuckLake Table Name">;
-export type TDLColName = Branded<TName, "DuckLake Column Name">;

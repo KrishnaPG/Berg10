@@ -16,4 +16,12 @@ export type TFilePath = Branded<string, "FilePath">;
 export type TFolderPath = Branded<string, "FolderPath">;
 
 // the folder that contains .git folder (i.e. root of git repo)
-export type TGitRepoRootPath = Branded<string, "GitRepoRoot">;
+export type TGitRepoRootPath = Branded<TFolderPath, "GitRepoRoot">;
+
+// Base58
+export type TB58String = Branded<string, "B58String">;
+
+// SHA256
+export type TSHA256B58 = Branded<TB58String, "sha256 base58 string">;
+
+
