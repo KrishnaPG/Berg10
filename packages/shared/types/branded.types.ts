@@ -5,8 +5,32 @@
 
 // Create a branded type utility
 declare const __brand: unique symbol;
-type Brand<B> = { readonly [__brand]: B };
-export type Branded<K, T> = K & Brand<T>;
+
+// The brand stores both the root base-type and the accumulated tags
+type Brand<Root, Tags extends string> = {
+  readonly [__brand]: {
+    root: Root;
+    tags: Record<Tags, true>;
+  };
+};
+
+// Accumulate brands and preserve root
+type Branded<Base, Tag extends string> =
+  Base extends { readonly [__brand]: { root: infer R; tags: infer T } }
+    ? R & Brand<R, keyof T & string | Tag> // merge existing tags + new tag
+    : Base & Brand<Base, Tag>;
+
+/**
+ * Type extraction helpers
+ * @example
+ *  ```ts
+      type RootType = RootOf<TGitRepoRootPath>; // string
+      type AllTags = TagsOf<TGitRepoRootPath>; // "FolderPath" | "GitRepoRoot"
+ *  ```
+ */
+type RootOf<T> = T extends { readonly [__brand]: { root: infer R } } ? R : never;
+type TagsOf<T> = T extends { readonly [__brand]: { tags: Record<infer K, true> } } ? K : never;
+
 
 // basic types
 export type TName = Branded<string, "Generic Name">;
@@ -15,13 +39,19 @@ export type TName = Branded<string, "Generic Name">;
 export type TFilePath = Branded<string, "FilePath">;
 export type TFolderPath = Branded<string, "FolderPath">;
 
-// the folder that contains .git folder (i.e. root of git repo)
+/** The working directory that contains `.git` file/folder (i.e. root of a git repo) */
 export type TGitRepoRootPath = Branded<TFolderPath, "GitRepoRoot">;
+
+export type TGitRepoRootPath1 = Branded<TGitRepoRootPath, "GitRepoRoot1">;
+export type TGitRepoRootPath2 = Branded<TGitRepoRootPath1, "GitRepoRoot2">;
+
+export type test = TagsOf<TGitRepoRootPath2>;
+export type baseTest = RootOf<TFolderPath>;
+export type baseTest1 = RootOf<TGitRepoRootPath>;
+export type sTest = RootOf<TFolderPath>;
 
 // Base58
 export type TB58String = Branded<string, "B58String">;
 
 // SHA256
 export type TSHA256B58 = Branded<TB58String, "sha256 base58 string">;
-
-

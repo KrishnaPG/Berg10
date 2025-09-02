@@ -1,5 +1,3 @@
-# Semantic Content Management System Product Requirements Document (PRD)  
-  
 # Semantic Content Management System Product Requirements Document (PRD)
 
 ## Goals and Background Context

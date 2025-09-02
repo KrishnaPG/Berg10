@@ -9,3 +9,8 @@ import type { TSHA256B58 } from "./types";
 export function hashNEncode(str: string): TSHA256B58 {
 	return sha256(str).toBase58() as TSHA256B58;
 }
+
+export function maybeGitRepoRootPath(path: string): path is TGitRepoRootPath {
+  // Add actual validation logic here
+  return path.endsWith(".git") || fs.existsSync(path + "/.git");
+}
