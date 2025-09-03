@@ -4,9 +4,13 @@
   "type": "module",
   "private": true,
   "scripts": {
-  "dev:server": "cd apps/ducklake-fs-indexer/server && bun dev",
-  "dev:ui": "cd apps/ducklake-fs-indexer/ui && bun dev"
-},
+    "dev:server": "cd apps/ducklake-fs-indexer/server && bun dev",
+    "dev:ui": "cd apps/ducklake-fs-indexer/ui && bun dev",
+    "dev": "cd packages/git-db && bun dev"
+  },
+  "dependencies": {
+    "@fict/crypto": "^0.1.4"
+  },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
     "concurrently": "^9.2.1"
