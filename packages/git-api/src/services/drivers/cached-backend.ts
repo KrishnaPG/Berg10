@@ -1,5 +1,5 @@
-import { sha256 } from "@fict/crypto";
 import { LRUCache } from "lru-cache";
+import { hashNEncode } from "../../../../../packages/shared/utils";
 import { CONFIG } from "../../config";
 import type { IGitBackend } from "./backend";
 
@@ -117,6 +117,5 @@ export function createCachedBackend<T extends IGitBackend>(
 }
 
 function hashArgs<K extends keyof IGitBackend>(...args: Args<IGitBackend[K]>) {
-  const argsStr = JSON.stringify(args);
-  return sha256(argsStr).toBase58();
+  return hashNEncode(JSON.stringify(args));
 }

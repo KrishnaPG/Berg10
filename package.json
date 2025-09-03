@@ -3,14 +3,22 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+  "dev:server": "cd apps/ducklake-fs-indexer/server && bun dev",
+  "dev:ui": "cd apps/ducklake-fs-indexer/ui && bun dev"
+},
   "devDependencies": {
-    "@types/bun": "latest",
-    "@biomejs/biome": "2.2.2"
+    "@biomejs/biome": "2.2.2",
+    "concurrently": "^9.2.1"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "workspaces": [
-    "packages/*"
+    "packages/**/*",
+    "apps/**/*"
+  ],
+  "trustedDependencies": [
+    "@tailwindcss/oxide"
   ]
 }

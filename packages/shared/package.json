@@ -1,0 +1,9 @@
+{
+  "name": "berg10-shared",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+  "@fict/crypto": "^0.1.4"
+}
+}
