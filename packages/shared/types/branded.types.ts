@@ -4,7 +4,7 @@
  */
 
 // Create a branded type utility
-declare const __brand: unique symbol;
+export declare const __brand: unique symbol;
 
 // The brand stores both the root base-type and the accumulated tags
 type Brand<Root, Tags extends string> = {
@@ -34,18 +34,25 @@ export type TagsOf<T> = T extends { readonly [__brand]: { tags: Record<infer K, 
 
 // basic types
 export type TName = Branded<string, "Generic Name">;
+export type TEMail = Branded<string, "EMail">;
+
+export type TSize = Branded<number, "Size">;
+export type TCount = Branded<number, "Count">;
+export type TIndexPos = Branded<number, "IndexPos">;
+
 
 // basic file/folder path types
 export type TFilePath = Branded<string, "FilePath">;
 export type TFolderPath = Branded<string, "FolderPath">;
 
-/** The working directory that contains `.git` file/folder (i.e. root of a git repo) */
-export type TGitRepoRootPath = Branded<TFolderPath, "GitRepoRoot">;
-
-// Base58
+// Encoded Strings
 export type TB58String = Branded<string, "B58String">;
+export type TB64String = Branded<string, "B64String">;
+export type THexString = Branded<string, "HexString">;
 
 // SHA256
 export type TSHA256B58 = Branded<TB58String, "sha256 base58 string">;
+export type TSHA256B64 = Branded<TB64String, "sha256 base64 string">;
+export type TSHA256Hex = Branded<TB58String, "sha256 hex string">;
 
 export type TISOString = Branded<string, "ISO Time String">
