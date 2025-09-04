@@ -1,4 +1,4 @@
-import { Branded, TCount, TEMail, TFolderPath, TIndexPos, TISOString, TName, TSHA256Hex, TSize } from "./branded.types";
+import type { Branded, TCount, TEMail, TIndexPos, TISOString, TName, TSHA256Hex, TSize } from "./branded.types";
 
 // Git Object Types
 export type TGitObjectId = Branded<TSHA256Hex, "GitObjectId">;
@@ -12,9 +12,6 @@ export type TRefName = Branded<TName, "RefName">;
 export type TBranchName = Branded<TRefName, "BranchName">;
 export type TTagName = Branded<TRefName, "TagName">;
 export type TRemoteName = Branded<TName, "RemoteName">;
-
-/** The working directory that contains `.git` file/folder (i.e. root of a git repo) */
-export type TGitRepoRootPath = Branded<TFolderPath, "GitRepoRoot">;
 
 // Author/Commit Types
 export type TAuthorName = Branded<TName, "AuthorName">;

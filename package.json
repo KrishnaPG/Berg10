@@ -6,7 +6,7 @@
   "scripts": {
     "dev:server": "cd apps/ducklake-fs-indexer/server && bun dev",
     "dev:ui": "cd apps/ducklake-fs-indexer/ui && bun dev",
-    "dev": "cd packages/git-db && bun dev"
+    "dev": "cd packages/git-on-db && bun dev"
   },
   "dependencies": {
     "@fict/crypto": "^0.1.4"
