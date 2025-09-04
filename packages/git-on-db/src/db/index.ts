@@ -1,13 +1,15 @@
+import type { TFolderPath } from "@types";
 import { getPackageJsonFolder } from "@utils";
 import { drizzle } from "drizzle-orm/bun-sql";
 import { migrate } from "drizzle-orm/bun-sql/migrator";
 import os from "os";
 import path from "path";
+import {sql} from "./generated/git-internals.sqlite.sql";
 
 const client = new Bun.SQL({
   // Required for SQLite
   // adapter: "sqlite",
-  filename: ":memory:", //path.resolve(os.tmpdir(),"sqlite.db"), // or ":memory:" for in-memory database
+  filename: `sqlite://${path.resolve(os.tmpdir(), "sqlite.db")}`, // or ":memory:" for in-memory database
 
   // SQLite-specific access modes
   readonly: false, // Open in read-only mode
@@ -29,13 +31,10 @@ const client = new Bun.SQL({
 
 export function initDB() {
   const gitInternalsDB = drizzle({ client });
-  console.log("Running database migrations...");
-  return getPackageJsonFolder()
-    .then((packageJsonFolder) => {
-      return migrate(gitInternalsDB, { migrationsFolder: path.resolve(packageJsonFolder, "migrations") });
-    })
+  console.log("Preparing the database...");
+  return gitInternalsDB.execute(sql)
     .then(() => {
-      console.log("Database migrations completed.");
+      console.log("Database Ready.");
       return gitInternalsDB;
     });
 }
