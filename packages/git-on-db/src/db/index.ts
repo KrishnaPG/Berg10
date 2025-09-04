@@ -1,40 +1,7 @@
-import type { TFolderPath } from "@types";
-import { getPackageJsonFolder } from "@utils";
-import { drizzle } from "drizzle-orm/bun-sql";
-import { migrate } from "drizzle-orm/bun-sql/migrator";
-import os from "os";
-import path from "path";
-import {sql} from "./generated/git-internals.sqlite.sql";
+import { ensureTables } from "@shared/ducklake/";
+import type { TDuckLakeDBName, TDuckLakeRootPath, TSQLString } from "@shared/types";
+import { sql } from "./schemas/git-internals.duckdb.sql";
 
-const client = new Bun.SQL({
-  // Required for SQLite
-  // adapter: "sqlite",
-  filename: `sqlite://${path.resolve(os.tmpdir(), "sqlite.db")}`, // or ":memory:" for in-memory database
-
-  // SQLite-specific access modes
-  readonly: false, // Open in read-only mode
-  create: true, // Create database if it doesn't exist
-  readwrite: true, // Allow read and write operations
-
-  // SQLite data handling
-  strict: true, // Enable strict mode for better type safety
-  safeIntegers: false, // Use BigInt for integers exceeding JS number range
-
-  // Callbacks
-  onconnect: (client) => {
-    console.log("SQLite database opened");
-  },
-  onclose: (client) => {
-    console.log("SQLite database closed");
-  },
-});
-
-export function initDB() {
-  const gitInternalsDB = drizzle({ client });
-  console.log("Preparing the database...");
-  return gitInternalsDB.execute(sql)
-    .then(() => {
-      console.log("Database Ready.");
-      return gitInternalsDB;
-    });
+export function initDB(lakeRootPath: TDuckLakeRootPath) {
+  return ensureTables(lakeRootPath, "gitLake" as TDuckLakeDBName, sql as TSQLString).then(({ db }) => db);
 }

@@ -7,7 +7,7 @@
 export declare const __brand: unique symbol;
 
 // The brand stores both the root base-type and the accumulated tags
-type Brand<Root, Tags extends string> = {
+export type Brand<Root, Tags extends string> = {
   readonly [__brand]: {
     root: Root;
     tags: Record<Tags, true>;
@@ -55,4 +55,8 @@ export type TSHA256B58 = Branded<TB58String, "sha256 base58 string">;
 export type TSHA256B64 = Branded<TB64String, "sha256 base64 string">;
 export type TSHA256Hex = Branded<TB58String, "sha256 hex string">;
 
+// Time String
 export type TISOString = Branded<string, "ISO Time String">
+
+// SQL String
+export type TSQLString = Branded<string, "SQL">;
