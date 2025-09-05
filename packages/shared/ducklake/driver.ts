@@ -68,6 +68,8 @@ async function initDB(
   const con = await instance.connect();
 
   // Install and load DuckLake extension
+  await con.run("INSTALL parquet;");
+  await con.run("LOAD parquet;");
   await con.run("INSTALL ducklake;");
   await con.run("LOAD ducklake;");
   const attachCmd = `ATTACH IF NOT EXISTS 'ducklake:${metaFilePath}' AS lakeFile (DATA_PATH '${dataFilesFolderPath}'${readOnly ? " READ_ONLY " : ""});`;
@@ -256,7 +258,7 @@ export class _BaseQueryExecutor {
   }
 
   /**
-   * exec executes a query without returning any rows.
+   * exec executes a query.
    *
    * @example
    * const email = "foo@example.com";

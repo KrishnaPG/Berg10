@@ -23,6 +23,10 @@
     "apps/**/*"
   ],
   "trustedDependencies": [
-    "@tailwindcss/oxide"
+    "@tailwindcss/oxide",
+    "esbuild",
+    "lmdb",
+    "msgpackr-extract",
+    "sse4_crc32"
   ]
 }
