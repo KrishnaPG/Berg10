@@ -2,44 +2,47 @@ import { createWriteStream, fsyncSync, mkdirSync, openSync, renameSync } from "n
 import { dirname, join } from "node:path";
 import * as arrow from "apache-arrow";
 import { writeParquet } from "parquet-wasm";
-import type { Config, GitObject } from "./types";
+import type { TGitObject, TGitObjectType, TImportConfig } from "./types";
 
 const SCHEMAS = {
   commit: new arrow.Schema([
-    { name: "sha", type: new arrow.Utf8() },
-    { name: "author", type: new arrow.Utf8() },
-    { name: "committer", type: new arrow.Utf8() },
-    { name: "message", type: new arrow.Utf8() },
-    { name: "tree", type: new arrow.Utf8() },
-    { name: "parents", type: new arrow.List(new arrow.Utf8()) },
+    new arrow.Field("sha", new arrow.Utf8()),
+    new arrow.Field("author", new arrow.Utf8()),
+    new arrow.Field("committer", new arrow.Utf8()),
+    new arrow.Field("message", new arrow.Utf8()),
+    new arrow.Field("tree", new arrow.Utf8()),
+    new arrow.Field("parents", new arrow.List(new arrow.Field("item", new arrow.Utf8()))),
   ]),
   tree: new arrow.Schema([
-    { name: "sha", type: new arrow.Utf8() },
-    {
-      name: "entries",
-      type: new arrow.List(
-        new arrow.Struct([
-          { name: "name", type: new arrow.Utf8() },
-          { name: "sha", type: new arrow.Utf8() },
-          { name: "mode", type: new arrow.Int32() },
-        ]),
+    new arrow.Field("sha", new arrow.Utf8()),
+    new arrow.Field(
+      "entries",
+      new arrow.List(
+        new arrow.Field(
+          "item", // List's inner field must have a name
+          new arrow.Struct([
+            new arrow.Field("name", new arrow.Utf8()),
+            new arrow.Field("sha", new arrow.Utf8()),
+            new arrow.Field("mode", new arrow.Int32()),
+          ]),
+        ),
       ),
-    },
+    ),
   ]),
   blob: new arrow.Schema([
-    { name: "sha", type: new arrow.Utf8() },
-    { name: "size", type: new arrow.Int64() },
-    { name: "data", type: new arrow.Binary() },
+    new arrow.Field("sha", new arrow.Utf8()),
+    new arrow.Field("size", new arrow.Int64()),
+    new arrow.Field("data", new arrow.Binary()),
   ]),
   tag: new arrow.Schema([
-    { name: "sha", type: new arrow.Utf8() },
-    { name: "object", type: new arrow.Utf8() },
-    { name: "type", type: new arrow.Utf8() },
-    { name: "tag", type: new arrow.Utf8() },
-    { name: "tagger", type: new arrow.Utf8() },
-    { name: "message", type: new arrow.Utf8() },
+    new arrow.Field("sha", new arrow.Utf8()),
+    new arrow.Field("object", new arrow.Utf8()),
+    new arrow.Field("type", new arrow.Utf8()),
+    new arrow.Field("tag", new arrow.Utf8()),
+    new arrow.Field("tagger", new arrow.Utf8()),
+    new arrow.Field("message", new arrow.Utf8()),
   ]),
-};
+} as const;
 
 export class ParquetWriter {
   private batches = new Map<string, arrow.RecordBatch[]>();
@@ -49,14 +52,14 @@ export class ParquetWriter {
   private max = new Map<string, string>();
 
   constructor(
-    private cfg: Config,
+    private cfg: TImportConfig,
     private root: string,
     sn: number,
   ) {
     this.sn = sn;
   }
 
-  append(o: GitObject): void {
+  append(o: TGitObject): void {
     const type = o.type;
     let cols: arrow.Vector[];
     if (type === "blob") {
@@ -75,7 +78,7 @@ export class ParquetWriter {
     if (this.sizes.get(type)! >= this.cfg.parquet.targetRowGroupSize) this.flush(type);
   }
 
-  private flush(type: string) {
+  private flush(type: TGitObjectType) {
     const tbl = new arrow.Table(SCHEMAS[type], this.batches.get(type));
     const prefix = this.min.get(type)!.slice(0, 2);
     const dir = join(this.root, "v2", type, `part_hash=${prefix}`);
@@ -99,6 +102,6 @@ export class ParquetWriter {
   }
 
   flushAll(): void {
-    for (const t of this.batches.keys()) this.flush(t);
+    for (const t of this.batches.keys()) this.flush(t as TGitObjectType);
   }
 }

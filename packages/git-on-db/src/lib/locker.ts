@@ -1,5 +1,6 @@
 import { constants } from "node:fs";
 import { open, readFile, unlink, writeFile } from "node:fs/promises";
+import { FILESYSTEM_RETRY_OPTIONS, retry } from "@shared/retry";
 
 export class Locker {
   private fd: any = null; // FileHandle from fs/promises
@@ -12,84 +13,80 @@ export class Locker {
       throw new Error("Lock already acquired");
     }
 
-    let retryCount = 0;
-    const maxRetries = 3;
-    const retryDelay = 100; // ms
+    // Use retry utility for acquiring lock with exponential backoff
+    const result = await retry(
+      async () => {
+        try {
+          // Try to create the lock file exclusively (fails if exists)
+          this.fd = await open(this.file, "wx+");
 
-    while (retryCount < maxRetries) {
-      try {
-        // Try to create the lock file exclusively (fails if exists)
-        this.fd = await open(this.file, "wx+");
+          // Write our PID to the lock file
+          await writeFile(this.file, String(process.pid), "utf8");
 
-        // Write our PID to the lock file
-        await writeFile(this.file, String(process.pid), "utf8");
+          this.isLocked = true;
+          return true; // Success!
+        } catch (error: any) {
+          // Clean up any partial state
+          await this.safeCleanup();
 
-        this.isLocked = true;
-        return; // Success!
-      } catch (error: any) {
-        // Clean up any partial state
-        await this.safeCleanup();
-
-        if (error.code === "EEXIST") {
-          // Lock file exists, check if it's stale
-          try {
-            const existingPidStr = await readFile(this.file, "utf8");
-            const existingPid = parseInt(existingPidStr.trim());
-
-            // Validate PID
-            if (isNaN(existingPid) || existingPid <= 0) {
-              // Invalid PID in lock file, remove it and retry
-              try {
-                await unlink(this.file);
-              } catch (unlinkError: any) {
-                if (unlinkError.code !== "ENOENT") {
-                  throw unlinkError;
-                }
-              }
-              retryCount++;
-              await this.delay(retryDelay);
-              continue;
-            }
-
-            // Check if the process is still alive
+          if (error.code === "EEXIST") {
+            // Lock file exists, check if it's stale
             try {
-              process.kill(existingPid, 0);
-              // Process is alive, lock is held
-              throw new Error(`Lock held by process ${existingPid}`);
-            } catch (killError: any) {
-              if (killError.code === "ESRCH") {
-                // Process is dead, remove stale lock and retry
+              const existingPidStr = await readFile(this.file, "utf8");
+              const existingPid = parseInt(existingPidStr.trim());
+
+              // Validate PID
+              if (isNaN(existingPid) || existingPid <= 0) {
+                // Invalid PID in lock file, remove it and retry
                 try {
                   await unlink(this.file);
                 } catch (unlinkError: any) {
                   if (unlinkError.code !== "ENOENT") {
                     throw unlinkError;
                   }
-                  // File was already removed by someone else
                 }
-                retryCount++;
-                await this.delay(retryDelay);
-              } else {
-                // Other error (permissions, etc.)
-                throw new Error(`Failed to check process ${existingPid}: ${killError.message}`);
+                // Retry by throwing the error
+                throw error;
               }
-            }
-          } catch (readError: any) {
-            if (readError.code === "ENOENT") {
-              // File was removed between check and read, retry immediately
-              retryCount++;
-              continue;
-            }
-            throw new Error(`Failed to read lock file: ${readError.message}`);
-          }
-        } else {
-          // Other file system error
-          throw new Error(`Failed to create lock file: ${error.message}`);
-        }
-      }
-    }
 
-    throw new Error("Failed to acquire lock after maximum retries");
+              // Check if the process is still alive
+              try {
+                process.kill(existingPid, 0);
+                // Process is alive, lock is held
+                throw new Error(`Lock held by process ${existingPid}`);
+              } catch (killError: any) {
+                if (killError.code === "ESRCH") {
+                  // Process is dead, remove stale lock and retry
+                  try {
+                    await unlink(this.file);
+                  } catch (unlinkError: any) {
+                    if (unlinkError.code !== "ENOENT") {
+                      throw unlinkError;
+                    }
+                    // File was already removed by someone else
+                  }
+                  // Retry by throwing the original error
+                  throw error;
+                } else {
+                  // Other error (permissions, etc.)
+                  throw new Error(`Failed to check process ${existingPid}: ${killError.message}`);
+                }
+              }
+            } catch (readError: any) {
+              if (readError.code === "ENOENT") {
+                // File was removed between check and read, retry immediately
+                throw readError;
+              }
+              throw new Error(`Failed to read lock file: ${readError.message}`);
+            }
+          } else {
+            // Other file system error
+            throw new Error(`Failed to create lock file: ${error.message}`);
+          }
+        }
+      },
+      { config: FILESYSTEM_RETRY_OPTIONS }
+    );
   }
 
   async release(): Promise<void> {

@@ -1,31 +1,31 @@
 import { type Static, Type } from "@sinclair/typebox";
 
-export const TObjectType = Type.Union([
+export const GitObjectTypeSchema = Type.Union([
   Type.Literal("commit"),
   Type.Literal("tree"),
   Type.Literal("blob"),
   Type.Literal("tag"),
 ]);
-export type ObjectType = Static<typeof TObjectType>;
+export type TGitObjectType = Static<typeof GitObjectTypeSchema>;
 
-export const TGitObject = Type.Object({
-  sha: Type.String({ pattern: "^[0-9a-f]{40}$" }),
-  type: TObjectType,
+export const GitObjectSchema = Type.Object({
+  sha: Type.String({ pattern: "^[0-9a-f]{64}$" }),
+  type: GitObjectTypeSchema,
   size: Type.Integer({ minimum: 0 }),
   data: Type.Uint8Array(), // zero-copy slice
 });
-export type GitObject = Static<typeof TGitObject>;
+export type TGitObject = Static<typeof GitObjectSchema>;
 
-export const TCheckpoint = Type.Object({
+export const ImportCheckpointSchema = Type.Object({
   reflogSeq: Type.Integer({ minimum: 0 }),
   lastCommitSha: Type.String({ pattern: "^[0-9a-f]{40}$" }),
   parquetSn: Type.Integer({ minimum: 0 }),
   txnId: Type.String({ format: "uuid" }),
   ts: Type.Integer(), // epoch ms
 });
-export type Checkpoint = Static<typeof TCheckpoint>;
+export type TImportCheckpoint = Static<typeof ImportCheckpointSchema>;
 
-export const TConfig = Type.Object({
+export const ImportConfigSchema = Type.Object({
   version: Type.Literal(1),
   parquet: Type.Object({
     targetRowGroupSize: Type.Integer({ minimum: 1024 }),
@@ -50,4 +50,4 @@ export const TConfig = Type.Object({
     file: Type.String(),
   }),
 });
-export type Config = Static<typeof TConfig>;
+export type TImportConfig = Static<typeof ImportConfigSchema>;

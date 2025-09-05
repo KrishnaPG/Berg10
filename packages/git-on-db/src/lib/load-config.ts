@@ -1,12 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
-import { type Config, TConfig } from "./types";
+import { ImportConfigSchema, type TImportConfig } from "./types";
 
-const C = TypeCompiler.Compile(TConfig);
-let _cfg: Config | null = null;
+const C = TypeCompiler.Compile(ImportConfigSchema);
+let _cfg: TImportConfig | null = null;
 
-export function loadConfig(repo: string, override?: string): Config {
+export function loadConfig(repo: string, override?: string): TImportConfig {
   if (_cfg) return _cfg;
   const path = override || join(repo, ".git_duck_sync/config.json");
   const raw = JSON.parse(readFileSync(path, "utf8"));
