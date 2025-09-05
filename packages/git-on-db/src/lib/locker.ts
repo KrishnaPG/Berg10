@@ -122,10 +122,6 @@ export class Locker {
     }
   }
 
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
   get isAcquired(): boolean {
     return this.isLocked;
   }
