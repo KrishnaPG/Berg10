@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
+import { type TBergPath, TDriftPath } from "@shared/types";
+import type { TFsDBRootPath } from "@shared/types/fs-db.types";
+import type { TFsVCSDotGitPath, TFsVCSRootPath } from "@shared/types/fs-vcs.types";
+import fs from "fs-extra";
+import os from "os";
 import { DuckStateUpdater } from "./duckstate";
 import { GitCli } from "./git-cli";
 import { getCheckpoint, putCheckpoint } from "./lmdb-store";
@@ -9,8 +14,33 @@ import { Locker } from "./locker";
 import { ParquetWriter } from "./parquet";
 import { streamObjects } from "./streamer";
 
-export async function runOnce(repo: string, configOverride?: string): Promise<void> {
-  const lock = new Locker(join(repo, ".git_duck_sync/lock"));
+class ImportCoordinator {
+  constructor(protected fsVCSDotGitPath: TFsVCSDotGitPath) {}
+
+  // bergPath should already exist
+  open(bergPath: TBergPath): Promise<TFsVCSDotGitPath> {
+    console.log(`Mounting ${bergPath} ...`);
+    const fsVCSRootpath: TFsVCSRootPath = path.resolve(bergPath, "vcs") as TFsVCSRootPath;
+    const fsDBRootPath: TFsDBRootPath = path.resolve(bergPath, "db") as TFsDBRootPath;
+    const gitSha = "SomeSha.git";
+    const vcsGitFolder: TFsVCSDotGitPath = path.resolve(fsVCSRootpath, gitSha) as TFsVCSDotGitPath;
+    return fs.ensureDir(vcsGitFolder).then(() => {
+      return vcsGitFolder;
+    });
+  }
+
+  public getLockFilePath() {
+    return path.resolve(this.fsVCSDotGitPath, "import-sync.lock");
+  }
+  public getImportConfigPath() {
+    return path.resolve(this.fsVCSDotGitPath, "import-config.json");
+  }
+}
+
+const getImportConfigPath =
+
+export async function runOnce(repo: TFsVCSDotGitPath, configOverride?: string): Promise<void> {
+  const lock = new Locker(getLockFilePath(repo));
   await lock.acquire();
   try {
     const cfg = loadConfig(repo, configOverride);
