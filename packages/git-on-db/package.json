@@ -21,11 +21,13 @@
     "graphql": "^16.11.0",
     "graphql-yoga": "^5.15.1",
     "lmdb": "3.4.2",
+    "nodegit": "^0.26.1",
     "lru-cache": "^11.1.0",
     "parquet-wasm": "^0.6.1",
     "sodium-universal": "^5.0.1"
   },
   "devDependencies": {
+    "@types/nodegit": "^0.28.8",
     "bun-types": "1.2.21",
     "drizzle-kit": "^0.31.4",
     "typescript": "^5.9.2"

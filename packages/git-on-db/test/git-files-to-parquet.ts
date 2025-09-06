@@ -393,9 +393,9 @@ FROM read_parquet('${join(snapDir, "refs.parquet")}', hive_partitioning=0);
 
   lmdbEnv.transactionSync(async () => {
     /* persist maps */
-    const commits = Array.from(currCommitMap.entries()).map(([k, v]) => db.commitMap.put(k, JSON.stringify(v)));
-    const regfs = Array.from(currRefMap.entries()).map(([k, v]) => db.refMap.put(k, v));
-    const snap = db.snapshots.put(snapName, {
+    const commitsP = Array.from(currCommitMap.entries()).map(([k, v]) => db.commitMap.put(k, JSON.stringify(v)));
+    const refsP = Array.from(currRefMap.entries()).map(([k, v]) => db.refMap.put(k, v));
+    const snapP = db.snapshots.put(snapName, {
       name: snapName,
       createdMs: Date.now(),
       files: ["commits.parquet", "trees.parquet", "refs.parquet", "_catalog.parquet"].map((f) => ({
@@ -404,7 +404,7 @@ FROM read_parquet('${join(snapDir, "refs.parquet")}', hive_partitioning=0);
         crc: 0, // todo: crc if desired
       })),
     });
-    return Promise.all([commits, refs, snap]);
+    return Promise.all([commitsP, refsP, snapP]);
   }, lmdb.TransactionFlags.SYNCHRONOUS_COMMIT);
 
   lmdbEnv.close();
