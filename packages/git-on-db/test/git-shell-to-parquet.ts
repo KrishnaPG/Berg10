@@ -113,30 +113,87 @@ async function* lines(stream: ReadableStream<Uint8Array>): AsyncGenerator<string
   }
 }
 
-/* ---------- Packfile Index Builder (idempotent) ---------- */
-async function buildPackIndex() {
-  const packs = await new Response(git(["rev-parse", "--git-dir"]).stdout).text();
-  const gitDir = packs.trim();
+
+
+/** ---------- Packfile Index Builder (idempotent) ---------- 
+ * 
+ * One-time, idempotent helper that builds a fast look-up table 
+ * from every object SHA-1 that lives inside a pack-file to the physical 
+ * location of that object (which pack it is in and at what byte offset). 
+ * 
+ * Later, when the main loop streams `git ls-tree`, it can immediately tell 
+ * whether an object is packed and where to find it, without having to open 
+ * every pack again.
+*/
+async function buildPackIndex(): Promise<void> {
+  /* 1. locate .git/objects/pack */
+  const gitDir = (
+    await new Response(git(["rev-parse", "--git-dir"]).stdout).text()
+  ).trim();
+
   const packDir = path.join(gitDir, "objects", "pack");
   if (!fs.existsSync(packDir)) return;
-  const files = fs.readdirSync(packDir).filter((f) => f.endsWith(".idx"));
-  for (const idx of files) {
-    const packfile = path.join(packDir, idx.replace(".idx", ".pack"));
-    if (db.packIndex.get(packfile)) continue; // already indexed
-    const idxOutput = await new Response(git(["verify-pack", "-v", path.join(packDir, idx)]).stdout).text();
-    lmdbEnv.transactionSync(() => {
-      for (const line of idxOutput.split("\n")) {
-        const m = line.match(/^([0-9a-f]{40}) \w+ (\d+) (\d+) (\d+)$/);
-        if (!m) continue;
-        const [, sha, _, offset] = m;
-        const buf = new ArrayBuffer(16);
-        const v = new DataView(buf);
-        const packId = packfile.split("/").pop()!.split("-").pop()!.replace(".pack", "");
-        v.setBigUint64(0, BigInt(packId), true);
-        v.setBigUint64(8, BigInt(offset), true);
-        db.packIndex.put(sha, new Uint8Array(buf));
+
+  /* 2. iterate over *.idx files */
+  const idxFiles = fs
+    .readdirSync(packDir)
+    .filter((f) => f.endsWith(".idx"))
+    .map((f) => path.join(packDir, f));
+
+  for (const idxPath of idxFiles) {
+    const packPath = idxPath.replace(/\.idx$/, ".pack");
+
+    /* 3. skip if we already indexed this pack */
+    if (db.packIndex.get(packPath)) continue;
+
+    /* 4. stream 'git verify-pack -v' lines */
+    const verify = git(["verify-pack", "-v", idxPath]);
+    const reader = verify.stdout.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+
+    /* 5. prepare pack-id once */
+    const packName = path.basename(packPath, ".pack"); // "pack-1234abcd…"
+    const packIdHex = packName.startsWith("pack-")
+      ? packName.slice(5)
+      : packName;
+    const packIdBig = BigInt(`0x${packIdHex}`); // hex → bigint
+
+    /* 6. single transaction for the whole pack */
+    lmdbEnv.transactionSync(async () => {
+      /* eslint-disable no-constant-condition */
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+
+        let eol=0;
+        while ((eol = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, eol);
+          buf = buf.slice(eol + 1);
+
+          /* 4-column output: <sha> <type> <size> <offset> */
+          const m = line.match(
+            /^([0-9a-f]{40})\s+(\w+)\s+(\d+)\s+(\d+)$/
+          );
+          if (!m) continue; // header/footer lines
+
+          const [, sha, , , offsetStr] = m;
+          const offsetBig = BigInt(offsetStr);
+
+          /* 16-byte value: 8-byte pack-id, 8-byte offset (little-endian) */
+          const val = new Uint8Array(16);
+          const view = new DataView(val.buffer);
+          view.setBigUint64(0, packIdBig, true);
+          view.setBigUint64(8, offsetBig, true);
+
+          db.packIndex.put(sha, val);
+        }
       }
-      db.packIndex.put(packfile, new Uint8Array(1)); // marker      
+
+      /* 7. mark pack itself as done */
+      db.packIndex.put(packPath, new Uint8Array(1));
+      reader.releaseLock();
     }, LMDB.TransactionFlags.SYNCHRONOUS_COMMIT);
   }
 }
