@@ -2,7 +2,7 @@
  * FS VCS Types
  */
 
-import type { Branded, TFolderPath, TGitRepoRootPath } from "./branded.types";
+import type { Branded, TFolderPath } from "./branded.types";
 
 /** Usually this is `TBergPath + "/vcs"`; 
  * 

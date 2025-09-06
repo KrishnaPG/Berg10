@@ -1,11 +1,12 @@
 #!/usr/bin/env bun
 import { ParquetSchema, ParquetWriter } from "@dsnp/parquetjs";
+import type { TFileHandle, TFilePath, TFolderPath } from "@shared/types";
 import * as arrow from "apache-arrow";
-import { Builder, RecordBatch } from "apache-arrow";
-import { spawn } from "bun";
 import * as fs from "fs";
 import * as LMDB from "lmdb";
+import os from "os";
 import * as path from "path";
+import { linesBatchedTransform } from "./lines-batched-transform";
 
 /* ---------- Config ---------- */
 const GIT_DIR = process.env.GIT_DIR || ".";
@@ -23,9 +24,10 @@ const lmdbEnv = LMDB.open({
   overlappingSync: false,
 });
 const db = {
-  checkpoint: lmdbEnv.openDB<string, string>({name: "checkpoint"}),
-  progress: lmdbEnv.openDB<string, boolean>({name: "progress"}),
-  packIndex: lmdbEnv.openDB<Uint8Array, string>({name: "pack_index"}), // 16-byte value: 8-byte packfile-id, 8-byte offset
+  checkpoint: lmdbEnv.openDB<string, string>({ name: "checkpoint" }),
+  progress: lmdbEnv.openDB<string, boolean>({ name: "progress" }),
+  packIndex: lmdbEnv.openDB<Uint8Array, string>({ name: "pack_index" }), // 16-byte value: 8-byte packfile-id, 8-byte offset
+  packsDone: lmdbEnv.openDB<boolean, string>({ name: "packs_scanned" }), // checkpoint for packIndex data
 };
 
 /* ---------- Arrow Schemas ---------- */
@@ -85,53 +87,52 @@ const refParquetSchema = new ParquetSchema({
 });
 
 /* ---------- Helpers ---------- */
-function git(args: string[]) {
+function gitShellStream(args: string[], write: UnderlyingSinkWriteCallback<string[]>, linesBatch = 1024) {
   return spawn(["git", "-C", GIT_DIR, ...args], {
     stdout: "pipe",
     stderr: "inherit",
-  });
+  })
+    .stdout.pipeThrough(linesBatchedTransform(linesBatch))
+    .pipeTo(new WritableStream<string[]>({ write }));
 }
 
-async function* lines(stream: ReadableStream<Uint8Array>): AsyncGenerator<string> {
-  const dec = new TextDecoder();
-  let buf = "";
-  const reader = stream.getReader();
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      let i=0;
-      while ((i = buf.indexOf("\n")) >= 0) {
-        yield buf.slice(0, i);
-        buf = buf.slice(i + 1);
-      }
-    }
-    if (buf.length) yield buf;
-  } finally {
-    reader.releaseLock();
-  }
+// read the idx file and append the content to output file
+function loadIDXFile(idxPath: TFilePath): Promise<string> {
+  let outLines = "";
+  return gitShellStream(["verify-pack", "-v", idxPath], (idsLinesBatch: string[]) => {
+    idsLinesBatch.forEach((idxLine) => {
+      const m = idxLine.match(/^([0-9a-f]{40})\s+(\w+)\s+(\d+)\s+(\d+)$/);
+      if (!m) return; // skip unwanted lines
+      const [, sha, type, size, offset] = m;
+      outLines += `${sha}\t${type}\t${size}\t${offset}\n`;
+    });
+  }).then(() => outLines);
 }
 
+/** writes the given tsv content to DuckDB table */
+function saveTSVToDuckDB(tsvLines: string, dbFile: string) {
+  const sql = `COPY (
+  SELECT * FROM read_csv_auto(${JSON.stringify(tsvLines)}, delim='\t', header=false,  columns={sha:'VARCHAR',type:'VARCHAR',size:'UBIGINT',offset:'UBIGINT'})
+  ) TO ${dbFile} (FORMAT PARQUET, COMPRESSION ZSTD)`;
+  return Promise.resolve(sql);
+}
 
-
-/** ---------- Packfile Index Builder (idempotent) ---------- 
- * 
- * One-time, idempotent helper that builds a fast look-up table 
- * from every object SHA-1 that lives inside a pack-file to the physical 
- * location of that object (which pack it is in and at what byte offset). 
- * 
- * Later, when the main loop streams `git ls-tree`, it can immediately tell 
- * whether an object is packed and where to find it, without having to open 
+/** ---------- Packfile Index Builder (idempotent) ----------
+ *
+ * One-time, idempotent helper that builds a fast look-up table
+ * from every object SHA-1 that lives inside a pack-file to the physical
+ * location of that object (which pack it is in and at what byte offset).
+ *
+ * Later, when the main loop streams `git ls-tree`, it can immediately tell
+ * whether an object is packed and where to find it, without having to open
  * every pack again.
-*/
-async function buildPackIndex(): Promise<void> {
+ *
+ * The pack index data is available as parquet files for DuckLake:
+ *  `CREATE VIEW pack_index AS SELECT * FROM '<FsVCSRoot>/<sha>.git/pack_index/*.parquet'`;
+ */
+async function buildPackIndex(dotGitFolderPath: TFolderPath): Promise<void | void[]> {
   /* 1. locate .git/objects/pack */
-  const gitDir = (
-    await new Response(git(["rev-parse", "--git-dir"]).stdout).text()
-  ).trim();
-
-  const packDir = path.join(gitDir, "objects", "pack");
+  const packDir = path.resolve(dotGitFolderPath, "objects", "pack");
   if (!fs.existsSync(packDir)) return;
 
   /* 2. iterate over *.idx files */
@@ -140,62 +141,34 @@ async function buildPackIndex(): Promise<void> {
     .filter((f) => f.endsWith(".idx"))
     .map((f) => path.join(packDir, f));
 
+  const p = []; // batch multiples idx loads
+
+  /* 3. write the .idx file content to tsv */
   for (const idxPath of idxFiles) {
-    const packPath = idxPath.replace(/\.idx$/, ".pack");
+    const packName = path.basename(idxPath, ".idx"); // "pack-1234…"
+    if (db.packsDone.get(packName)) return; // already captured
 
-    /* 3. skip if we already indexed this pack */
-    if (db.packIndex.get(packPath)) continue;
+    // duckDB temp and final filenames (in the VCS/<sha>.git/ folder)
+    const tmpFilePath = path.resolve(os.tmpdir(), "pack_index", `${packName}.tmp`);
+    const finalFilePath = path.resolve(os.tmpdir(), "pack_index", `${packName}.parquet`);
 
-    /* 4. stream 'git verify-pack -v' lines */
-    const verify = git(["verify-pack", "-v", idxPath]);
-    const reader = verify.stdout.getReader();
-    const dec = new TextDecoder();
-    let buf = "";
+    p.push(
+      loadIDXFile(idxPath as TFilePath)
+        .then((idxLines: string) => saveTSVToDuckDB(idxLines, tmpFilePath))
+        .then(() => {
+          /* atomic unit: LMDB flag + DuckDB file appearance */
+          lmdbEnv.transactionSync(() => {
+            /* a) mark logically done first */
+            db.packsDone.put(packName, true);
+            /* b) physical commit point: rename */
+            fs.renameSync(tmpFilePath, finalFilePath); // atomic on same filesystem
+          }, LMDB.TransactionFlags.SYNCHRONOUS_COMMIT);
+        }),
+    );
 
-    /* 5. prepare pack-id once */
-    const packName = path.basename(packPath, ".pack"); // "pack-1234abcd…"
-    const packIdHex = packName.startsWith("pack-")
-      ? packName.slice(5)
-      : packName;
-    const packIdBig = BigInt(`0x${packIdHex}`); // hex → bigint
-
-    /* 6. single transaction for the whole pack */
-    lmdbEnv.transactionSync(async () => {
-      /* eslint-disable no-constant-condition */
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-
-        let eol=0;
-        while ((eol = buf.indexOf("\n")) >= 0) {
-          const line = buf.slice(0, eol);
-          buf = buf.slice(eol + 1);
-
-          /* 4-column output: <sha> <type> <size> <offset> */
-          const m = line.match(
-            /^([0-9a-f]{40})\s+(\w+)\s+(\d+)\s+(\d+)$/
-          );
-          if (!m) continue; // header/footer lines
-
-          const [, sha, , , offsetStr] = m;
-          const offsetBig = BigInt(offsetStr);
-
-          /* 16-byte value: 8-byte pack-id, 8-byte offset (little-endian) */
-          const val = new Uint8Array(16);
-          const view = new DataView(val.buffer);
-          view.setBigUint64(0, packIdBig, true);
-          view.setBigUint64(8, offsetBig, true);
-
-          db.packIndex.put(sha, val);
-        }
-      }
-
-      /* 7. mark pack itself as done */
-      db.packIndex.put(packPath, new Uint8Array(1));
-      reader.releaseLock();
-    }, LMDB.TransactionFlags.SYNCHRONOUS_COMMIT);
+    if (p.length >= 4) await Promise.all(p).then(() => (p.length = 0));
   }
+  return Promise.all(p);
 }
 
 /* ---------- Parquet Writer Factory ---------- */
@@ -223,8 +196,12 @@ async function run() {
   const cw = await ParquetWriter.openFile(commitParquetSchema, path.join(DB_DIR, "commits.parquet"), {
     rowGroupSize: ROW_GROUP_SIZE,
   });
-  const ow = await ParquetWriter.openFile(objectParquetSchema, path.join(DB_DIR, "objects.parquet"), { rowGroupSize: ROW_GROUP_SIZE });
-  const rw = await ParquetWriter.openFile(refParquetSchema, path.join(DB_DIR, "refs.parquet"), { rowGroupSize: ROW_GROUP_SIZE });
+  const ow = await ParquetWriter.openFile(objectParquetSchema, path.join(DB_DIR, "objects.parquet"), {
+    rowGroupSize: ROW_GROUP_SIZE,
+  });
+  const rw = await ParquetWriter.openFile(refParquetSchema, path.join(DB_DIR, "refs.parquet"), {
+    rowGroupSize: ROW_GROUP_SIZE,
+  });
 
   let rowsSinceCheckpoint = 0;
   let currentCommit = "";

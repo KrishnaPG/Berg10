@@ -44,6 +44,7 @@ export type TIndexPos = Branded<number, "IndexPos">;
 // basic file/folder path types
 export type TFilePath = Branded<string, "FilePath">;
 export type TFolderPath = Branded<string, "FolderPath">;
+export type TFileHandle = Branded<number, "FileHandler">;
 
 // Encoded Strings
 export type TB58String = Branded<string, "B58String">;
