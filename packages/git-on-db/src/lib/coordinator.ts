@@ -37,7 +37,7 @@ class ImportCoordinator {
   }
 }
 
-const getImportConfigPath =
+//const getImportConfigPath =
 
 export async function runOnce(repo: TFsVCSDotGitPath, configOverride?: string): Promise<void> {
   const lock = new Locker(getLockFilePath(repo));
