@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { ParquetSchema, ParquetWriter } from "@dsnp/parquetjs";
-import { Bool, Builder, Int64, RecordBatch, RecordBatchStreamWriter, Table, Uint8, Utf8 } from "apache-arrow";
+import * as arrow from "apache-arrow";
+import { Builder, RecordBatch } from "apache-arrow";
 import { spawn } from "bun";
 import * as fs from "fs";
 import * as LMDB from "lmdb";
@@ -9,8 +10,8 @@ import * as path from "path";
 /* ---------- Config ---------- */
 const GIT_DIR = process.env.GIT_DIR || ".";
 const DB_DIR = process.env.DB_DIR || "repo.db";
-const BATCH_ROWS = 128_000;
-const CHECKPOINT_INTERVAL = 1_000_000; // rows
+const ROW_GROUP_SIZE = 5000;
+const CHECKPOINT_INTERVAL = 10000; // rows
 
 /* ---------- LMDB ---------- */
 const lmdbEnv = LMDB.open({
@@ -22,37 +23,65 @@ const lmdbEnv = LMDB.open({
   overlappingSync: false,
 });
 const db = {
-  checkpoint = lmdbEnv.openDB<string, string>({name: "checkpoint"}),
-  progress = lmdbEnv.openDB<string, boolean>({name: "progress"}),
-  packIndex = lmdbEnv.openDB<Uint8Array, string>({name: "pack_index"}), // 16-byte value: 8-byte packfile-id, 8-byte offset
+  checkpoint: lmdbEnv.openDB<string, string>({name: "checkpoint"}),
+  progress: lmdbEnv.openDB<string, boolean>({name: "progress"}),
+  packIndex: lmdbEnv.openDB<Uint8Array, string>({name: "pack_index"}), // 16-byte value: 8-byte packfile-id, 8-byte offset
 };
 
 /* ---------- Arrow Schemas ---------- */
-const commitSchema = new Table({
-  sha: Utf8(),
-  parents: Utf8(),
-  tree: Utf8(),
-  author_time: Int64(),
-  author_name: Utf8(),
-  author_email: Utf8(),
-  message: Utf8(),
+const commitSchema = new arrow.Schema([
+  new arrow.Field("sha", new arrow.Utf8()),
+  new arrow.Field("parents", new arrow.Utf8()),
+  new arrow.Field("tree", new arrow.Utf8()),
+  new arrow.Field("author_time", new arrow.Int64()),
+  new arrow.Field("author_name", new arrow.Utf8()),
+  new arrow.Field("author_email", new arrow.Utf8()),
+  new arrow.Field("message", new arrow.Utf8()),
+]);
+
+const objectSchema = new arrow.Schema([
+  new arrow.Field("sha", new arrow.Utf8()),
+  new arrow.Field("type", new arrow.Int32()), // 1=blob, 2=tree
+  new arrow.Field("size", new arrow.Int64()),
+  new arrow.Field("path", new arrow.Utf8()),
+  new arrow.Field("packfile", new arrow.Utf8()),
+  new arrow.Field("offset", new arrow.Int64()),
+  new arrow.Field("commit_sha", new arrow.Utf8()),
+]);
+
+const refSchema = new arrow.Schema([
+  new arrow.Field("ref", new arrow.Utf8()),
+  new arrow.Field("sha", new arrow.Utf8()),
+  new arrow.Field("upstream", new arrow.Utf8()),
+  new arrow.Field("is_head", new arrow.Bool()),
+]);
+
+/* ---------- Parquet Schemas ---------- */
+const commitParquetSchema = new ParquetSchema({
+  sha: { type: "UTF8", optional: false },
+  parents: { type: "UTF8", optional: false },
+  tree: { type: "UTF8", optional: false },
+  author_time: { type: "INT64", optional: false },
+  author_name: { type: "UTF8", optional: false },
+  author_email: { type: "UTF8", optional: false },
+  message: { type: "UTF8", optional: false },
 });
 
-const objectSchema = new Table({
-  sha: Utf8(),
-  type: Uint8(), // 1=blob, 2=tree
-  size: Int64(),
-  path: Utf8(),
-  packfile: Utf8(),
-  offset: Int64(),
-  commit_sha: Utf8(),
+const objectParquetSchema = new ParquetSchema({
+  sha: { type: "UTF8", optional: false },
+  type: { type: "INT32", optional: false }, // 1=blob, 2=tree
+  size: { type: "INT64", optional: false },
+  path: { type: "UTF8", optional: false },
+  packfile: { type: "UTF8", optional: false },
+  offset: { type: "INT64", optional: false },
+  commit_sha: { type: "UTF8", optional: false },
 });
 
-const refSchema = new Table({
-  ref: Utf8(),
-  sha: Utf8(),
-  upstream: Utf8(),
-  is_head: Bool(),
+const refParquetSchema = new ParquetSchema({
+  ref: { type: "UTF8", optional: false },
+  sha: { type: "UTF8", optional: false },
+  upstream: { type: "UTF8", optional: false },
+  is_head: { type: "BOOLEAN", optional: false },
 });
 
 /* ---------- Helpers ---------- */
@@ -72,7 +101,7 @@ async function* lines(stream: ReadableStream<Uint8Array>): AsyncGenerator<string
       const { done, value } = await reader.read();
       if (done) break;
       buf += dec.decode(value, { stream: true });
-      let i;
+      let i=0;
       while ((i = buf.indexOf("\n")) >= 0) {
         yield buf.slice(0, i);
         buf = buf.slice(i + 1);
@@ -95,14 +124,15 @@ async function buildPackIndex() {
     const packfile = path.join(packDir, idx.replace(".idx", ".pack"));
     if (db.packIndex.get(packfile)) continue; // already indexed
     const idxOutput = await new Response(git(["verify-pack", "-v", path.join(packDir, idx)]).stdout).text();
-    lmdbEnv.transactionSync(()=>{
+    lmdbEnv.transactionSync(() => {
       for (const line of idxOutput.split("\n")) {
         const m = line.match(/^([0-9a-f]{40}) \w+ (\d+) (\d+) (\d+)$/);
         if (!m) continue;
         const [, sha, _, offset] = m;
         const buf = new ArrayBuffer(16);
         const v = new DataView(buf);
-        v.setBigUint64(0, BigInt(packfile.split("/").pop()!.split("-").pop()!.replace(".pack", "")), true);
+        const packId = packfile.split("/").pop()!.split("-").pop()!.replace(".pack", "");
+        v.setBigUint64(0, BigInt(packId), true);
         v.setBigUint64(8, BigInt(offset), true);
         db.packIndex.put(sha, new Uint8Array(buf));
       }
@@ -113,10 +143,10 @@ async function buildPackIndex() {
 
 /* ---------- Parquet Writer Factory ---------- */
 let batchSeq = 0;
-function newParquetWriter<T>(schema: Table, name: string) {
+async function newParquetWriter(schema: ParquetSchema, name: string) {
   const file = path.join(DB_DIR, `${name}.${String(batchSeq).padStart(6, "0")}.parquet`);
   batchSeq++;
-  const writer = ParquetWriter.create(file, schema);
+  const writer = await ParquetWriter.openFile(schema, file);
   return { writer, file, rows: 0 };
 }
 
@@ -133,15 +163,18 @@ async function run() {
   if (lastCommit) args.push(lastCommit + "..HEAD");
 
   const commitStream = git(args).stdout;
-  const commitWriter = newParquetWriter(commitSchema, "commits");
-  const objectWriter = newParquetWriter(objectSchema, "objects");
+  const cw = await ParquetWriter.openFile(commitParquetSchema, path.join(DB_DIR, "commits.parquet"), {
+    rowGroupSize: ROW_GROUP_SIZE,
+  });
+  const ow = await ParquetWriter.openFile(objectParquetSchema, path.join(DB_DIR, "objects.parquet"), { rowGroupSize: ROW_GROUP_SIZE });
+  const rw = await ParquetWriter.openFile(refParquetSchema, path.join(DB_DIR, "refs.parquet"), { rowGroupSize: ROW_GROUP_SIZE });
 
   let rowsSinceCheckpoint = 0;
   let currentCommit = "";
   let currentTree = "";
 
-  const commitBuilder = Builder.new(commitSchema);
-  const objectBuilder = Builder.new(objectSchema);
+  // const commitBuilder = Builder.new(commitSchema);
+  // const objectBuilder = Builder.new(objectSchema);
 
   for await (const raw of lines(commitStream)) {
     const line = raw.trim();
@@ -150,7 +183,7 @@ async function run() {
       const [sha, parents, tree, ts, name, email, ...msgArr] = line.slice(7).split("|");
       currentCommit = sha;
       currentTree = tree;
-      commitBuilder.append({
+      cw.appendRow({
         sha,
         parents,
         tree,
@@ -177,7 +210,7 @@ async function run() {
           packfile = `objects/pack/pack-${packId.toString(16)}.pack`;
           offset = off;
         }
-        objectBuilder.append({
+        ow.appendRow({
           sha,
           type: type === "blob" ? 1 : 2,
           size: BigInt(size),
@@ -188,9 +221,6 @@ async function run() {
         });
       }
 
-      if (commitBuilder.length >= BATCH_ROWS) {
-        flush();
-      }
       if (rowsSinceCheckpoint >= CHECKPOINT_INTERVAL) {
         checkpoint(currentCommit);
         rowsSinceCheckpoint = 0;
@@ -198,45 +228,26 @@ async function run() {
     }
   }
 
-  flush();
   checkpoint(currentCommit);
 
-  commitWriter.writer.close();
-  objectWriter.writer.close();
+  await cw.close();
+  await ow.close();
 
   /* ---------- Refs ---------- */
-  const refWriter = newParquetWriter(refSchema, "refs");
-  const refBuilder = Builder.new(refSchema);
+  // const refBuilder = Builder.new(refSchema);
   const refStream = git(["for-each-ref", "--format=%(refname)%09%(objectname)%09%(upstream)%09%(HEAD)"]).stdout;
   for await (const l of lines(refStream)) {
     const [ref, sha, upstream, head] = l.split("\t");
-    refBuilder.append({ ref, sha, upstream, is_head: head === "*" });
+    rw.appendRow({ ref, sha, upstream, is_head: head === "*" });
   }
-  const rb = RecordBatch.from(refBuilder.toVector());
-  refWriter.writer.write(rb);
-  refWriter.writer.close();
+  await rw.close();
 
   console.error("Done.");
 }
 
-function flush() {
-  if (commitBuilder.length) {
-    const rb = RecordBatch.from(commitBuilder.toVector());
-    commitWriter.writer.write(rb);
-    commitWriter.rows += rb.numRows;
-    commitBuilder.clear();
-  }
-  if (objectBuilder.length) {
-    const rb = RecordBatch.from(objectBuilder.toVector());
-    objectWriter.writer.write(rb);
-    objectWriter.rows += rb.numRows;
-    objectBuilder.clear();
-  }
-}
-
 function checkpoint(commit: string) {
-  lmdbEnv.transactionSync(()=>{
-    db.checkpoint.put("last_processed_commit", commit)
+  lmdbEnv.transactionSync(() => {
+    db.checkpoint.put("last_processed_commit", commit);
   }, LMDB.TransactionFlags.SYNCHRONOUS_COMMIT);
   fs.fsyncSync(fs.openSync(DB_DIR, "r"));
 }
