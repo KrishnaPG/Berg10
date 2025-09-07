@@ -88,7 +88,7 @@ const refParquetSchema = new ParquetSchema({
 
 /* ---------- Helpers ---------- */
 function gitShellStream(args: string[], write: UnderlyingSinkWriteCallback<string[]>, linesBatch = 1024) {
-  return spawn(["git", "-C", GIT_DIR, ...args], {
+  return Bun.spawn(["git", "-C", GIT_DIR, ...args], {
     stdout: "pipe",
     stderr: "inherit",
   })
@@ -146,7 +146,7 @@ async function buildPackIndex(dotGitFolderPath: TFolderPath): Promise<void | voi
   /* 3. write the .idx file content to tsv */
   for (const idxPath of idxFiles) {
     const packName = path.basename(idxPath, ".idx"); // "pack-1234…"
-    if (db.packsDone.get(packName)) return; // already captured
+    if (db.packsDone.get(packName)) continue; // already captured
 
     // duckDB temp and final filenames (in the VCS/<sha>.git/ folder)
     const tmpFilePath = path.resolve(os.tmpdir(), "pack_index", `${packName}.tmp`);

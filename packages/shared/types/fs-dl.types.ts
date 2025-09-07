@@ -6,10 +6,10 @@ import type { Branded, TFilePath, TFolderPath, TName } from "./branded.types"; /
 import type { TDuckLakeRootPath } from "./ducklake.types";
 
 /**
- * Usually this is `TBergPath + "/db"`;
+ * Usually this is `TBergPath + "/dl"`;
  *
  * Same as `TDuckLakeRootPath`, and contains {`TDuckLakeMetaFilePath`, `TDuckLakeDataFilesFolder`};
  *
- * A single `TFsDBRootPath` might contain multiple tables, metadata files inside it.
+ * A single `TFsDLRootPath` might contain multiple tables, metadata files inside it.
  */
-export type TFsDBRootPath = TDuckLakeRootPath;
+export type TFsDLRootPath = TDuckLakeRootPath;

@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 import { type TBergPath, type TDriftPath, TDuckLakeDBName } from "@shared/types";
-import type { TFsDBRootPath } from "@shared/types/fs-db.types";
+import type { TFsDLRootPath } from "@shared/types/fs-dl.types";
 import type { TFsVCSDotGitPath, TFsVCSRootPath } from "@shared/types/fs-vcs.types";
 import fs from "fs-extra";
 import os from "os";
@@ -19,7 +19,7 @@ const { values } = parseArgs({
 function open(bergPath: TBergPath): Promise<TFsVCSDotGitPath> {
   console.log(`Mounting ${bergPath} ...`);
   const fsVCSRootpath: TFsVCSRootPath = path.resolve(bergPath, "vcs") as TFsVCSRootPath;
-  const fsDBRootPath: TFsDBRootPath = path.resolve(bergPath, "db") as TFsDBRootPath;
+  const fsDLRootPath: TFsDLRootPath = path.resolve(bergPath, "db") as TFsDLRootPath;
   const gitSha = "SomeSha.git";
   const vcsGitFolder: TFsVCSDotGitPath = path.resolve(fsVCSRootpath, gitSha) as TFsVCSDotGitPath;
   return fs.ensureDir(vcsGitFolder).then(() => {

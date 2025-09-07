@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { type TBergPath, TDriftPath } from "@shared/types";
-import type { TFsDBRootPath } from "@shared/types/fs-db.types";
+import type { TFsDLRootPath } from "@shared/types/fs-dl.types";
 import type { TFsVCSDotGitPath, TFsVCSRootPath } from "@shared/types/fs-vcs.types";
 import fs from "fs-extra";
 import os from "os";
@@ -21,7 +21,7 @@ class ImportCoordinator {
   open(bergPath: TBergPath): Promise<TFsVCSDotGitPath> {
     console.log(`Mounting ${bergPath} ...`);
     const fsVCSRootpath: TFsVCSRootPath = path.resolve(bergPath, "vcs") as TFsVCSRootPath;
-    const fsDBRootPath: TFsDBRootPath = path.resolve(bergPath, "db") as TFsDBRootPath;
+    const fsDLRootPath: TFsDLRootPath = path.resolve(bergPath, "db") as TFsDLRootPath;
     const gitSha = "SomeSha.git";
     const vcsGitFolder: TFsVCSDotGitPath = path.resolve(fsVCSRootpath, gitSha) as TFsVCSDotGitPath;
     return fs.ensureDir(vcsGitFolder).then(() => {
