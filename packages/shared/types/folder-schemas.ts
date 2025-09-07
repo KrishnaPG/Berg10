@@ -6,6 +6,7 @@ import type { TFolderPath } from "./branded.types";
 import { folder } from "./folder-validators";
 import type { TGitRepoRootPath } from "./git.types";
 
+
 /* ---------- generic folder behaviours ---------- */
 export const FolderPath = folder<TFolderPath>("FolderPath", "FolderPath");
 export const ExistingFolderPath = folder<TFolderPath>("FolderPath", "ExistingFolderPath");
@@ -19,4 +20,3 @@ const gitCheck = (p: string) =>
 
 export const GitRepoPath = folder<TGitRepoRootPath>("GitRepoRoot", "FolderPath", gitCheck);
 export const ExistingGitRepoPath = folder<TGitRepoRootPath>("GitRepoRoot", "ExistingFolderPath", gitCheck);
-export const EnsuredGitRepoPath = folder<TGitRepoRootPath>("GitRepoRoot", "EnsuredFolderPath", gitCheck);

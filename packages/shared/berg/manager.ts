@@ -1,15 +1,17 @@
 import { setupLake } from "@shared/ducklake";
 import { FsDB, type TBergPath, type TDriftPath, type TDuckLakeDBName, type TFolderPath } from "@shared/types";
+import { ExistingGitRepoPath } from "@shared/types/folder-schemas";
 import type { TFsDLRootPath } from "@shared/types/fs-dl.types";
 import { TFsVCSDotGitPath, type TFsVCSRootPath } from "@shared/types/fs-vcs.types";
 import type { TGitRepoRootPath } from "@shared/types/git.types";
+import { Value } from "@sinclair/typebox/value";
 import { getPackageJsonFolder } from "@utils";
 import fs from "fs-extra";
 import os from "os";
 import path from "path";
 
-function getTemplateFolderPath(): Promise<TFolderPath> {
-  return getPackageJsonFolder(import.meta.dir as TFolderPath);
+function getTemplateFolderPath(currentDir: TFolderPath): Promise<TFolderPath> {
+  return getPackageJsonFolder(currentDir);
 }
 
 abstract class BergComponent {
@@ -73,23 +75,24 @@ export class BergManager {
   /**
    * Initialize the orchestrator on application startup. Creates the folder structure if needed. */
   public static initialize(
-    userHome: TDriftPath = os.tmpdir() as TDriftPath,
-    bergName: string = ".berg10",
+    userHome: TDriftPath, // the target path, usually user home `~/`
+    templDir: TFolderPath, // path of the "template" folder that has .berg10 inside
+    bergName: string = ".berg10", // the target bergName, if needs to be changed while copying
   ): Promise<BergManager> {
-    const bergPath: TBergPath = path.resolve(userHome, bergName) as TBergPath;
+    const destPath: TBergPath = path.resolve(userHome, bergName) as TBergPath;
+    const srcPath: TFolderPath = path.resolve(templDir, ".berg10") as TFolderPath;
     // check if already exists, else copy the template folder to init
-    return Bun.file(bergPath)
+    return Bun.file(destPath)
       .exists()
       .then((exists) => {
-        if (exists) return BergManager.open(bergPath);
-        console.log(`Initializing ${bergPath} ...`);
+        if (exists) return BergManager.open(destPath);
+        console.log(`Initializing ${destPath} ...`);
         // scaffold the template folder into userHome
         const desiredMode = 0o2775;
-        return Promise.all([getTemplateFolderPath(), fs.ensureDir(bergPath, desiredMode)])
-          .then(([templateParentDir]) => {
-            return fs.copy(path.resolve(templateParentDir, "template", ".berg10"), bergPath);
-          })
-          .then(() => BergManager.open(bergPath));
+        return fs
+          .ensureDir(destPath, desiredMode)
+          .then(() => fs.copy(srcPath, destPath))
+          .then(() => BergManager.open(destPath));
       });
   }
 
@@ -103,9 +106,12 @@ export class BergManager {
       });
   }
 
-  public importRepo(gitRepo: TGitRepoRootPath) {
-    // does it already exist?
+  public async importRepo(gitRepo: TGitRepoRootPath, bAutoGit = true) {
+    // is it already imported?
+    // TODO: check if already imported
     // is it valid git Repo, if not should vcs be created?
+    const x = await Value.Decode(ExistingGitRepoPath, gitRepo);
+    console.log("X: ", x);
     // not a valid git repo and unable to create vcs => can not import
   }
 }

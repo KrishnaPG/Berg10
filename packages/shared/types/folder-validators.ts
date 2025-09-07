@@ -1,6 +1,7 @@
 // folderBehaviour.ts
-import { type TSchema, Type } from "@sinclair/typebox";
+import { Static, type TSchema, Type } from "@sinclair/typebox";
 import fs from "fs-extra";
+import type { Branded } from "./branded.types";
 
 export type TFolderBehavior = "FolderPath" | "ExistingFolderPath" | "EnsuredFolderPath";
 
@@ -18,14 +19,14 @@ const ensureDir = (p: string) => fs.ensureDir(p);
  * The returned value is already cast to the branded type `B`.
  */
 export function folder<B extends string>(
-  brand: B,
+  brand: string,
   behavior: TFolderBehavior,
   extraCheck?: (path: string) => Promise<void>,
-): TSchema & { static: unknown } {
-  return Type.Unsafe({
+): TSchema & Branded<B, "FolderSchema"> {
+  const raw = {
     type: "string",
     [Symbol.for("TypeBox.Kind")]: `${brand}:${behavior}`, // helps TypeBox introspection
-    async $check(value: unknown) {
+    async check(value: unknown) {
       if (typeof value !== "string") return { error: "Expected string" };
 
       switch (behavior) {
@@ -48,5 +49,6 @@ export function folder<B extends string>(
       }
       return { value }; // cast happens at call-site via static type
     },
-  });
+  };
+  return Type.Unsafe(raw) as TSchema & Branded<B, "FolderSchema">;
 }

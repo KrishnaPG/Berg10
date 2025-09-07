@@ -23,9 +23,7 @@ export function maybeGitRepoRootPath(path: TFolderPath): Promise<TGitRepoRootPat
  *  Returns the first folder path that contains a package.json file.
  * @param currentDir the starting folder to start the search from
  */
-export async function getPackageJsonFolder(
-  currentDir: TFolderPath = import.meta.dir as TFolderPath,
-): Promise<TFolderPath> {
+export async function getPackageJsonFolder(currentDir: TFolderPath): Promise<TFolderPath> {
   while (true) {
     const filePath = resolve(currentDir, "package.json");
     if (await Bun.file(filePath).exists()) return currentDir;

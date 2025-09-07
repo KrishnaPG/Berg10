@@ -1,6 +1,9 @@
 #!/usr/bin/env bun
 import { ParquetSchema, ParquetWriter } from "@dsnp/parquetjs";
-import type { TFileHandle, TFilePath, TFolderPath } from "@shared/types";
+import { BergManager } from "@shared/berg/manager";
+import type { TDriftPath, TFileHandle, TFilePath, TFolderPath } from "@shared/types";
+import type { TGitRepoRootPath } from "@shared/types/git.types";
+import { getPackageJsonFolder } from "@shared/utils";
 import * as arrow from "apache-arrow";
 import * as fs from "fs";
 import * as LMDB from "lmdb";
@@ -182,7 +185,11 @@ async function newParquetWriter(schema: ParquetSchema, name: string) {
 
 /* ---------- Main Transform ---------- */
 async function run() {
-  fs.mkdirSync(DB_DIR, { recursive: true });
+  const bMgr = await BergManager.initialize(
+    os.tmpdir() as TDriftPath,
+    path.resolve(await getPackageJsonFolder(import.meta.dir as TFolderPath), "template") as TFolderPath,
+  );
+  await bMgr.importRepo(process.cwd() as TGitRepoRootPath);
 
   await buildPackIndex();
 
