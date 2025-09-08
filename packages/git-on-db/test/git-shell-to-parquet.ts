@@ -2,7 +2,7 @@
 import { ParquetSchema, ParquetWriter } from "@dsnp/parquetjs";
 import { BergManager } from "@shared/berg/manager";
 import type { TDriftPath, TFileHandle, TFilePath, TFolderPath } from "@shared/types";
-import type { TGitRepoRootPath } from "@shared/types/git.types";
+import type { TGitDirPath, TGitRepoRootPath } from "@shared/types/git.types";
 import { getPackageJsonFolder } from "@shared/utils";
 import * as arrow from "apache-arrow";
 import * as fs from "fs";
@@ -113,7 +113,7 @@ function saveTSVToDuckDB(tsvLines: string, dbFile: string) {
  * The pack index data is available as parquet files for DuckLake:
  *  `CREATE VIEW pack_index AS SELECT * FROM '<FsVCSRoot>/<sha>.git/pack_index/*.parquet'`;
  */
-async function buildPackIndex(dotGitFolderPath: TFolderPath): Promise<void | void[]> {
+async function buildPackIndex(dotGitFolderPath: TGitDirPath): Promise<void | void[]> {
   /* 1. locate .git/objects/pack */
   const packDir = path.resolve(dotGitFolderPath, "objects", "pack");
   if (!fs.existsSync(packDir)) return;

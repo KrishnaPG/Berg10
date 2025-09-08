@@ -1,21 +1,23 @@
 import { setupLake } from "@shared/ducklake";
-import { NotAGitRepo } from "@shared/git-shell/helpers";
-import { initExternalGit } from "@shared/git-shell/stream";
-import { FsDB, type TBergPath, type TDriftPath, type TDuckLakeDBName, type TFolderPath } from "@shared/types";
+import { GitRepo } from "@shared/git-shell";
+import { assertRepo, NotAGitRepo } from "@shared/git-shell/helpers";
+import {
+  FsDB,
+  type TBergPath,
+  type TDriftPath,
+  type TDuckLakeDBName,
+  type TFolderPath,
+  type TLMDBRootPath,
+} from "@shared/types";
 import { ExistingGitRepoPath } from "@shared/types/folder-schemas";
 import type { TFsDLRootPath } from "@shared/types/fs-dl.types";
 import { TFsVCSDotGitPath, type TFsVCSRootPath } from "@shared/types/fs-vcs.types";
-import type { TGitRepoRootPath } from "@shared/types/git.types";
+import type { TGitDirPath, TGitRepoRootPath } from "@shared/types/git.types";
 import { Value } from "@sinclair/typebox/value";
 import { getPackageJsonFolder } from "@utils";
 import fs, { exists } from "fs-extra";
 import os from "os";
 import path from "path";
-import { assertRepo, InvalidGitRepo } from "./helpers";
-
-function getTemplateFolderPath(currentDir: TFolderPath): Promise<TFolderPath> {
-  return getPackageJsonFolder(currentDir);
-}
 
 abstract class BergComponent {
   constructor(protected bMgr: BergManager) {}
@@ -33,6 +35,12 @@ class FsVCSManager extends BergComponent {
 
 class FsDLManager extends BergComponent {
   constructor(protected fsDLRootPath: TFsDLRootPath) {
+    super(null!);
+  }
+}
+
+class LMDBManager extends BergComponent {
+  constructor(protected dbRootPath: TLMDBRootPath) {
     super(null!);
   }
 }
@@ -113,30 +121,18 @@ export class BergManager {
   public importRepo(workTree: TGitRepoRootPath, bAutoGit = true) {
     // is it already imported?
     // TODO: check if already imported
-    // is it valid git Repo, if not should vcs be created?
+    // is it valid git Repo, if not setup local VCS?
     return assertRepo(workTree)
       .catch((ex) => {
-        if (ex instanceof NotAGitRepo) return initExternalGit(this.vcs., workTree); // create a local VCS repo
+        if (ex instanceof NotAGitRepo) return this.setupGit(workTree); // create a local VCS repo
         throw ex; // re-throw other errors;
       })
       .then((gitDir) => new GitRepo(gitDir));
-
-    return assertRepo(gitRepo).then((isRepo) => {
-      if (!isRepo) {
-        if (bAutoGit) setupLocalGit();
-        else {
-          // not a valid git repo and we are not allowed to import
-          throw new InvalidGitRepo(`"${gitRepo}" is not a valid Git Repo`);
-          // not a valid git repo and unable to create vcs => can not import
-        }
-      } else {
-        // gitRepo is a valid Repo, lets import from it
-      }
-    });
   }
 
   /** We need to setup an internal VCS for the given working directory */
-  public setupGit(workDir: TFolderPath) {}
-
-  private async _importRepo(gitRepo: TExistingGitRepoPath) {}
+  public setupGit(workDir: TFolderPath): Promise<TGitDirPath> {
+    throw new Error("Local VCS Setup Not Yet Implemented");
+    // return GitRepo.initExternalGit(this.vcs., workTree);
+  }
 }
