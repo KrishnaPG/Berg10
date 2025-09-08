@@ -9,7 +9,7 @@ import * as fs from "fs";
 import * as LMDB from "lmdb";
 import os from "os";
 import * as path from "path";
-import { linesBatchedTransform } from "./lines-batched-transform";
+import { linesBatchedTransform } from "../../shared/git-shell/lines-batched-transform";
 
 /* ---------- Config ---------- */
 const GIT_DIR = process.env.GIT_DIR || ".";
@@ -90,27 +90,7 @@ const refParquetSchema = new ParquetSchema({
 });
 
 /* ---------- Helpers ---------- */
-function gitShellStream(args: string[], write: UnderlyingSinkWriteCallback<string[]>, linesBatch = 1024) {
-  return Bun.spawn(["git", "-C", GIT_DIR, ...args], {
-    stdout: "pipe",
-    stderr: "inherit",
-  })
-    .stdout.pipeThrough(linesBatchedTransform(linesBatch))
-    .pipeTo(new WritableStream<string[]>({ write }));
-}
 
-// read the idx file and append the content to output file
-function loadIDXFile(idxPath: TFilePath): Promise<string> {
-  let outLines = "";
-  return gitShellStream(["verify-pack", "-v", idxPath], (idsLinesBatch: string[]) => {
-    idsLinesBatch.forEach((idxLine) => {
-      const m = idxLine.match(/^([0-9a-f]{40})\s+(\w+)\s+(\d+)\s+(\d+)$/);
-      if (!m) return; // skip unwanted lines
-      const [, sha, type, size, offset] = m;
-      outLines += `${sha}\t${type}\t${size}\t${offset}\n`;
-    });
-  }).then(() => outLines);
-}
 
 /** writes the given tsv content to DuckDB table */
 function saveTSVToDuckDB(tsvLines: string, dbFile: string) {
