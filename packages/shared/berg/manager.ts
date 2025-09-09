@@ -6,13 +6,14 @@ import type {
   TDriftPath,
   TDuckLakeDBName,
   TFolderPath,
+  TFsVCSDotGitPath,
   TLMDBRootPath,
   TMSSinceEpoch,
   TName,
 } from "@shared/types";
 import type { TFsDLRootPath } from "@shared/types/fs-dl.types";
 import type { TFsVCSRootPath } from "@shared/types/fs-vcs.types";
-import type { TGitDirPath, TGitRepoRootPath } from "@shared/types/git.types";
+import type { TGitDirPath, TGitRepoRootPath, TWorkTreePath } from "@shared/types/git.types";
 import fs from "fs-extra";
 import type { Database, RootDatabaseOptions } from "lmdb";
 import * as LMDB from "lmdb";
@@ -27,6 +28,10 @@ export abstract class BergComponent {
   }
 }
 
+export class FsVCS {
+  constructor(protected vcsDotGitFolder: TFsVCSDotGitPath) {}
+}
+
 export class FsVCSManager extends BergComponent {
   constructor(protected fsVCSRootpath: TFsVCSRootPath) {
     super(null!);
@@ -35,6 +40,7 @@ export class FsVCSManager extends BergComponent {
   initWorkTree(workTree: TFolderPath) {}
 }
 
+/** The DuckLake Storage - for append only, immutable files */
 export class FsDLManager extends BergComponent {
   constructor(protected fsDLRootPath: TFsDLRootPath) {
     super(null!);
@@ -43,7 +49,7 @@ export class FsDLManager extends BergComponent {
 
 export interface IRepoImportRecord {
   name: TName;
-  workTree: TGitRepoRootPath;
+  workTree: TWorkTreePath;
   gitDir: TGitDirPath;
   first_import_at: TMSSinceEpoch;
   last_sync_at: TMSSinceEpoch;
@@ -51,13 +57,14 @@ export interface IRepoImportRecord {
 }
 
 export interface ILMDBDBs {
-  repoImports: Database<IRepoImportRecord, TGitRepoRootPath>;
+  repoImports: Database<IRepoImportRecord, TWorkTreePath>;
   checkpoint: Database<string, string>;
   progress: Database<boolean, string>;
   packIndex: Database<Uint8Array, string>;
   packsDone: Database<boolean, string>;
 }
 
+/** For ACID transactional data */
 export class LMDBManager extends BergComponent {
   protected _env: LMDB.RootDatabase;
   protected _db: ILMDBDBs;
@@ -90,6 +97,12 @@ export class LMDBManager extends BergComponent {
   get env() {
     return this._env;
   }
+  public getImportRecord(workTree: TWorkTreePath) {
+    return this._db.repoImports.get(workTree);
+  }
+  public putImportRecord(rec: IRepoImportRecord) {
+    return this._db.repoImports.put(rec.workTree, rec);
+  }
 }
 
 export class BergManager {
@@ -110,10 +123,7 @@ export class BergManager {
     return this._bergPath;
   }
   get db() {
-    return this._dbMgr.db;
-  }
-  get dbEnv() {
-    return this._dbMgr.env;
+    return this._dbMgr;
   }
 
   // bergPath should already exist
@@ -179,30 +189,45 @@ export class BergManager {
       });
   }
 
-  public importRepo(workTree: TGitRepoRootPath, bAutoGit = true) {
+  private addImportRecord(rec: IRepoImportRecord) {
+    this.db.putImportRecord(rec);
+  }
+
+  /** re-syncs an earlier imported repo */
+  public resyncRepo(rec: IRepoImportRecord) {
+    // check if a sync already in progress
+    if (rec.sync_in_progress) throw new RepoSyncInProgress(`repo: ${rec.name}, Sync already in Progress.`);
+    const srcGitRepo = new GitRepo(rec.gitDir);
+  }
+
+  public importRepo(workTree: TWorkTreePath, name?: TName) {
     // check if it is already imported?
-    const rec = this.db.repoImports.get(workTree);
+    const rec = this.db.getImportRecord(workTree);
+    if (rec) return this.resyncRepo(rec);
 
-    // Yes, imported and sync in progress
-    if (rec?.sync_in_progress) throw new RepoSyncInProgress(`${workTree} already imported and Sync In Progress.`);
-
-    if (rec) {
-      /* imported earlier, but may be stale, do a fresh sync */
-      new GitRepo(rec.gitDir);
-    } /* never imported earlier */ else {
-      // is workTree a valid git Repo?
-      return assertRepo(workTree)
-        .catch((ex) => {
-          // we are given a normal folder (not a git repo).
-          // create a local VCS repo so that we can track the changes.
-          if (ex instanceof NotAGitRepo) return this.setupGit(workTree);
-          throw ex; // re-throw other errors;
-        })
-        .then((gitDir) => {
-          // gitDir is now a valid git repo (either pre-existing git, or our own local vcs)
-          new GitRepo(gitDir);
+    // is workTree a valid git Repo?
+    return assertRepo(workTree as TGitRepoRootPath)
+      .catch((ex) => {
+        // we are given a normal folder (not a git repo).
+        // create a local VCS repo so that we can track the changes.
+        if (ex instanceof NotAGitRepo) return this.setupGit(workTree);
+        throw ex; // re-throw other errors;
+      })
+      .then((gitDir) => {
+        // gitDir is now a valid git repo (either pre-existing git, or our own local vcs)
+        const srcGitRepo = new GitRepo(gitDir);
+        
+        // this is a fresh import, first add an entry into the LMDB
+        const now = Date.now() as TMSSinceEpoch;
+        this.addImportRecord({
+          name: name ?? ("default" as TName),
+          workTree,
+          gitDir,
+          first_import_at: now,
+          last_sync_at: now,
+          sync_in_progress: true,
         });
-    }
+      });
   }
 
   /** We need to setup an internal VCS for the given working directory */

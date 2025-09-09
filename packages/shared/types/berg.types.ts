@@ -1,5 +1,5 @@
 import type { Branded, TFilePath, TFolderPath } from "./branded.types";
-import type { TDuckLakeRootPath } from "./ducklake.types";
+import type { TDuckLakeRootPath, TParquetFilePath } from "./ducklake.types";
 
 /**
  * Usually this is same as user home folder;
@@ -50,6 +50,13 @@ export type TFsVCSRootPath = Branded<TFolderPath, "FsVCSRoot">;
  * Contains git internal files/folders such as {`objects`, `HEAD`, `refs`...}
  */
 export type TFsVCSDotGitPath = Branded<TFolderPath, "<sha256B58>.git folder">;
+
+/** The pack-index root folder under TFsVCSDotGitPath; 
+ *  Usually this is `TFsVCSDotGitPath + pack-index/`
+ */
+export type TFsVCSPackIndexRoot = Branded<TFolderPath, "VCSPackIndex">;
+export type TFsVCSPackIndexFilePath = Branded<TParquetFilePath, "<PackIndex>.Parquet">;
+
 
 export type TBergShelfPath = TLMDBRootPath | TFsDLRootPath | TFsSemRootPath | TFsVCSRootPath;
 

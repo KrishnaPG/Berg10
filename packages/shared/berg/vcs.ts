@@ -17,24 +17,24 @@ import type { FsVCSManager } from "./manager";
  * The pack index data is available as parquet files for DuckLake:
  *  `CREATE VIEW pack_index AS SELECT * FROM '<FsVCSRoot>/<sha>.git/pack_index/*.parquet'`;
  */
-export function buildGitPackIndex(this: FsVCSManager, gitRepo: GitRepo) {
+export function buildGitPackIndex(this: FsVCSManager, srcGitRepo: GitRepo) {
   /* 1. locate .git/objects/pack */
-  const packDir = gitRepo.packDir;
-  if (!fs.existsSync(gitRepo.packDir)) return;
+  const srcPackDir = srcGitRepo.packDir;
+  if (!fs.existsSync(srcPackDir)) return;
 
   /* 2. iterate over *.idx files */
-  const idxFiles = fs
-    .readdirSync(packDir)
+  const srcIdxFiles = fs
+    .readdirSync(srcPackDir)
     .filter((f) => f.endsWith(".idx"))
-    .map((f) => path.join(packDir, f));
+    .map((f) => path.join(srcPackDir, f));
 
   const p = []; // batch multiples idx loads
 
   /* 3. write the .idx file content to tsv and use DuckDB
         to transform it as .parquet file.
    */
-  for (const idxPath of idxFiles) {
-    const packName = path.basename(idxPath, ".idx"); // "pack-1234…"
+  for (const srcIdxPath of srcIdxFiles) {
+    const packName = path.basename(srcIdxPath, ".idx"); // "pack-1234…"
     if (db.packsDone.get(packName)) continue; // already captured
 
     // duckDB temp and final filenames (in the VCS/<imported_repo_name>/.git/ folder)
