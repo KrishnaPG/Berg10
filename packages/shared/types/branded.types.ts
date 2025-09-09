@@ -40,6 +40,9 @@ export type TSize = Branded<number, "Size">;
 export type TCount = Branded<number, "Count">;
 export type TIndexPos = Branded<number, "IndexPos">;
 
+// time types
+export type TMSSinceEpoch = Branded<number, "MSSinceEpoch">;
+
 
 // basic file/folder path types
 export type TFilePath = Branded<string, "FilePath">;

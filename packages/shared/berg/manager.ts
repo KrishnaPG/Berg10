@@ -8,6 +8,8 @@ import {
   type TDuckLakeDBName,
   type TFolderPath,
   type TLMDBRootPath,
+  type TMSSinceEpoch,
+  type TName,
 } from "@shared/types";
 import { ExistingGitRepoPath } from "@shared/types/folder-schemas";
 import type { TFsDLRootPath } from "@shared/types/fs-dl.types";
@@ -16,8 +18,11 @@ import type { TGitDirPath, TGitRepoRootPath } from "@shared/types/git.types";
 import { Value } from "@sinclair/typebox/value";
 import { getPackageJsonFolder } from "@utils";
 import fs, { exists } from "fs-extra";
+import type { Database, RootDatabaseOptions } from "lmdb";
+import * as LMDB from "lmdb";
 import os from "os";
 import path from "path";
+import { RepoSyncInProgress } from "./errors";
 
 abstract class BergComponent {
   constructor(protected bMgr: BergManager) {}
@@ -39,17 +44,63 @@ class FsDLManager extends BergComponent {
   }
 }
 
+interface IRepoImportRecord {
+  name: TName;
+  workTree: TGitRepoRootPath;
+  gitDir: TGitDirPath;
+  first_import_at: TMSSinceEpoch;
+  last_sync_at: TMSSinceEpoch;
+  sync_in_progress: boolean;
+}
+
+interface ILMDBDBs {
+  repoImports: Database<IRepoImportRecord, TGitRepoRootPath>;
+  checkpoint: Database<string, string>;
+  progress: Database<boolean, string>;
+  packIndex: Database<Uint8Array, string>;
+  packsDone: Database<boolean, string>;
+}
+
 class LMDBManager extends BergComponent {
-  constructor(protected dbRootPath: TLMDBRootPath) {
+  protected _env: LMDB.RootDatabase;
+  protected _db: ILMDBDBs;
+
+  constructor(
+    protected dbRootPath: TLMDBRootPath,
+    options?: RootDatabaseOptions,
+  ) {
     super(null!);
+    this._env = LMDB.open({
+      path: path.join(dbRootPath, "meta.lmdb"),
+      compression: true,
+      // high perf options
+      mapSize: 100 * 1024 * 1024, // 100 MB
+      commitDelay: 0,
+      overlappingSync: false,
+      ...options,
+    });
+    this._db = {
+      repoImports: this._env.openDB<IRepoImportRecord, TGitRepoRootPath>({ name: "repos" }),
+      checkpoint: this._env.openDB<string, string>({ name: "checkpoint" }),
+      progress: this._env.openDB<boolean, string>({ name: "progress" }),
+      packIndex: this._env.openDB<Uint8Array, string>({ name: "pack_index" }), // 16-byte value: 8-byte packfile-id, 8-byte offset
+      packsDone: this._env.openDB<boolean, string>({ name: "packs_scanned" }), // checkpoint for packIndex data
+    };
+  }
+  get db() {
+    return this._db;
+  }
+  get env() {
+    return this._env;
   }
 }
 
 export class BergManager {
   constructor(
+    protected _bergPath: TBergPath,
+    protected _dbMgr: LMDBManager,
     protected _vcsMgr: FsVCSManager,
     protected _dlMgr: FsDLManager,
-    protected _bergPath: TBergPath,
   ) {}
 
   get vcs() {
@@ -61,16 +112,29 @@ export class BergManager {
   get bergPath() {
     return this._bergPath;
   }
+  get db() {
+    return this._dbMgr.db;
+  }
+  get dbEnv() {
+    return this._dbMgr.env;
+  }
 
   // bergPath should already exist
   public static open(bergPath: TBergPath): Promise<BergManager> {
     console.log(`Opening ${bergPath} ...`);
     const fsVCSRootpath: TFsVCSRootPath = path.resolve(bergPath, "vcs") as TFsVCSRootPath;
-    const fsDBRootPath: TFsDLRootPath = path.resolve(bergPath, "db") as TFsDLRootPath;
+    const fsDLRootPath: TFsDLRootPath = path.resolve(bergPath, "dl") as TFsDLRootPath;
+    const lmdbRootPath: TLMDBRootPath = path.resolve(bergPath, "db") as TLMDBRootPath;
 
-    const bMgr: BergManager = new BergManager(new FsVCSManager(fsVCSRootpath), new FsDLManager(fsDBRootPath), bergPath);
+    const bMgr: BergManager = new BergManager(
+      bergPath,
+      new LMDBManager(lmdbRootPath),
+      new FsVCSManager(fsVCSRootpath),
+      new FsDLManager(fsDLRootPath),
+    );
     bMgr._vcsMgr._resetManager(bMgr);
     bMgr._dlMgr._resetManager(bMgr);
+    bMgr._dbMgr._resetManager(bMgr);
 
     return Promise.resolve(bMgr);
 
@@ -119,15 +183,29 @@ export class BergManager {
   }
 
   public importRepo(workTree: TGitRepoRootPath, bAutoGit = true) {
-    // is it already imported?
-    // TODO: check if already imported
-    // is it valid git Repo, if not setup local VCS?
-    return assertRepo(workTree)
-      .catch((ex) => {
-        if (ex instanceof NotAGitRepo) return this.setupGit(workTree); // create a local VCS repo
-        throw ex; // re-throw other errors;
-      })
-      .then((gitDir) => new GitRepo(gitDir));
+    // check if it is already imported?
+    const rec = this.db.repoImports.get(workTree);
+
+    // Yes, imported and sync in progress
+    if (rec?.sync_in_progress) throw new RepoSyncInProgress(`${workTree} already imported and Sync In Progress.`);
+
+    if (rec) {
+      /* imported earlier, but may be stale, do a fresh sync */
+      new GitRepo(rec.gitDir);
+    } /* never imported earlier */ else {
+      // is workTree a valid git Repo?
+      return assertRepo(workTree)
+        .catch((ex) => {
+          // we are given a normal folder (not a git repo).
+          // create a local VCS repo so that we can track the changes.
+          if (ex instanceof NotAGitRepo) return this.setupGit(workTree);
+          throw ex; // re-throw other errors;
+        })
+        .then((gitDir) => {
+          // gitDir is now a valid git repo (either pre-existing git, or our own local vcs)
+          new GitRepo(gitDir);
+        });
+    }
   }
 
   /** We need to setup an internal VCS for the given working directory */
