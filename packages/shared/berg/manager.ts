@@ -16,6 +16,8 @@ import type { TGitDirPath, TGitRepoRootPath } from "@shared/types/git.types";
 import { Value } from "@sinclair/typebox/value";
 import { getPackageJsonFolder } from "@utils";
 import fs, { exists } from "fs-extra";
+import type { Database, RootDatabaseOptions } from "lmdb";
+import * as LMDB from "lmdb";
 import os from "os";
 import path from "path";
 
@@ -40,16 +42,44 @@ class FsDLManager extends BergComponent {
 }
 
 class LMDBManager extends BergComponent {
-  constructor(protected dbRootPath: TLMDBRootPath) {
+  protected _env: LMDB.RootDatabase;
+  protected _db: Record<string, Database>;
+
+  constructor(
+    protected dbRootPath: TLMDBRootPath,
+    options?: RootDatabaseOptions,
+  ) {
     super(null!);
+    this._env = LMDB.open({
+      path: path.join(dbRootPath, "meta.lmdb"),
+      compression: true,
+      // high perf options
+      mapSize: 100 * 1024 * 1024, // 100 MB
+      commitDelay: 0,
+      overlappingSync: false,
+      ...options,
+    });
+    this._db = {
+      checkpoint: this._env.openDB<string, string>({ name: "checkpoint" }),
+      progress: this._env.openDB<string, boolean>({ name: "progress" }),
+      packIndex: this._env.openDB<Uint8Array, string>({ name: "pack_index" }), // 16-byte value: 8-byte packfile-id, 8-byte offset
+      packsDone: this._env.openDB<boolean, string>({ name: "packs_scanned" }), // checkpoint for packIndex data
+    };
+  }
+  get db() {
+    return this._db;
+  }
+  get env() {
+    return this._env;
   }
 }
 
 export class BergManager {
   constructor(
+    protected _bergPath: TBergPath,
+    protected _dbMgr: LMDBManager,
     protected _vcsMgr: FsVCSManager,
     protected _dlMgr: FsDLManager,
-    protected _bergPath: TBergPath,
   ) {}
 
   get vcs() {
@@ -61,16 +91,29 @@ export class BergManager {
   get bergPath() {
     return this._bergPath;
   }
+  get db() {
+    return this._dbMgr.db;
+  }
+  get dbEnv() {
+    return this._dbMgr.env;
+  }
 
   // bergPath should already exist
   public static open(bergPath: TBergPath): Promise<BergManager> {
     console.log(`Opening ${bergPath} ...`);
     const fsVCSRootpath: TFsVCSRootPath = path.resolve(bergPath, "vcs") as TFsVCSRootPath;
-    const fsDBRootPath: TFsDLRootPath = path.resolve(bergPath, "db") as TFsDLRootPath;
+    const fsDLRootPath: TFsDLRootPath = path.resolve(bergPath, "dl") as TFsDLRootPath;
+    const lmdbRootPath: TLMDBRootPath = path.resolve(bergPath, "db") as TLMDBRootPath;
 
-    const bMgr: BergManager = new BergManager(new FsVCSManager(fsVCSRootpath), new FsDLManager(fsDBRootPath), bergPath);
+    const bMgr: BergManager = new BergManager(
+      bergPath,
+      new LMDBManager(lmdbRootPath),
+      new FsVCSManager(fsVCSRootpath),
+      new FsDLManager(fsDLRootPath),
+    );
     bMgr._vcsMgr._resetManager(bMgr);
     bMgr._dlMgr._resetManager(bMgr);
+    bMgr._dbMgr._resetManager(bMgr);
 
     return Promise.resolve(bMgr);
 
