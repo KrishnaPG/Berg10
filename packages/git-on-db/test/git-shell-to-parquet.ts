@@ -131,7 +131,7 @@ async function buildPackIndex(dotGitFolderPath: TGitDirPath): Promise<void | voi
     const packName = path.basename(idxPath, ".idx"); // "pack-1234…"
     if (db.packsDone.get(packName)) continue; // already captured
 
-    // duckDB temp and final filenames (in the VCS/<sha>.git/ folder)
+    // duckDB temp and final filenames (in the VCS/<imported_repo_name>/.git/ folder)
     const tmpFilePath = path.resolve(os.tmpdir(), "pack_index", `${packName}.tmp`);
     const finalFilePath = path.resolve(os.tmpdir(), "pack_index", `${packName}.parquet`);
 

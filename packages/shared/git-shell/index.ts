@@ -1,14 +1,21 @@
 import type { TFilePath, TFolderPath } from "@shared/types";
 import { type TGitDirPath, TGitRepoRootPath } from "@shared/types/git.types";
+import path from "path";
 import { NotAGitRepo } from "./helpers";
 import { linesBatchedTransform } from "./lines-batched-transform";
-import { gitShellStream } from "./stream";
 
 export class GitRepo {
   protected gitDirArgs: string[];
 
-  constructor(gitDir: TGitDirPath) {
-    this.gitDirArgs = ["--git-dir", `"${gitDir}"`];
+  constructor(public _gitDir: TGitDirPath) {
+    this.gitDirArgs = ["--git-dir", `"${_gitDir}"`];
+  }
+
+  public get gitDir() {
+    return this._gitDir;
+  }
+  public get packDir() {
+    return path.resolve(this.gitDir, "objects", "pack");
   }
 
   private shellStream(args: string[], write: UnderlyingSinkWriteCallback<string[]>, linesBatch = 1024) {

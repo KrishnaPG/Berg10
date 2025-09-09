@@ -1,50 +1,47 @@
 import { setupLake } from "@shared/ducklake";
 import { GitRepo } from "@shared/git-shell";
 import { assertRepo, NotAGitRepo } from "@shared/git-shell/helpers";
-import {
-  FsDB,
-  type TBergPath,
-  type TDriftPath,
-  type TDuckLakeDBName,
-  type TFolderPath,
-  type TLMDBRootPath,
-  type TMSSinceEpoch,
-  type TName,
+import type {
+  TBergPath,
+  TDriftPath,
+  TDuckLakeDBName,
+  TFolderPath,
+  TLMDBRootPath,
+  TMSSinceEpoch,
+  TName,
 } from "@shared/types";
-import { ExistingGitRepoPath } from "@shared/types/folder-schemas";
 import type { TFsDLRootPath } from "@shared/types/fs-dl.types";
-import { TFsVCSDotGitPath, type TFsVCSRootPath } from "@shared/types/fs-vcs.types";
+import type { TFsVCSRootPath } from "@shared/types/fs-vcs.types";
 import type { TGitDirPath, TGitRepoRootPath } from "@shared/types/git.types";
-import { Value } from "@sinclair/typebox/value";
-import { getPackageJsonFolder } from "@utils";
-import fs, { exists } from "fs-extra";
+import fs from "fs-extra";
 import type { Database, RootDatabaseOptions } from "lmdb";
 import * as LMDB from "lmdb";
-import os from "os";
 import path from "path";
 import { RepoSyncInProgress } from "./errors";
+import { buildGitPackIndex } from "./vcs";
 
-abstract class BergComponent {
+export abstract class BergComponent {
   constructor(protected bMgr: BergManager) {}
   /* package-private */ _resetManager(mgr: BergManager) {
     this.bMgr = mgr;
   }
 }
 
-class FsVCSManager extends BergComponent {
+export class FsVCSManager extends BergComponent {
   constructor(protected fsVCSRootpath: TFsVCSRootPath) {
     super(null!);
   }
+  public buildGitPackIndex = buildGitPackIndex.bind(this);
   initWorkTree(workTree: TFolderPath) {}
 }
 
-class FsDLManager extends BergComponent {
+export class FsDLManager extends BergComponent {
   constructor(protected fsDLRootPath: TFsDLRootPath) {
     super(null!);
   }
 }
 
-interface IRepoImportRecord {
+export interface IRepoImportRecord {
   name: TName;
   workTree: TGitRepoRootPath;
   gitDir: TGitDirPath;
@@ -53,7 +50,7 @@ interface IRepoImportRecord {
   sync_in_progress: boolean;
 }
 
-interface ILMDBDBs {
+export interface ILMDBDBs {
   repoImports: Database<IRepoImportRecord, TGitRepoRootPath>;
   checkpoint: Database<string, string>;
   progress: Database<boolean, string>;
@@ -61,7 +58,7 @@ interface ILMDBDBs {
   packsDone: Database<boolean, string>;
 }
 
-class LMDBManager extends BergComponent {
+export class LMDBManager extends BergComponent {
   protected _env: LMDB.RootDatabase;
   protected _db: ILMDBDBs;
 
