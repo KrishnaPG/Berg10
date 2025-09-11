@@ -1,8 +1,26 @@
 import type { GitRepo } from "@shared/git-shell";
+import type { TFsVCSDotGitPath, TFsVCSPackIndexName } from "@shared/types";
 import fs from "fs-extra";
 import os from "os";
 import path from "path";
 import type { FsVCSManager } from "./manager";
+
+export class FsVCS {
+  constructor(protected vcsDotGitFolder: TFsVCSDotGitPath) {}
+  public static init(vcsDotGitFolder: TFsVCSDotGitPath): Promise<FsVCS> {
+    const instance = new FsVCS(vcsDotGitFolder);
+    return fs.ensureDir(instance.packIndexRootPath).then(() => instance);
+  }
+  get packIndexRootPath() {
+    return path.resolve(this.vcsDotGitFolder, "pack-index");
+  }
+  getPackFilePath(packName: TFsVCSPackIndexName) {
+    return path.resolve(this.packIndexRootPath, packName, ".parquet");
+  }
+  isPackImported(packName: TFsVCSPackIndexName): Promise<boolean> {
+    return fs.exists(this.getPackFilePath(packName));
+  }
+}
 
 /** ---------- Packfile Index Builder (idempotent) ----------
  *

@@ -6,7 +6,6 @@ import type {
   TDriftPath,
   TDuckLakeDBName,
   TFolderPath,
-  TFsVCSDotGitPath,
   TLMDBRootPath,
   TMSSinceEpoch,
   TName,
@@ -26,10 +25,7 @@ export abstract class BergComponent {
   /* package-private */ _resetManager(mgr: BergManager) {
     this.bMgr = mgr;
   }
-}
-
-export class FsVCS {
-  constructor(protected vcsDotGitFolder: TFsVCSDotGitPath) {}
+  cleanup() {}
 }
 
 export class FsVCSManager extends BergComponent {
@@ -47,17 +43,19 @@ export class FsDLManager extends BergComponent {
   }
 }
 
+/** the record entry that is stored in the LMDB repoImports table */
 export interface IRepoImportRecord {
   name: TName;
-  workTree: TWorkTreePath;
-  gitDir: TGitDirPath;
+  workTree: TWorkTreePath; // the source workTree folder, always external
+  gitDir: TGitDirPath; // the source .git/ folder (could be `vcs/<repoId>.git/` or external)
   first_import_at: TMSSinceEpoch;
   last_sync_at: TMSSinceEpoch;
   sync_in_progress: boolean;
 }
 
+export type ImportsLMDB = Database<IRepoImportRecord, TWorkTreePath>;
 export interface ILMDBDBs {
-  repoImports: Database<IRepoImportRecord, TWorkTreePath>;
+  repoImports: ImportsLMDB;
   checkpoint: Database<string, string>;
   progress: Database<boolean, string>;
   packIndex: Database<Uint8Array, string>;
@@ -67,7 +65,7 @@ export interface ILMDBDBs {
 /** For ACID transactional data */
 export class LMDBManager extends BergComponent {
   protected _env: LMDB.RootDatabase;
-  protected _db: ILMDBDBs;
+  protected _dbs: ILMDBDBs;
 
   constructor(
     protected dbRootPath: TLMDBRootPath,
@@ -83,25 +81,65 @@ export class LMDBManager extends BergComponent {
       overlappingSync: false,
       ...options,
     });
-    this._db = {
-      repoImports: this._env.openDB<IRepoImportRecord, TGitRepoRootPath>({ name: "repos" }),
+    this._dbs = {
+      repoImports: this._env.openDB<IRepoImportRecord, TWorkTreePath>({ name: "repos" }),
       checkpoint: this._env.openDB<string, string>({ name: "checkpoint" }),
       progress: this._env.openDB<boolean, string>({ name: "progress" }),
       packIndex: this._env.openDB<Uint8Array, string>({ name: "pack_index" }), // 16-byte value: 8-byte packfile-id, 8-byte offset
       packsDone: this._env.openDB<boolean, string>({ name: "packs_scanned" }), // checkpoint for packIndex data
     };
   }
-  get db() {
-    return this._db;
+  get dbs() {
+    return this._dbs;
   }
   get env() {
     return this._env;
   }
-  public getImportRecord(workTree: TWorkTreePath) {
-    return this._db.repoImports.get(workTree);
+  public getImportRecord(workTree: TWorkTreePath): IRepoImportRecord | undefined {
+    return this._dbs.repoImports.get(workTree);
   }
   public putImportRecord(rec: IRepoImportRecord) {
-    return this._db.repoImports.put(rec.workTree, rec);
+    return this._dbs.repoImports.put(rec.workTree, rec);
+  }
+  public updateImportRecord(patch: Partial<IRepoImportRecord>) {
+    if (!patch.workTree) throw new Error(`workTree not specified in the call to updateImportRecord()`);
+    const workTree = patch.workTree;
+    const importsDB = this.dbs.repoImports;
+    return importsDB.transaction(async () => {
+      const rec = await importsDB.get(workTree);
+      if (!rec) throw new Error(`workTree record not found for "${workTree}" in updateImportRecord()`);
+      return importsDB.put(workTree, { ...rec, ...patch });
+    });
+  }
+  public importReSync(rec: IRepoImportRecord) {
+    return this.updateImportRecord({ workTree: rec.workTree, sync_in_progress: true }).finally(() =>
+      this.updateImportRecord({
+        workTree: rec.workTree,
+        sync_in_progress: false,
+        last_sync_at: Date.now() as TMSSinceEpoch,
+      }),
+    );
+  }
+  public importNewSync(srcWorkTree: TWorkTreePath, srcGitDir: TGitDirPath, repoName?: TName) {
+    // this is a fresh import, first add an entry into the LMDB
+    const now = Date.now() as TMSSinceEpoch;
+    const rec = {
+      name: repoName ?? ("default" as TName),
+      workTree: srcWorkTree,
+      gitDir: srcGitDir,
+      first_import_at: now,
+      last_sync_at: now,
+      sync_in_progress: false,
+    };
+    return this.putImportRecord(rec).then(() => this.importReSync(rec));
+  }
+  public cleanup() {
+    return Promise.allSettled([
+      this.dbs.checkpoint.close(),
+      this.dbs.packIndex.close(),
+      this.dbs.progress.close(),
+      this.dbs.repoImports.close(),
+    ]).finally(() => this.env.close());
   }
 }
 
@@ -179,6 +217,10 @@ export class BergManager {
       });
   }
 
+  public cleanup(): Promise<unknown> {
+    return Promise.allSettled([this.vcs.cleanup(), this.db.cleanup(), this.dl.cleanup()]);
+  }
+
   // Setup DuckDB lake database
   private async setupDatabase(dbRootPath: TFsDLRootPath, lakeDBName: TDuckLakeDBName) {
     console.log("Setting up DataLake...");
@@ -189,10 +231,6 @@ export class BergManager {
       });
   }
 
-  private addImportRecord(rec: IRepoImportRecord) {
-    this.db.putImportRecord(rec);
-  }
-
   /** re-syncs an earlier imported repo */
   public resyncRepo(rec: IRepoImportRecord) {
     // check if a sync already in progress
@@ -200,10 +238,15 @@ export class BergManager {
     const srcGitRepo = new GitRepo(rec.gitDir);
   }
 
+  /**
+   * Takes care of importing/resyncing external git meta data into VCS DuckDB.
+   *  LMDB is used for progress tracking (ACID/CRUD).
+   *  `.git/` metadata is loaded into DuckDB for quick retrieval at `VCS/<repoId>.db/`
+   */
   public importRepo(workTree: TWorkTreePath, name?: TName) {
     // check if it is already imported?
     const rec = this.db.getImportRecord(workTree);
-    if (rec) return this.resyncRepo(rec);
+    if (rec) return this.db.importReSync(rec);
 
     // is workTree a valid git Repo?
     return assertRepo(workTree as TGitRepoRootPath)
@@ -215,18 +258,7 @@ export class BergManager {
       })
       .then((gitDir) => {
         // gitDir is now a valid git repo (either pre-existing git, or our own local vcs)
-        const srcGitRepo = new GitRepo(gitDir);
-        
-        // this is a fresh import, first add an entry into the LMDB
-        const now = Date.now() as TMSSinceEpoch;
-        this.addImportRecord({
-          name: name ?? ("default" as TName),
-          workTree,
-          gitDir,
-          first_import_at: now,
-          last_sync_at: now,
-          sync_in_progress: true,
-        });
+        return this.db.importNewSync(workTree, gitDir, name);
       });
   }
 

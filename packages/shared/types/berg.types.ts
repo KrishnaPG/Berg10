@@ -1,5 +1,6 @@
-import type { Branded, TFilePath, TFolderPath } from "./branded.types";
+import type { Branded, TFilePath, TFolderPath, TName } from "./branded.types";
 import type { TDuckLakeRootPath, TParquetFilePath } from "./ducklake.types";
+import type { TGitDirPath } from "./git.types";
 
 /**
  * Usually this is same as user home folder;
@@ -40,25 +41,39 @@ export type TFsSemRootPath = Branded<TFolderPath, "FsSemRoot">;
 
 /** Usually this is `TBergPath + "/vcs"`;
  *
- * Contains multiple `<sha256B58>.git` named folders, each a `.git` folder
- * created with `--separate-git-dir`;
+ * Contains multiple {<SrcRepoId>.git, <SrcRepoId>.db} paired folders, where 
+ *  each a `.git` folder is created with `--separate-git-dir`, and
+ *  the respective `.db` folder holds the .git -> db imported data;
+ * 
+ * When external .git repos are imported, the `<SrcRepoId>.git` may be missing
+ * and only the `<SrcRepoId>.db` may exist. 
+ * 
+ * The details of `SrcRepoId`'s name, workTree etc. tracked in the LMDB (the `db/` berg-shelf);
  * */
-export type TFsVCSRootPath = Branded<TFolderPath, "FsVCSRoot">;
+export type TFsVcsRootPath = Branded<TFolderPath, "FsVCSRoot">;
 /**
- * Usually this is `TFsVCSRootPath + "/<sha256B58>.git"`;
+ * Usually this is `TFsVCSRootPath + "/<SrcRepoId>.git"`;
  *
  * Contains git internal files/folders such as {`objects`, `HEAD`, `refs`...}
  */
-export type TFsVCSDotGitPath = Branded<TFolderPath, "<sha256B58>.git folder">;
-
-/** The pack-index root folder under TFsVCSDotGitPath; 
- *  Usually this is `TFsVCSDotGitPath + pack-index/`
+export type TFsVcsDotGitPath = TGitDirPath;
+/** 
+ * TFsVCSDotDBPath contains `pack-index/`, `commits.parquet`, `objects.parquet` etc.
+ * 
+ * Usually hosts the DuckDB parquet files created from .git/ metadata
  */
-export type TFsVCSPackIndexRoot = Branded<TFolderPath, "VCSPackIndex">;
-export type TFsVCSPackIndexFilePath = Branded<TParquetFilePath, "<PackIndex>.Parquet">;
+export type TFsVcsDotDBPath = Branded<TFolderPath, "VCSDBFolder">; 
 
+/** The pack-index root folder under TFsVCSDotDBPath;
+ *  Usually this is `TFsVCSDotDBPath + pack-index/`
+ */
+export type TFsVcsDBPackIndexRoot = Branded<TFolderPath, "VCSPackIndex">;
+/** usually source .git/ will have `pack/<PackIndexName>.idx` files */
+export type TFsVcsDBPackIndexName = Branded<TName, "PackIndexName">;
+/** `TFsVCSPackIndexFilePath = <TFsVCSPackIndexRoot>/pack-index/<TFsVCSPackIndexName>.parquet`  */
+export type TFsVcsDBPackIndexFilePath = Branded<TParquetFilePath, "<PackIndex>.Parquet">;
 
-export type TBergShelfPath = TLMDBRootPath | TFsDLRootPath | TFsSemRootPath | TFsVCSRootPath;
+export type TBergShelfPath = TLMDBRootPath | TFsDLRootPath | TFsSemRootPath | TFsVcsRootPath;
 
 export type TFsSrcFilePath = Branded<TFilePath, "FsSrcFile">;
 export type TFSSrcFolderPath = Branded<TFolderPath, "FsSrcFolder">;
