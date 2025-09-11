@@ -2,7 +2,7 @@
 import { ParquetSchema, ParquetWriter } from "@dsnp/parquetjs";
 import { BergManager } from "@shared/berg/manager";
 import type { TDriftPath, TFileHandle, TFilePath, TFolderPath } from "@shared/types";
-import type { TGitDirPath, TGitRepoRootPath } from "@shared/types/git.types";
+import type { TGitDirPath, TGitRepoRootPath, TWorkTreePath } from "@shared/types/git.types";
 import { getPackageJsonFolder } from "@shared/utils";
 import * as arrow from "apache-arrow";
 import * as fs from "fs";
@@ -169,7 +169,7 @@ async function run() {
     os.tmpdir() as TDriftPath,
     path.resolve(await getPackageJsonFolder(import.meta.dir as TFolderPath), "template") as TFolderPath,
   );
-  await bMgr.importRepo(process.cwd() as TGitRepoRootPath);
+  await bMgr.importRepo(process.cwd() as TWorkTreePath);
 
   await buildPackIndex();
 

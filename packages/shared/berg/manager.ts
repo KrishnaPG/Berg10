@@ -82,7 +82,7 @@ export class LMDBManager extends BergComponent {
       ...options,
     });
     this._dbs = {
-      repoImports: this._env.openDB<IRepoImportRecord, TWorkTreePath>({ name: "repos" }),
+      repoImports: this._env.openDB<IRepoImportRecord, TWorkTreePath>({ name: "repos", useVersions: false }),
       checkpoint: this._env.openDB<string, string>({ name: "checkpoint" }),
       progress: this._env.openDB<boolean, string>({ name: "progress" }),
       packIndex: this._env.openDB<Uint8Array, string>({ name: "pack_index" }), // 16-byte value: 8-byte packfile-id, 8-byte offset
@@ -99,26 +99,29 @@ export class LMDBManager extends BergComponent {
     return this._dbs.repoImports.get(workTree);
   }
   public putImportRecord(rec: IRepoImportRecord) {
-    return this._dbs.repoImports.put(rec.workTree, rec);
+    return this._dbs.repoImports.putSync(rec.workTree, rec);
   }
-  public updateImportRecord(patch: Partial<IRepoImportRecord>) {
-    if (!patch.workTree) throw new Error(`workTree not specified in the call to updateImportRecord()`);
-    const workTree = patch.workTree;
-    const importsDB = this.dbs.repoImports;
-    return importsDB.transaction(async () => {
-      const rec = await importsDB.get(workTree);
-      if (!rec) throw new Error(`workTree record not found for "${workTree}" in updateImportRecord()`);
-      return importsDB.put(workTree, { ...rec, ...patch });
-    });
+
+  public abortPrevSync(rec: IRepoImportRecord) {
+    rec.sync_in_progress = false;
+    return this.putImportRecord(rec);
   }
+
   public importReSync(rec: IRepoImportRecord) {
-    return this.updateImportRecord({ workTree: rec.workTree, sync_in_progress: true }).finally(() =>
-      this.updateImportRecord({
-        workTree: rec.workTree,
-        sync_in_progress: false,
-        last_sync_at: Date.now() as TMSSinceEpoch,
-      }),
-    );
+    // check if a sync already in progress
+    if (rec.sync_in_progress) throw new RepoSyncInProgress(`repo: ${rec.name}, Sync already in Progress.`);
+    // mark sync as ON
+    rec.sync_in_progress = true;
+    this.putImportRecord(rec);
+    
+    // ... do the import ...
+
+    // mark sync as OFF
+    this.putImportRecord({
+      ...rec,
+      sync_in_progress: false,
+      last_sync_at: Date.now() as TMSSinceEpoch,
+    });
   }
   public importNewSync(srcWorkTree: TWorkTreePath, srcGitDir: TGitDirPath, repoName?: TName) {
     // this is a fresh import, first add an entry into the LMDB
@@ -131,8 +134,11 @@ export class LMDBManager extends BergComponent {
       last_sync_at: now,
       sync_in_progress: false,
     };
-    return this.putImportRecord(rec).then(() => this.importReSync(rec));
+    this.putImportRecord(rec);
+    // starts a fresh resync
+    return this.importReSync(rec);
   }
+  
   public cleanup() {
     return Promise.allSettled([
       this.dbs.checkpoint.close(),
@@ -229,13 +235,6 @@ export class BergManager {
       .catch((error) => {
         throw new Error(`Failed to setup DataLake at [${dbRootPath}].\n\t${(error as Error).message}\n`);
       });
-  }
-
-  /** re-syncs an earlier imported repo */
-  public resyncRepo(rec: IRepoImportRecord) {
-    // check if a sync already in progress
-    if (rec.sync_in_progress) throw new RepoSyncInProgress(`repo: ${rec.name}, Sync already in Progress.`);
-    const srcGitRepo = new GitRepo(rec.gitDir);
   }
 
   /**
