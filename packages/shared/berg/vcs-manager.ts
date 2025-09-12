@@ -27,7 +27,7 @@ export class FsVCSManager extends BergComponent {
 
   protected importReSync(rec: IRepoImportRecord) {
     // check if a sync already in progress
-    if (rec.syncInProgress) throw new RepoSyncInProgress(`repo: ${rec.name}, Sync already in Progress.`);
+    // if (rec.syncInProgress) throw new RepoSyncInProgress(`repo: ${rec.name}, Sync already in Progress.`);
     // mark sync as ON
     rec.syncInProgress = true;
     this.bMgr.db.putImportRecord(rec);

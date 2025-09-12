@@ -171,6 +171,8 @@ async function run() {
   );
   await bMgr.importRepo(process.cwd() as TWorkTreePath);
 
+  return;
+
   await buildPackIndex();
 
   const lastCommit = db.checkpoint.get("last_processed_commit") || "";
@@ -276,5 +278,5 @@ function checkpoint(commit: string) {
 /* ---------- Go ---------- */
 run().catch((e) => {
   console.error(e);
-  process.exit(1);
+  //process.exit(1);
 });

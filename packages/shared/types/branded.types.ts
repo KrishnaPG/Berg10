@@ -41,6 +41,7 @@ export type TCount = Branded<number, "Count">;
 export type TIndexPos = Branded<number, "IndexPos">;
 
 export type THash = Branded<string, "Hash">; // generic hash base
+export type TSHA1 = Branded<THash, "sha1{40}">;
 
 // time types
 export type TMSSinceEpoch = Branded<number, "MSSinceEpoch">;

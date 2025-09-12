@@ -1,4 +1,4 @@
-import type { Branded, TCount, TEMail, TIndexPos, TISOString, TName, TSHA256Hex, TSize } from "./branded.types";
+import type { Branded, TCount, TEMail, TIndexPos, TISOString, TName, TSHA1, TSHA256Hex, TSize } from "./branded.types";
 
 // Git Object Types
 export type TGitObjectId = Branded<TSHA256Hex, "GitObjectId">;
@@ -29,3 +29,14 @@ export type TTreeEntryCount = Branded<TCount, "TreeEntryCount">;
 // Index Types
 export type TIndexPosition = TIndexPos;
 export type TIndexEntryCount = Branded<TCount, "IndexEntryCount">;
+
+
+export interface IdxFileLine {
+  sha1: TSHA1;
+  type: "commit" | "tree" | "blob" | "tag";
+  size: number;
+  sizeInPack : number;
+  offset: number;
+  depth?: number;
+  base?: TSHA1;
+}

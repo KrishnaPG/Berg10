@@ -4,11 +4,14 @@ import path from "path";
 import { NotAGitRepo } from "./helpers";
 import { linesBatchedTransform } from "./lines-batched-transform";
 
+const idxFileLineRegEx = /^(?<sha1>[0-9a-f]{40})\s+(?<type>commit|tree|blob|tag)\s+(?<size>\d+)\s+(?<sizeInPack>\d+)\s+(?<offset>\d+)(?:\s+(?<depth>\d+)\s+(?<base>[0-9a-f]{40}))?$/;
+
+
 export class GitRepo {
   protected gitDirArgs: string[];
 
   constructor(public _gitDir: TGitDirPath) {
-    this.gitDirArgs = ["--git-dir", `"${_gitDir}"`];
+    this.gitDirArgs = ["--git-dir", _gitDir];
   }
 
   public get gitDir() {
@@ -19,7 +22,8 @@ export class GitRepo {
   }
 
   private shellStream(args: string[], write: UnderlyingSinkWriteCallback<string[]>, linesBatch = 1024) {
-    return Bun.spawn(["git", ...this.gitDirArgs, ...args], {
+    const cmd = ["git", ...this.gitDirArgs, ...args]; console.log(cmd);
+    return Bun.spawn(cmd, {
       stdout: "pipe",
       stderr: "inherit",
     })
@@ -39,9 +43,9 @@ export class GitRepo {
     let outLines = "";
     return this.shellStream(["verify-pack", "-v", idxPath], (idsLinesBatch: string[]) => {
       idsLinesBatch.forEach((idxLine) => {
-        const m = idxLine.match(/^([0-9a-f]{40})\s+(\w+)\s+(\d+)\s+(\d+)$/);
+        const m = idxLine.match(idxFileLineRegEx);
         if (!m) return; // skip unwanted lines
-        const [, sha, type, size, offset] = m;
+        const [, sha, type, size, sizeInPackFile, offset] = m;
         outLines += `${sha}\t${type}\t${size}\t${offset}\n`;
       });
     }).then(() => outLines);
