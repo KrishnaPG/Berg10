@@ -46,4 +46,16 @@ export class GitRepo {
       });
     }).then(() => outLines);
   }
+
+  /**
+   * Returns the hash (SHA-1) of the first commit in the current branch’s history.
+   * If the repository is empty the promise resolves to an empty string.
+   */
+  public getFirstCommitHash(): Promise<string> {
+    let firstSha = "";
+
+    return this.shellStream(["rev-list", "--reverse", "--max-parents=0", "HEAD"], (lines: string[]) => {
+      if (lines.length) firstSha = lines[0].trim();
+    }).then(() => firstSha);
+  }
 }

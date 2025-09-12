@@ -1,5 +1,13 @@
 import type { GitRepo } from "@shared/git-shell";
-import type { TFsVcsDbPIFilePath, TFsVcsDbPIFolderPath, TFsVcsDbPIName, TFsVcsDotDBPath, TFsVcsDotGitPath, TFsVcsRepoId } from "@shared/types";
+import type {
+  TFilePath,
+  TFsVcsDbPIFilePath,
+  TFsVcsDbPIFolderPath,
+  TFsVcsDbPIName,
+  TFsVcsDotDBPath,
+  TFsVcsDotGitPath,
+  TFsVcsRepoId,
+} from "@shared/types";
 import type { TFsVCSRootPath } from "@shared/types/fs-vcs.types";
 import fs from "fs-extra";
 import os from "os";
@@ -17,7 +25,7 @@ export class FsVCS {
     const instance = new FsVCS(
       path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.git`) as TFsVcsDotGitPath,
       path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.db`) as TFsVcsDotDBPath,
-      vcsMgr.importsDB
+      vcsMgr.importsDB,
     );
     return fs.ensureDir(instance.dbPIFolderPath).then(() => instance);
   }
@@ -27,8 +35,8 @@ export class FsVCS {
   getDBPackFilePath(packName: TFsVcsDbPIName): TFsVcsDbPIFilePath {
     return path.resolve(this.dbPIFolderPath, packName, ".parquet") as TFsVcsDbPIFilePath;
   }
-  isPackImported(packName: TFsVcsDbPIName): Promise<boolean> {
-    return fs.exists(this.getDBPackFilePath(packName));
+  isPackImported(packName: TFsVcsDbPIName): boolean {
+    return fs.existsSync(this.getDBPackFilePath(packName));
   }
 
   /** ---------- Packfile Index Builder (idempotent) ----------
@@ -44,7 +52,7 @@ export class FsVCS {
    * The pack index data is available as parquet files for DuckLake:
    *  `CREATE VIEW pack_index AS SELECT * FROM '<FsVCSRoot>/<sha>.git/pack_index/*.parquet'`;
    */
-  buildGitPackIndex(srcGitRepo: GitRepo) {
+  async buildGitPackIndex(srcGitRepo: GitRepo) {
     /* 1. locate .git/objects/pack */
     const srcPackDir = srcGitRepo.packDir;
     if (!fs.existsSync(srcPackDir)) return;
@@ -61,14 +69,30 @@ export class FsVCS {
           to transform it as .parquet file.
     */
     for (const srcIdxPath of srcIdxFiles) {
-      const packName = path.basename(srcIdxPath, ".idx"); // "pack-1234…"
-      if (db.packsDone.get(packName)) continue; // already captured
+      const packName = path.basename(srcIdxPath, ".idx") as TFsVcsDbPIName; // "pack-1234…"
+      if (this.isPackImported(packName)) continue; // already captured
 
-      // duckDB temp and final filenames (in the VCS/<imported_repo_name>/.git/ folder)
-      const tmpFilePath = path.resolve(os.tmpdir(), "pack_index", `${packName}.tmp`);
-      const finalFilePath = path.resolve(os.tmpdir(), "pack_index", `${packName}.parquet`);
+      // duckDB temp and final filenames (in the VCS/<imported_repo_name>.db/pack-index/ folder)
+      const tmpFilePath = path.resolve(this.dbPIFolderPath, `${packName}.tmp`);
+      const finalFilePath = path.resolve(this.dbPIFolderPath, `${packName}.parquet`);
+
+      p.push(
+        srcGitRepo
+          .loadIDXFile(srcIdxPath as TFilePath)
+          .then((idxLines: string) => saveTSVToDuckDB(idxLines, tmpFilePath))
+          .then(() => fs.rename(tmpFilePath, finalFilePath)),
+      );
+
+      if (p.length >= 4) await Promise.all(p).then(() => (p.length = 0)); // do not stress the system too much
     }
+    return Promise.all(p); // wait for any pending promises
   }
- 
 }
 
+/** writes the given tsv content to DuckDB table */
+function saveTSVToDuckDB(tsvLines: string, dbFile: string) {
+  const sql = `COPY (
+  SELECT * FROM read_csv_auto(${JSON.stringify(tsvLines)}, delim='\t', header=false,  columns={sha:'VARCHAR',type:'VARCHAR',size:'UBIGINT',offset:'UBIGINT'})
+  ) TO ${dbFile} (FORMAT PARQUET, COMPRESSION ZSTD)`;
+  return Promise.resolve(sql);
+}

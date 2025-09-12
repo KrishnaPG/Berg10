@@ -1,6 +1,6 @@
 import { GitRepo } from "@shared/git-shell";
 import { assertRepo, NotAGitRepo } from "@shared/git-shell/helpers";
-import type { TFolderPath, TMSSinceEpoch, TName } from "@shared/types";
+import type { TFolderPath, TFsVcsRepoId, TMSSinceEpoch, TName } from "@shared/types";
 import type { TFsVCSRootPath } from "@shared/types/fs-vcs.types";
 import type { TGitDirPath, TGitRepoRootPath, TWorkTreePath } from "@shared/types/git.types";
 import { BergComponent } from "./base";
@@ -34,9 +34,7 @@ export class FsVCSManager extends BergComponent {
 
     // ... do the import ...
     return FsVCS.getInstance(this, rec.repoId)
-      .then((vcs) => {
-        return vcs.buildGitPackIndex(new GitRepo(rec.gitDir));
-      })
+      .then((vcs) => vcs.buildGitPackIndex(new GitRepo(rec.gitDir)))
       .finally(() => {
         // mark sync as OFF
         return this.bMgr.db.putImportRecord({
@@ -51,11 +49,11 @@ export class FsVCSManager extends BergComponent {
     const now = Date.now() as TMSSinceEpoch;
     const rec: IRepoImportRecord = {
       name: repoName ?? ("default" as TName),
-      repoId: "matchMedia",
+      repoId: (repoName + (Math.random() * Date.now()).toString(36)) as TFsVcsRepoId, // TODO: can we use first commit ID as repoId?
       workTree: srcWorkTree,
       gitDir: srcGitDir,
-      first_import_at: now,
-      last_sync_at: now,
+      firstImportAt: now,
+      lastSyncAt: now,
       syncInProgress: false,
     };
     this.bMgr.db.putImportRecord(rec);
