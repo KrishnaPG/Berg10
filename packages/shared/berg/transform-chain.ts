@@ -8,13 +8,24 @@ type MaybePromise<T> = T | Promise<T>;
  * IMPORTANT: transform/flush return type O is treated as a single value and
  * passed to the next step unchanged. We do NOT implicitly flatten arrays.
  */
-export type Step<I = unknown, O = unknown> = {
+export type Step<I, O> = {
   transform: (input: I) => MaybePromise<O | undefined>;
   flush?: () => MaybePromise<O | undefined>;
 };
 
 /** A tuple of Steps. Used to infer the stream input/output types. */
-export type StepChain = readonly Step[];
+export type StepChain = readonly Step<any, any>[];
+
+/*  true left-fold:  [A→B, B→C, C→D]  ok   ;  [A→B, C→D]  error  */
+type ValidateChain<T> =
+  // biome-ignore lint/suspicious/noRedeclare: O should be same for Step1 and Step2
+  T extends readonly [Step<infer I, infer O>, Step<infer O, infer P>, ...infer Rest]
+    ? Rest extends []
+      ? T
+      : readonly [Step<I, O>, ...ValidateChain<readonly [Step<O, P>, ...Rest]>]
+    : T extends readonly [Step<any, any>] // single step – always ok
+      ? T
+      : never;
 
 /* Helpers to infer types of the chain */
 type FirstInput<T extends StepChain> = T extends [Step<infer I, unknown>, ...unknown[]] ? I : never;
@@ -44,7 +55,7 @@ export async function runStepsFrom<T extends StepChain>(
   let v: unknown = value;
   for (let i = fromIndex; i < steps.length; i++) {
     if (v === undefined) return undefined;
-    v = await (steps[i] as Step).transform(v);
+    v = await (steps[i] as Step<unknown, unknown>).transform(v);
   }
   return v as LastOutput<T> | undefined;
 }
@@ -56,7 +67,9 @@ export async function runStepsFrom<T extends StepChain>(
  *
  * This is safe, type-checked, and supports async steps + flush propagation.
  */
-export function buildTransform<T extends StepChain>(steps: T): TransformStream<FirstInput<T>, LastOutput<T>> {
+export function chainTransform<T extends StepChain>(
+  steps: ValidateChain<T>,
+): TransformStream<FirstInput<T>, LastOutput<T>> {
   return new TransformStream<FirstInput<T>, LastOutput<T>>({
     async transform(chunk, controller) {
       // Run the entire chain on this chunk, enqueue final value(s).
@@ -86,14 +99,32 @@ export function buildTransform<T extends StepChain>(steps: T): TransformStream<F
 }
 
 /* Convenience wrapper: allow a plain function to be used as a Step */
-export function stepFn<I, O>(fn: Step<I,O>["transform"]): Step<I, O> {
+export function stepFn<I, O>(fn: Step<I, O>["transform"]): Step<I, O> {
   return { transform: fn };
 }
 
 // Convenience: allow shortcut where user supplies just the transform function
-export type StepOrFn<I, O> = Step<I, O> | Step<I,O>["transform"];
+export type StepOrFn<I, O> = Step<I, O> | Step<I, O>["transform"];
 
 // Helpers to normalize Step into StepFn object
 export function normalizeStep<I, O>(s: StepOrFn<I, O>): Step<I, O> {
   return typeof s === "function" ? { transform: s } : s;
 }
+
+export function normalize<const T extends readonly StepOrFn<unknown, unknown>[]>(steps: T): StepChain {
+  return steps.map(normalizeStep);
+}
+
+/**
+ * Usage examples:
+    const s1: Step<string, number> = { transform: (x) => x.length };
+    const s2: Step<number, boolean> = { transform: (n) => n > 5 };
+
+    const good = chainTransform([s1, s2]); // ok
+
+    const s3: Step<string, number> = { transform: (x) => x.length };
+    const s4: Step<boolean, string> = { transform: (b) => (b ? "yes" : "no") };
+
+    const bad = chainTransform([s3, s4]); //<- Typescript error will come here
+ */
+
