@@ -1,3 +1,4 @@
+import { ParquetSchema } from "@dsnp/parquetjs";
 import type { GitRepo } from "@shared/git-shell";
 import type {
   TFilePath,
@@ -13,7 +14,18 @@ import fs from "fs-extra";
 import os from "os";
 import path from "path";
 import type { ImportsLMDB } from "./lmdb-manager";
+import { AtomicParquetWriter } from "./parquet-writer";
 import type { FsVCSManager } from "./vcs-manager";
+
+const IdxFileLineSchema = new ParquetSchema({
+  sha1: { type: "UTF8", encoding: "PLAIN", compression: "LZ4" },
+  type: { type: "UTF8", encoding: "RLE" }, // use RLE for repeating values in the column
+  size: { type: "INT64", encoding: "PLAIN", compression: "LZ4"  },
+  sizeInPack: { type: "INT64", encoding: "PLAIN", compression: "LZ4"  },
+  offset: { type: "INT64", encoding: "PLAIN", compression: "LZ4" },
+  depth: { type: "INT64", optional: true },
+  base: { type: "UTF8", encoding: "PLAIN", compression: "LZ4", optional: true },
+});
 
 export class FsVCS {
   constructor(

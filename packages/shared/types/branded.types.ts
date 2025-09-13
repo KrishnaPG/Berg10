@@ -48,6 +48,7 @@ export type TMSSinceEpoch = Branded<number, "MSSinceEpoch">;
 
 
 // basic file/folder path types
+export type TFileBaseName = Branded<TName, "FileBaseName">; // filename without ext
 export type TFilePath = Branded<string, "FilePath">;
 export type TFolderPath = Branded<string, "FolderPath">;
 export type TFileHandle = Branded<number, "FileHandler">;
