@@ -1,7 +1,9 @@
-import type { Branded, TCount, TEMail, TIndexPos, TISOString, TName, TSHA1, TSHA256Hex, TSize } from "./branded.types";
+import type { Branded, TCount, TEMail, TIndexPos, TISOString, TName, TSHA1Hex, TSHA256Hex, TSize } from "./branded.types";
+
+export type TGitSHA = TSHA1Hex | TSHA256Hex;
 
 // Git Object Types
-export type TGitObjectId = Branded<TSHA256Hex, "GitObjectId">;
+export type TGitObjectId = Branded<TGitSHA, "GitObjectId">;
 export type TCommitHash = Branded<TGitObjectId, "CommitHash">;
 export type TTreeHash = Branded<TGitObjectId, "TreeHash">;
 export type TBlobHash = Branded<TGitObjectId, "BlobHash">;

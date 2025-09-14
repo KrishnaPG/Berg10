@@ -14,7 +14,7 @@ import os from "os";
 import path from "path";
 import { streamIDXtoParquet } from "./idx-to-parquet";
 import type { ImportsLMDB } from "./lmdb-manager";
-import { AtomicParquetWriter, TransactionalParquetWriter } from "./parquet-writer";
+import { TransactionalParquetWriter } from "./parquet-writer";
 import type { FsVCSManager } from "./vcs-manager";
 
 export class FsVCS {

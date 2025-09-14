@@ -278,5 +278,5 @@ function checkpoint(commit: string) {
 /* ---------- Go ---------- */
 run().catch((e) => {
   console.error(e);
-  //process.exit(1);
+  process.exit(1);
 });

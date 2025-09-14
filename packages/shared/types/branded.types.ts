@@ -40,9 +40,6 @@ export type TSize = Branded<number, "Size">;
 export type TCount = Branded<number, "Count">;
 export type TIndexPos = Branded<number, "IndexPos">;
 
-export type THash = Branded<string, "Hash">; // generic hash base
-export type TSHA1 = Branded<THash, "sha1{40}">;
-
 // time types
 export type TMSSinceEpoch = Branded<number, "MSSinceEpoch">;
 
@@ -58,13 +55,14 @@ export type TB58String = Branded<string, "B58String">;
 export type TB64String = Branded<string, "B64String">;
 export type THexString = Branded<string, "HexString">;
 
-// SHA256
+// SHA1/256
+export type TSHA1Hex = Branded<THexString, "HexChar[40]">;
 export type TSHA256B58 = Branded<TB58String, "sha256 base58 string">;
 export type TSHA256B64 = Branded<TB64String, "sha256 base64 string">;
 export type TSHA256Hex = Branded<TB58String, "sha256 hex string">;
 
 // Time String
-export type TISOString = Branded<string, "ISO Time String">
+export type TISOString = Branded<string, "ISO Time String">;
 
 // SQL String
 export type TSQLString = Branded<string, "SQL">;

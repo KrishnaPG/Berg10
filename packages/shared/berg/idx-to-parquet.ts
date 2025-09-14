@@ -1,6 +1,7 @@
 import { ParquetSchema } from "@dsnp/parquetjs";
 import type { GitRepo } from "@shared/git-shell";
-import type { TFileBaseName, TFilePath, TFolderPath, TFsVcsDbPIFolderPath, TFsVcsDbPIName, TSHA1 } from "@shared/types";
+import type { TFilePath, TFsVcsDbPIFolderPath, TFsVcsDbPIName } from "@shared/types";
+import type { TGitSHA } from "@shared/types/git-internal.types";
 import { TransactionalParquetWriter } from "./parquet-writer";
 
 // NOTE: this has to match the interface `IdxFileLine` below
@@ -16,13 +17,13 @@ const idxFileLineSchema = new ParquetSchema({
 
 // NOTE: this interface has to match the groups of `idxFileLineRegEx` below
 export interface IdxFileLine {
-  sha1: TSHA1;
+  sha1: TGitSHA;
   type: "commit" | "tree" | "blob" | "tag";
   size: number;
   sizeInPack: number;
   offset: number;
   depth?: number;
-  base?: TSHA1;
+  base?: TGitSHA;
   [key: string]: unknown; // to make it compatible with ParquetWriter.appendRow()
 }
 
@@ -30,7 +31,7 @@ export interface IdxFileLine {
 const idxFileLineRegEx =
   /^(?<sha1>[0-9a-f]{40})\s+(?<type>commit|tree|blob|tag)\s+(?<size>\d+)\s+(?<sizeInPack>\d+)\s+(?<offset>\d+)(?:\s+(?<depth>\d+)\s+(?<base>[0-9a-f]{40}))?$/;
 
-const ROW_BATCH_SIZE = 1024;
+const ROW_BATCH_SIZE = 4096;
 
 // read the idx file and write the content to output file
 export function streamIDXtoParquet(
@@ -54,13 +55,13 @@ export function streamIDXtoParquet(
               if (!m?.groups) continue; // skip unnecessary lines
               const g = m.groups;
               const row: IdxFileLine = {
-                sha1: g.sha1 as TSHA1,
+                sha1: g.sha1 as TGitSHA,
                 type: g.type as IdxFileLine["type"],
                 size: Number(g.size),
                 sizeInPack: Number(g.sizeInPack),
                 offset: Number(g.offset),
                 depth: g.depth ? Number(g.depth) : undefined,
-                base: g.base as TSHA1,
+                base: g.base as TGitSHA,
               };
               p.push(writer.appendRow(row));
             }

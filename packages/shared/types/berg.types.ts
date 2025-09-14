@@ -1,4 +1,4 @@
-import type { Branded, TFileBaseName, TFilePath, TFolderPath, THash, TName } from "./branded.types";
+import type { Branded, TFileBaseName, TFilePath, TFolderPath, TName } from "./branded.types";
 import type { TDuckLakeRootPath, TParquetFilePath } from "./ducklake.types";
 import type { TGitDirPath } from "./git.types";
 
@@ -43,7 +43,7 @@ export type TFsSemRootPath = Branded<TFolderPath, "FsSemRoot">;
  * The TFsVcsRepoId is calculated based on either git first commit Id, or 
  * the workTree path hash;
  */
-export type TFsVcsRepoId = Branded<THash, "VcsRepoId">;
+export type TFsVcsRepoId = Branded<string, "VcsRepoId">;
 
 /** Usually this is `TBergPath + "/vcs"`;
  *
