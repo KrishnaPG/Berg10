@@ -5,13 +5,13 @@ import { TransactionalParquetWriter } from "./parquet-writer";
 
 // NOTE: this has to match the interface `IdxFileLine` below
 const idxFileLineSchema = new ParquetSchema({
-  sha1: { type: "UTF8", encoding: "PLAIN", compression: "LZ4" },
-  type: { type: "UTF8", encoding: "RLE" }, // use RLE for repeating values in the column
-  size: { type: "INT64", encoding: "PLAIN", compression: "LZ4" },
-  sizeInPack: { type: "INT64", encoding: "PLAIN", compression: "LZ4" },
-  offset: { type: "INT64", encoding: "PLAIN", compression: "LZ4" },
+  sha1: { type: "UTF8", encoding: "PLAIN", compression: "BROTLI" },
+  type: { type: "UTF8", encoding: "PLAIN" }, // use RLE for repeating values in the column
+  size: { type: "INT64", encoding: "PLAIN", compression: "BROTLI" },
+  sizeInPack: { type: "INT64", encoding: "PLAIN", compression: "BROTLI" },
+  offset: { type: "INT64", encoding: "PLAIN", compression: "BROTLI" },
   depth: { type: "INT64", optional: true },
-  base: { type: "UTF8", encoding: "PLAIN", compression: "LZ4", optional: true },
+  base: { type: "UTF8", encoding: "PLAIN", compression: "BROTLI", optional: true },
 });
 
 // NOTE: this interface has to match the groups of `idxFileLineRegEx` below

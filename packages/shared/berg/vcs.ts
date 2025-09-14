@@ -35,7 +35,7 @@ export class FsVCS {
     return path.resolve(this.dotDBFolder, "pack-index") as TFsVcsDbPIFolderPath;
   }
   getDBPackFilePath(packName: TFsVcsDbPIName): TFsVcsDbPIFilePath {
-    return path.resolve(this.dbPIFolderPath, packName, ".parquet") as TFsVcsDbPIFilePath;
+    return path.resolve(this.dbPIFolderPath, `${packName}.parquet`) as TFsVcsDbPIFilePath;
   }
   isPackImported(packName: TFsVcsDbPIName): boolean {
     return fs.existsSync(this.getDBPackFilePath(packName));
@@ -80,18 +80,6 @@ export class FsVCS {
     }
     return Promise.all(p); // wait for any pending promises
   }
-}
-
-function writeIDXtoParquet(srcIdxPath: TFilePath) {
-  let outLines = "";
-  return this.shellStream(["verify-pack", "-v", idxPath], (idsLinesBatch: string[]) => {
-    idsLinesBatch.forEach((idxLine) => {
-      const m = idxLine.match(idxFileLineRegEx);
-      if (!m) return; // skip unwanted lines
-      const [, sha, type, size, sizeInPackFile, offset] = m;
-      outLines += `${sha}\t${type}\t${size}\t${offset}\n`;
-    });
-  }).then(() => outLines);
 }
 
 /** writes the given tsv content to DuckDB table */
