@@ -3,12 +3,14 @@ import type { TFileBaseName, TFilePath, TFolderPath, TParquetFilePath } from "@s
 import fs from "fs-extra";
 import path from "path";
 
-export class AtomicParquetWriter {
+export class TransactionalParquetWriter {
   constructor(
     protected writer: ParquetWriter,
     protected tmpFilePath: TFilePath,
     protected finalFilePath: TParquetFilePath,
   ) {}
+
+  get rowGroupSize() { return this.writer.rowGroupSize; }
 
   /**
    * Append a single row to the parquet file. Rows are buffered in memory until
@@ -32,14 +34,14 @@ export class AtomicParquetWriter {
 
   public static open(
     schema: ParquetSchema,
-    folder: TFolderPath,
-    fileBaseName: TFileBaseName,
+    destFolder: TFolderPath,
+    destFileBaseName: TFileBaseName,
     opts?: WriterOptions,
-  ): Promise<AtomicParquetWriter> {
-    const tmpFilePath = path.resolve(folder, `${fileBaseName}.tmp`) as TFilePath;
-    const finalFilePath = path.resolve(folder, `${fileBaseName}.parquet`) as TParquetFilePath;
+  ): Promise<TransactionalParquetWriter> {
+    const tmpFilePath = path.resolve(destFolder, `${destFileBaseName}.tmp`) as TFilePath;
+    const finalFilePath = path.resolve(destFolder, `${destFileBaseName}.parquet`) as TParquetFilePath;
     return ParquetWriter.openFile(schema, tmpFilePath, opts).then((writer) => {
-      return new AtomicParquetWriter(writer, tmpFilePath, finalFilePath);
+      return new TransactionalParquetWriter(writer, tmpFilePath, finalFilePath);
     });
   }
 }

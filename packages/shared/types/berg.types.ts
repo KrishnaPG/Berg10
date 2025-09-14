@@ -1,4 +1,4 @@
-import type { Branded, TFilePath, TFolderPath, THash, TName } from "./branded.types";
+import type { Branded, TFileBaseName, TFilePath, TFolderPath, THash, TName } from "./branded.types";
 import type { TDuckLakeRootPath, TParquetFilePath } from "./ducklake.types";
 import type { TGitDirPath } from "./git.types";
 
@@ -76,7 +76,7 @@ export type TFsVcsDotDBPath = Branded<TFolderPath, "VcsDbFolder">;
  */
 export type TFsVcsDbPIFolderPath = Branded<TFolderPath, "VcsDbPIRoot">;
 /** usually source .git/ will have `pack/<PackIndexName>.idx` files */
-export type TFsVcsDbPIName = Branded<TName, "VcsDbPIName">;
+export type TFsVcsDbPIName = Branded<TFileBaseName, "VcsDbPIName">;
 /** `TFsVcsDbPIFilePath = <TFsVcsDbPIFolderPath>/<TFsVcsDbPIName>.parquet`  */
 export type TFsVcsDbPIFilePath = Branded<TParquetFilePath, "<VcsDbPIName>.Parquet">;
 

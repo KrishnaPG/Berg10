@@ -29,14 +29,3 @@ export type TTreeEntryCount = Branded<TCount, "TreeEntryCount">;
 // Index Types
 export type TIndexPosition = TIndexPos;
 export type TIndexEntryCount = Branded<TCount, "IndexEntryCount">;
-
-
-export interface IdxFileLine {
-  sha1: TSHA1;
-  type: "commit" | "tree" | "blob" | "tag";
-  size: number;
-  sizeInPack : number;
-  offset: number;
-  depth?: number;
-  base?: TSHA1;
-}

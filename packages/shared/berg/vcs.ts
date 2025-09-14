@@ -1,4 +1,3 @@
-import { ParquetSchema } from "@dsnp/parquetjs";
 import type { GitRepo } from "@shared/git-shell";
 import type {
   TFilePath,
@@ -13,19 +12,10 @@ import type { TFsVCSRootPath } from "@shared/types/fs-vcs.types";
 import fs from "fs-extra";
 import os from "os";
 import path from "path";
+import { streamIDXtoParquet } from "./idx-to-parquet";
 import type { ImportsLMDB } from "./lmdb-manager";
-import { AtomicParquetWriter } from "./parquet-writer";
+import { AtomicParquetWriter, TransactionalParquetWriter } from "./parquet-writer";
 import type { FsVCSManager } from "./vcs-manager";
-
-const IdxFileLineSchema = new ParquetSchema({
-  sha1: { type: "UTF8", encoding: "PLAIN", compression: "LZ4" },
-  type: { type: "UTF8", encoding: "RLE" }, // use RLE for repeating values in the column
-  size: { type: "INT64", encoding: "PLAIN", compression: "LZ4"  },
-  sizeInPack: { type: "INT64", encoding: "PLAIN", compression: "LZ4"  },
-  offset: { type: "INT64", encoding: "PLAIN", compression: "LZ4" },
-  depth: { type: "INT64", optional: true },
-  base: { type: "UTF8", encoding: "PLAIN", compression: "LZ4", optional: true },
-});
 
 export class FsVCS {
   constructor(
@@ -84,21 +74,24 @@ export class FsVCS {
       const packName = path.basename(srcIdxPath, ".idx") as TFsVcsDbPIName; // "pack-1234…"
       if (this.isPackImported(packName)) continue; // already captured
 
-      // duckDB temp and final filenames (in the VCS/<imported_repo_name>.db/pack-index/ folder)
-      const tmpFilePath = path.resolve(this.dbPIFolderPath, `${packName}.tmp`);
-      const finalFilePath = path.resolve(this.dbPIFolderPath, `${packName}.parquet`);
-
-      p.push(
-        srcGitRepo
-          .loadIDXFile(srcIdxPath as TFilePath)
-          .then((idxLines: string) => saveTSVToDuckDB(idxLines, tmpFilePath))
-          .then(() => fs.rename(tmpFilePath, finalFilePath)),
-      );
+      p.push(streamIDXtoParquet(srcGitRepo, srcIdxPath as TFilePath, this.dbPIFolderPath, packName));
 
       if (p.length >= 4) await Promise.all(p).then(() => (p.length = 0)); // do not stress the system too much
     }
     return Promise.all(p); // wait for any pending promises
   }
+}
+
+function writeIDXtoParquet(srcIdxPath: TFilePath) {
+  let outLines = "";
+  return this.shellStream(["verify-pack", "-v", idxPath], (idsLinesBatch: string[]) => {
+    idsLinesBatch.forEach((idxLine) => {
+      const m = idxLine.match(idxFileLineRegEx);
+      if (!m) return; // skip unwanted lines
+      const [, sha, type, size, sizeInPackFile, offset] = m;
+      outLines += `${sha}\t${type}\t${size}\t${offset}\n`;
+    });
+  }).then(() => outLines);
 }
 
 /** writes the given tsv content to DuckDB table */
