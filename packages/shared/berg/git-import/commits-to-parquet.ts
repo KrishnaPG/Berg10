@@ -2,56 +2,51 @@ import { ParquetSchema } from "@dsnp/parquetjs";
 import { csvToParquet } from "@shared/ducklake";
 import type { GitShell } from "@shared/git-shell";
 import type {
-  TFileBaseName,
+  TEMail,
   TFilePath,
   TFsVcsDbCommitBaseName,
   TFsVcsDbCommitsFolderPath,
+  TName,
   TParquetFilePath,
+  TSecSinceEpoch,
+  TSQLString,
 } from "@shared/types";
 import type { TGitSHA } from "@shared/types/git-internal.types";
+import { atomicFileRename } from "@shared/utils";
+import fs from "fs-extra";
 import path from "path";
-import { TransactionalParquetWriter } from "../parquet-writer";
 
-const commitLineSchema = new ParquetSchema({
-  sha: { type: "UTF8", optional: false },
-  parents: { type: "UTF8", optional: false },
-  tree: { type: "UTF8", optional: false },
-  author_time: { type: "INT64", optional: false },
-  author_name: { type: "UTF8", optional: false },
-  author_email: { type: "UTF8", optional: false },
-  message: { type: "UTF8", optional: false },
-});
-
-const ROW_BATCH_SIZE = 4096;
+export interface IGitCommitLine {
+  hash: TGitSHA; // 40-char hex
+  parents: TGitSHA[]; // hex strings
+  tree: TGitSHA;
+  timestamp: TSecSinceEpoch; // unix seconds since epoch
+  committerName: TName;
+  committerEmail: TEMail;
+  subject: string;
+}
 
 export function streamCommitsToParquet(
   srcGitShell: GitShell,
-  lastCommit: TGitSHA,
   destFolder: TFsVcsDbCommitsFolderPath,
   destFileBaseName: TFsVcsDbCommitBaseName,
+  since: TSecSinceEpoch,
 ) {
   const args = ["rev-list", "--all", "--topo-order", "--parents", "--format=%H|%P|%T|%ct|%cn|%ce|%s"];
-  if (lastCommit) args.push(`^${lastCommit}`);
+  if (since) args.push(`--since=${since}`); // TODO: use SELECT max(commit_time) FROM parquet_scan(?);
 
   const tmpCSVFilePath = path.resolve(destFolder, `${destFileBaseName}.csv.tmp`) as TFilePath;
-  const finalFilePath = path.resolve(destFolder, `${destFileBaseName}.parquet`) as TParquetFilePath;
 
-  return srcGitShell.execToFile(args, tmpCSVFilePath).then((tmpCSVFile) => {
-    csvToParquet(tmpCSVFile);
+  return srcGitShell.execToFile(args, tmpCSVFilePath).then((tmpCSVFile: Bun.BunFile) => {
+    const colProjection = `c[1] AS sha,
+    string_split(c[2],' ') AS parents,
+    c[3] AS tree,
+    to_timestamp(c[4]::BIGINT) AS commit_time,
+    c[5] AS author_name,
+    c[6] AS author_email,
+    c[7] AS subject`;
+    return csvToParquet(tmpCSVFilePath, colProjection as TSQLString, destFolder, destFileBaseName, "|").finally(() =>
+      tmpCSVFile.unlink(),
+    );
   });
-
-  return TransactionalParquetWriter.open(commitLineSchema, destFolder, destFileBaseName, {
-    rowGroupSize: ROW_BATCH_SIZE,
-  }).then((writer) =>
-    srcGitShell.execStream(args, (commitLinesBatch: string[]) => {
-      const p = [];
-      commitLinesBatch.forEach((commitLine) => {
-        const line = commitLine.trim();
-        if (!line || !line.startsWith("commit ")) return;
-        const [sha, parents, tree, ts, name, email, ...msgArr] = line.slice(7).split("|");
-        const currentCommit = sha;
-        const currentTree = tree;
-      });
-    }),
-  );
 }

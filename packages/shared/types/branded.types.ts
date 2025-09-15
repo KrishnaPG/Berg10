@@ -41,10 +41,11 @@ export type TCount = Branded<number, "Count">;
 export type TIndexPos = Branded<number, "IndexPos">;
 
 export type TJsonString = Branded<string, "JsonString">;
-export type TSqlString = Branded<string, "SQLString">;
 
 // time types
 export type TMSSinceEpoch = Branded<number, "MSSinceEpoch">;
+export type TSecSinceEpoch = Branded<number, "SecSinceEpoch">;
+export type TISOString = Branded<string, "ISO Time String">;
 
 
 // basic file/folder path types
@@ -63,9 +64,6 @@ export type TSHA1Hex = Branded<THexString, "HexChar[40]">;
 export type TSHA256B58 = Branded<TB58String, "sha256 base58 string">;
 export type TSHA256B64 = Branded<TB64String, "sha256 base64 string">;
 export type TSHA256Hex = Branded<TB58String, "sha256 hex string">;
-
-// Time String
-export type TISOString = Branded<string, "ISO Time String">;
 
 // SQL String
 export type TSQLString = Branded<string, "SQL">;

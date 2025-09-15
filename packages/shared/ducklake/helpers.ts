@@ -1,6 +1,8 @@
 import type duckdb from "@duckdb/node-api";
 import { DuckDBInstanceCache } from "@duckdb/node-api";
-import type { TFilePath, TJsonString, TParquetFilePath, TSqlString } from "@shared/types";
+import type { TFileBaseName, TFilePath, TFolderPath, TParquetFilePath, TSQLString } from "@shared/types";
+import { atomicFileRename } from "@shared/utils";
+import path from "path";
 
 const gDuckDBInstances = new DuckDBInstanceCache();
 /** Returns a DuckDB connection */
@@ -15,24 +17,33 @@ export type TCsvDelims = `\t` | `,` | "|";
 
 /** converts the given csv-compatible file/content to parquet (using DuckDB)*/
 export function csvToParquet(
-  src: TFilePath | string,  // can be csv file path or csv file content in string form
-  parquetSchema: TSqlString,
-  destFilePath: TParquetFilePath,
-  delim: TCsvDelims = "\t"
-): Promise<duckdb.DuckDBResultReader> {
+  srcFilePath: TFilePath, // can be csv file path or csv file content in string form
+  colProjection: TSQLString,
+  destFolder: TFolderPath,
+  destFileBaseName: TFileBaseName,
+  delim: TCsvDelims = "\t",
+) {
+  const tmpFilePath = path.resolve(destFolder, `${destFileBaseName}.tmp`) as TFilePath;
+  const finalFilePath = path.resolve(destFolder, `${destFileBaseName}.parquet`) as TFilePath;
+
   const sql = `
     COPY (
       WITH raw AS (
         SELECT regexp_split_to_array(line, '${delim}') AS c
         FROM read_csv_auto(
-            ${src},
+            ${srcFilePath},
             delim='\0',      -- we never want read_csv to split
             columns={'line': 'VARCHAR'},
             header=false
         )
       )
-      SELECT ${parquetSchema} FROM raw 
-    ) TO '${destFilePath}' (FORMAT PARQUET, COMPRESSION ZSTD);
+      SELECT ${colProjection} FROM raw 
+    ) TO ${tmpFilePath} (FORMAT PARQUET, COMPRESSION ZSTD);
   `;
-  return getDuckDbConnection().then((db) => db.runAndRead(sql));
+  return getDuckDbConnection().then((db) =>
+    db
+      .run(sql)
+      .then(() => atomicFileRename(tmpFilePath, finalFilePath))
+      .finally(() => db.closeSync()),
+  );
 }

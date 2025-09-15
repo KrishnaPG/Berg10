@@ -1,6 +1,6 @@
 import { type ParquetSchema, ParquetWriter, type WriterOptions } from "@dsnp/parquetjs";
 import type { TFileBaseName, TFilePath, TFolderPath, TParquetFilePath } from "@shared/types";
-import fs from "fs-extra";
+import { atomicFileRename } from "@shared/utils";
 import path from "path";
 
 export class TransactionalParquetWriter {
@@ -10,7 +10,9 @@ export class TransactionalParquetWriter {
     protected finalFilePath: TParquetFilePath,
   ) {}
 
-  get rowGroupSize() { return this.writer.rowGroupSize; }
+  get rowGroupSize() {
+    return this.writer.rowGroupSize;
+  }
 
   /**
    * Append a single row to the parquet file. Rows are buffered in memory until
@@ -28,21 +30,7 @@ export class TransactionalParquetWriter {
    */
   async commit(): Promise<void> {
     // 1. Flush the content to temp file/disk
-    return this.writer.close().then(()=>{
-      // 2. fsync the file
-      const fd = fs.openSync(this.tmpFilePath, "r+");
-      fs.fsyncSync(fd);
-      fs.closeSync(fd);
-
-      // 3. fsync the *directory* so the inode entry is durable
-      const dirPath = path.resolve(this.tmpFilePath, "..");
-      const dirFd = fs.openSync(dirPath, "r");
-      fs.fsyncSync(dirFd);
-      fs.closeSync(dirFd);
-
-      // 4. atomic rename
-      return fs.renameSync(this.tmpFilePath, this.finalFilePath);
-    });
+    return this.writer.close().then(() => atomicFileRename(this.tmpFilePath, this.finalFilePath));
   }
 
   public static open(

@@ -1,6 +1,7 @@
 import { sha256 } from "@fict/crypto";
-import { resolve } from "path";
-import type { TFolderPath, TSHA256B58 } from "./types";
+import fs from "fs-extra";
+import path from "path";
+import type { TFilePath, TFolderPath, TSHA256B58 } from "./types";
 import type { TGitRepoRootPath } from "./types/git.types";
 
 /**
@@ -12,11 +13,11 @@ export function hashNEncode(str: string): TSHA256B58 {
   return sha256(str).toBase58() as TSHA256B58;
 }
 
-export function maybeGitRepoRootPath(path: TFolderPath): Promise<TGitRepoRootPath | null> {
+export function maybeGitRepoRootPath(folderPath: TFolderPath): Promise<TGitRepoRootPath | null> {
   // .git file or folder both ok for working dir
-  return Bun.file(resolve(path, ".git"))
+  return Bun.file(path.resolve(folderPath, ".git"))
     .exists()
-    .then((exists) => (exists ? (path as TGitRepoRootPath) : null));
+    .then((exists) => (exists ? (folderPath as TGitRepoRootPath) : null));
 }
 
 /** Searches the parent folder hierarchy till a package.json is found
@@ -25,8 +26,24 @@ export function maybeGitRepoRootPath(path: TFolderPath): Promise<TGitRepoRootPat
  */
 export async function getPackageJsonFolder(currentDir: TFolderPath): Promise<TFolderPath> {
   while (true) {
-    const filePath = resolve(currentDir, "package.json");
+    const filePath = path.resolve(currentDir, "package.json");
     if (await Bun.file(filePath).exists()) return currentDir;
-    currentDir = resolve(currentDir, "..") as TFolderPath;
+    currentDir = path.resolve(currentDir, "..") as TFolderPath;
   }
+}
+
+export function atomicFileRename(oldFilePath: TFilePath, newFilePath: TFilePath) {
+  // 1. fsync the file
+  const fd = fs.openSync(oldFilePath, "r+");
+  fs.fsyncSync(fd);
+  fs.closeSync(fd);
+
+  // 2. fsync the *directory* so the inode entry is durable
+  const dirPath = path.resolve(newFilePath, "..");
+  const dirFd = fs.openSync(dirPath, "r");
+  fs.fsyncSync(dirFd);
+  fs.closeSync(dirFd);
+
+  // 3. atomic rename
+  return fs.renameSync(oldFilePath, newFilePath);
 }
