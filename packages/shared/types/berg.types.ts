@@ -64,9 +64,12 @@ export type TFsVcsRootPath = Branded<TFolderPath, "VcsRoot">;
  */
 export type TFsVcsDotGitPath = TGitDirPath;
 /** 
- * TFsVCSDotDBPath contains `pack-index/`, `commits.parquet`, `objects.parquet` etc.
+ * TFsVCSDotDBPath contains `pack-index/`, `commits/*.parquet`, `refs/*.parquet` etc.
  * 
  * Usually hosts the DuckDB parquet files created from .git/ metadata
+ * 
+ * Also acts as `TDuckLakeRootPath`, which means it contains 
+ * `{TDuckLakeMetaFilePath, TDuckLakeDataFilesFolder}` with lake name `gitDL`;
  */
 export type TFsVcsDotDBPath = Branded<TFolderPath, "VcsDbFolder">; 
 

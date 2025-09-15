@@ -1,19 +1,19 @@
 import type { GitShell } from "@shared/git-shell";
 import type {
   TFilePath,
+  TFsVcsDbCommitsFolderPath,
   TFsVcsDbPIFilePath,
   TFsVcsDbPIFolderPath,
   TFsVcsDbPIName,
   TFsVcsDotDBPath,
   TFsVcsDotGitPath,
   TFsVcsRepoId,
-  TJsonString,
-  TParquetFilePath,
 } from "@shared/types";
 import type { TGitSHA } from "@shared/types/git-internal.types";
 import fs from "fs-extra";
 import path from "path";
 import { streamIDXtoParquet } from "./git-import/idx-to-parquet";
+import { FsVcsGitDL } from "./vcs-git-dl";
 import type { FsVCSManager } from "./vcs-manager";
 
 /** Manages one specific vcs repo */
@@ -22,14 +22,20 @@ export class FsVCS {
     protected dotGitFolder: TFsVcsDotGitPath, // aux .git folder, probably `vcs/<repoId>.git/`, if exists
     protected dotDBFolder: TFsVcsDotDBPath, // db folder: `vcs/<repoId>.db/`
     protected vcsMgr: FsVCSManager,
+    protected gitDL: FsVcsGitDL,
   ) {}
   public static getInstance(vcsMgr: FsVCSManager, vcsRepoId: TFsVcsRepoId): Promise<FsVCS> {
-    const instance = new FsVCS(
-      path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.git`) as TFsVcsDotGitPath,
-      path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.db`) as TFsVcsDotDBPath,
-      vcsMgr,
-    );
-    return fs.ensureDir(instance.dbPIFolderPath).then(() => instance);
+    const dotGitFolder = path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.git`) as TFsVcsDotGitPath;
+    const dotDBFolder = path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.db`) as TFsVcsDotDBPath;
+    // ensureDir for all required folders
+    const dirs = ["commits", "trees", "refs", "blobs", "pack-index"];
+    return Promise.all([
+      fs.ensureDir(dotGitFolder),
+      ...dirs.map((d) => fs.ensureDir(path.resolve(dotDBFolder, d))),
+    ]).then(() => {
+      // setup DuckLake and mount GitDL
+      return FsVcsGitDL.mount(dotDBFolder).then((gitDL) => new FsVCS(dotGitFolder, dotDBFolder, vcsMgr, gitDL));
+    });
   }
   get dbPIFolderPath(): TFsVcsDbPIFolderPath {
     return path.resolve(this.dotDBFolder, "pack-index") as TFsVcsDbPIFolderPath;
@@ -39,6 +45,10 @@ export class FsVCS {
   }
   isPackImported(packName: TFsVcsDbPIName): boolean {
     return fs.existsSync(this.getDBPackFilePath(packName));
+  }
+
+  get dbCommitsFolderPath(): TFsVcsDbCommitsFolderPath {
+    return path.resolve(this.dotDBFolder, "commits") as TFsVcsDbCommitsFolderPath;
   }
 
   /** ---------- Packfile Index Builder (idempotent) ----------
@@ -98,4 +108,3 @@ export class FsVCS {
     });
   }
 }
-

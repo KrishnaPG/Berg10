@@ -201,7 +201,6 @@ export class _BaseQueryExecutor {
    * const email = "foo@example.com";
    * const rows = await database.rawQueryAll(query, email);
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async rawQueryAll<T extends Row<T> = Record<string, DuckDBValue>>(
     query: string,
     ...params: DuckDBValue[]
@@ -219,7 +218,6 @@ export class _BaseQueryExecutor {
    * const email = "foo@example.com";
    * const result = database.queryRow`SELECT id FROM users WHERE email=${email}`
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async queryRow<T extends Row<T> = Record<string, DuckDBValue>>(
     strings: TemplateStringsArray,
     ...params: DuckDBValue[]

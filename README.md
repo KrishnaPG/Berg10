@@ -6,12 +6,21 @@ Berg10 uses file system storage as the single source of truth for its operations
   
 - **fsVCS**: version metadata folder created by us for version controlling the fs `local` and `s3` (the `.git` folder is stored here, separate from the user files fs); It is organized as below:
   -  `/<TFsVcsRootPath>`: The VCS Root folder
+  -  
         -  |- `<SrcRepoId1>.git/`: contains HEAD, objects, refs etc.
-        -  |- `<SrcRepoId1>.db/` : contains commits.parquet, refs.parquet etc.
+        -  |- `<SrcRepoId1>.db/` : Lake Root
+        -  
+               ├─ gitDL.metadata
+               ├─ gitDL.files/
+               ├─ commits/*.parquet
+               ├─ pack-index/*.parquet
+               ├─ trees/*.parquet
+               ├─ blobs/*.parquet
+               └─ refs/*.parquet
         -  |- `<SrcRepoId2>.git/`
-        -  |- `<SrcRepoId2>.db/`
+        -  |- `<SrcRepoId2>.db/`: Lake Root
         -  |- ...
-        -  |- `<SrcRepoId3>.db/`
+        -  |- `<SrcRepoId3>.db/`: Lake Root
   -  for the `git` and `lakefs` type systems the `<SrcRepoId>.git/` may not exist (since those systems already maintain their own version metadata somewhere), or may usually be the same as fs.
   -  the `SrcRepoId` is usually the first commit id for external `.git` repos, else the workTree path hash;
   
