@@ -80,6 +80,12 @@ export type TFsVcsDbPIName = Branded<TFileBaseName, "VcsDbPIName">;
 /** `TFsVcsDbPIFilePath = <TFsVcsDbPIFolderPath>/<TFsVcsDbPIName>.parquet`  */
 export type TFsVcsDbPIFilePath = Branded<TParquetFilePath, "<VcsDbPIName>.Parquet">;
 
+export type TFsVcsDbCommitsFolderPath = Branded<TFolderPath, "VcsDbCommitsRoot">;
+export type TFsVcsDbCommitBaseName = Branded<TFileBaseName, "VcsDbCommitBaseName">;
+export type TFsVcsDbCommitFilePath = Branded<TParquetFilePath, "<VcsDbCommitBaseName>.Parquet">;
+
+
+
 export type TBergShelfPath = TLMDBRootPath | TFsDLRootPath | TFsSemRootPath | TFsVcsRootPath;
 
 export type TFsSrcFilePath = Branded<TFilePath, "FsSrcFile">;

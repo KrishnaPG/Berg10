@@ -8,3 +8,4 @@ export function ensureTables(lakeRootPath: TDuckLakeRootPath, lakeDBName: TDuckL
 }
 
 export * from "./driver";
+export * from "./helpers";

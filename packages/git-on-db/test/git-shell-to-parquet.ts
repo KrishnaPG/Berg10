@@ -91,7 +91,6 @@ const refParquetSchema = new ParquetSchema({
 
 /* ---------- Helpers ---------- */
 
-
 /** writes the given tsv content to DuckDB table */
 function saveTSVToDuckDB(tsvLines: string, dbFile: string) {
   const sql = `COPY (
@@ -165,15 +164,12 @@ async function newParquetWriter(schema: ParquetSchema, name: string) {
 
 /* ---------- Main Transform ---------- */
 async function run() {
+
   const bMgr = await BergManager.initialize(
     os.tmpdir() as TDriftPath,
     path.resolve(await getPackageJsonFolder(import.meta.dir as TFolderPath), "template") as TFolderPath,
   );
   await bMgr.importRepo(process.cwd() as TWorkTreePath);
-
-  return;
-
-  await buildPackIndex();
 
   const lastCommit = db.checkpoint.get("last_processed_commit") || "";
 

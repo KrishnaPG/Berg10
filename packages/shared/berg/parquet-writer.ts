@@ -26,8 +26,21 @@ export class TransactionalParquetWriter {
    * method twice on the same object or add any rows after the commit() method has
    * been called.
    */
-  commit(): Promise<void> {
-    return this.writer.close().then(() => {
+  async commit(): Promise<void> {
+    // 1. Flush the content to temp file/disk
+    return this.writer.close().then(()=>{
+      // 2. fsync the file
+      const fd = fs.openSync(this.tmpFilePath, "r+");
+      fs.fsyncSync(fd);
+      fs.closeSync(fd);
+
+      // 3. fsync the *directory* so the inode entry is durable
+      const dirPath = path.resolve(this.tmpFilePath, "..");
+      const dirFd = fs.openSync(dirPath, "r");
+      fs.fsyncSync(dirFd);
+      fs.closeSync(dirFd);
+
+      // 4. atomic rename
       return fs.renameSync(this.tmpFilePath, this.finalFilePath);
     });
   }

@@ -1,4 +1,4 @@
-import type { GitRepo } from "@shared/git-shell";
+import type { GitShell } from "@shared/git-shell";
 import type {
   TFilePath,
   TFsVcsDbPIFilePath,
@@ -7,27 +7,27 @@ import type {
   TFsVcsDotDBPath,
   TFsVcsDotGitPath,
   TFsVcsRepoId,
+  TJsonString,
+  TParquetFilePath,
 } from "@shared/types";
-import type { TFsVCSRootPath } from "@shared/types/fs-vcs.types";
+import type { TGitSHA } from "@shared/types/git-internal.types";
 import fs from "fs-extra";
-import os from "os";
 import path from "path";
-import { streamIDXtoParquet } from "./idx-to-parquet";
-import type { ImportsLMDB } from "./lmdb-manager";
-import { TransactionalParquetWriter } from "./parquet-writer";
+import { streamIDXtoParquet } from "./git-import/idx-to-parquet";
 import type { FsVCSManager } from "./vcs-manager";
 
+/** Manages one specific vcs repo */
 export class FsVCS {
   constructor(
-    protected dotGitFolder: TFsVcsDotGitPath,
-    protected dotDBFolder: TFsVcsDotDBPath,
-    protected importsDB: ImportsLMDB,
+    protected dotGitFolder: TFsVcsDotGitPath, // aux .git folder, probably `vcs/<repoId>.git/`, if exists
+    protected dotDBFolder: TFsVcsDotDBPath, // db folder: `vcs/<repoId>.db/`
+    protected vcsMgr: FsVCSManager,
   ) {}
   public static getInstance(vcsMgr: FsVCSManager, vcsRepoId: TFsVcsRepoId): Promise<FsVCS> {
     const instance = new FsVCS(
       path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.git`) as TFsVcsDotGitPath,
       path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.db`) as TFsVcsDotDBPath,
-      vcsMgr.importsDB,
+      vcsMgr,
     );
     return fs.ensureDir(instance.dbPIFolderPath).then(() => instance);
   }
@@ -54,10 +54,11 @@ export class FsVCS {
    * The pack index data is available as parquet files for DuckLake:
    *  `CREATE VIEW pack_index AS SELECT * FROM '<FsVCSRoot>/<sha>.git/pack_index/*.parquet'`;
    */
-  async buildGitPackIndex(srcGitRepo: GitRepo) {
+  async buildGitPackIndex(srcGitShell: GitShell) {
     /* 1. locate .git/objects/pack */
-    const srcPackDir = srcGitRepo.packDir;
-    if (!fs.existsSync(srcPackDir)) return;
+    const srcPackDir = srcGitShell.packDir;
+    // it is an optional path, may or may not exist - check it
+    if (!fs.existsSync(srcPackDir)) return this;
 
     /* 2. iterate over *.idx files */
     const srcIdxFiles = fs
@@ -67,25 +68,34 @@ export class FsVCS {
 
     const p = []; // batch multiples idx loads
 
-    /* 3. write the .idx file content to tsv and use DuckDB
-          to transform it as .parquet file.
-    */
+    /* 3. write the .idx file content to a .parquet file */
     for (const srcIdxPath of srcIdxFiles) {
       const packName = path.basename(srcIdxPath, ".idx") as TFsVcsDbPIName; // "pack-1234…"
       if (this.isPackImported(packName)) continue; // already captured
 
-      p.push(streamIDXtoParquet(srcGitRepo, srcIdxPath as TFilePath, this.dbPIFolderPath, packName));
+      // write to parquet file with atomic filename swap
+      p.push(streamIDXtoParquet(srcGitShell, srcIdxPath as TFilePath, this.dbPIFolderPath, packName));
 
-      if (p.length >= 4) await Promise.all(p).then(() => (p.length = 0)); // do not stress the system too much
+      // run multiple in parallel, but do not stress the system too much
+      if (p.length >= 4) await Promise.all(p).then(() => (p.length = 0));
     }
-    return Promise.all(p); // wait for any pending promises
+    // wait for any pending promises, then return `this` for method chaining
+    return Promise.all(p).then(() => this);
+  }
+
+  importCommits(srcGitShell: GitShell, lastCommit: TGitSHA) {
+    const args = ["rev-list", "--all", "--topo-order", "--parents", "--format=%H|%P|%T|%ct|%cn|%ce|%s"];
+    if (lastCommit) args.push(lastCommit);
+    return srcGitShell.execStream(args, (commitLinesBatch: string[]) => {
+      const p = [];
+      commitLinesBatch.forEach((commitLine) => {
+        const line = commitLine.trim();
+        if (!line || !line.startsWith("commit ")) return;
+        const [sha, parents, tree, ts, name, email, ...msgArr] = line.slice(7).split("|");
+        const currentCommit = sha;
+        const currentTree = tree;
+      });
+    });
   }
 }
 
-/** writes the given tsv content to DuckDB table */
-function saveTSVToDuckDB(tsvLines: string, dbFile: string) {
-  const sql = `COPY (
-  SELECT * FROM read_csv_auto(${JSON.stringify(tsvLines)}, delim='\t', header=false,  columns={sha:'VARCHAR',type:'VARCHAR',size:'UBIGINT',offset:'UBIGINT'})
-  ) TO ${dbFile} (FORMAT PARQUET, COMPRESSION ZSTD)`;
-  return Promise.resolve(sql);
-}

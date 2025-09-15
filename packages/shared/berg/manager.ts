@@ -1,5 +1,5 @@
 import { setupLake } from "@shared/ducklake";
-import { GitRepo } from "@shared/git-shell";
+import { GitShell } from "@shared/git-shell";
 import { assertRepo, NotAGitRepo } from "@shared/git-shell/helpers";
 import type {
   TBergPath,

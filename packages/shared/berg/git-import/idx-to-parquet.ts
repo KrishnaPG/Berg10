@@ -1,8 +1,8 @@
 import { ParquetSchema } from "@dsnp/parquetjs";
-import type { GitRepo } from "@shared/git-shell";
+import type { GitShell } from "@shared/git-shell";
 import type { TFilePath, TFsVcsDbPIFolderPath, TFsVcsDbPIName } from "@shared/types";
 import type { TGitSHA } from "@shared/types/git-internal.types";
-import { TransactionalParquetWriter } from "./parquet-writer";
+import { TransactionalParquetWriter } from "../parquet-writer";
 
 // NOTE: this has to match the interface `IdxFileLine` below
 const idxFileLineSchema = new ParquetSchema({
@@ -35,7 +35,7 @@ const ROW_BATCH_SIZE = 4096;
 
 // read the idx file and write the content to output file
 export function streamIDXtoParquet(
-  srcGitRepo: GitRepo,
+  srcGitShell: GitShell,
   srcIdxPath: TFilePath,
   destFolder: TFsVcsDbPIFolderPath,
   destFileBaseName: TFsVcsDbPIName,
@@ -44,8 +44,8 @@ export function streamIDXtoParquet(
     rowGroupSize: ROW_BATCH_SIZE,
   }).then(
     (writer) =>
-      srcGitRepo
-        .shellStream(
+      srcGitShell
+        .execStream(
           ["verify-pack", "-v", srcIdxPath],
           (idxLinesBatch: string[]) => {
             const p = [];

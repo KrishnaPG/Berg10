@@ -21,17 +21,11 @@ Berg10 uses file system storage as the single source of truth for its operations
   
 - **fsSem**: the semantic repo root that holds the semantic group definitions, entity mapping files, embedding vector index and blob files etc. The blobs folder is S3 mountable and the vector index is either VectorDB ingest-able or data lake mountable.
 
-## Development
-To install dependencies:
+## DuckDB consumption
+- DuckDB reads Parquet directly: 
+  ```sql
+  CREATE TABLE commits AS SELECT * FROM parquet_scan('s3://.../year=*/month=*/commits_*.parquet');
+  ```
+- For local files: `SELECT * FROM read_parquet('/path/to/*.parquet')`
 
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.2.19. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+- Keep parquet files immutable, DuckDB will happily query them.

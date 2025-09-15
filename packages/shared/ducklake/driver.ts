@@ -11,6 +11,7 @@ import os from "os";
 import path from "path";
 import { createRetryableDatabaseOperation } from "../retry";
 import type { TDuckLakeDataFilesFolder, TDuckLakeDBName, TDuckLakeMetaFilePath, TDuckLakeRootPath } from "../types";
+import { getDuckDbConnection } from "./helpers";
 
 // converts Date() based milli-seconds to DuckDB compatible timestamps
 export const getTimestamp = (tMS: number = Date.now()) => timestampMillisValue(BigInt(tMS));
@@ -63,9 +64,8 @@ async function initDB(
   { metaFilePath, dataFilesFolderPath }: ILakePaths,
   readOnly: boolean = false,
 ): Promise<BaseQueryExecutor> {
-  const cache = new DuckDBInstanceCache();
-  const instance = await cache.getOrCreateInstance(":memory:");
-  const con = await instance.connect();
+  // get a temporary db
+  const con = await getDuckDbConnection(":memory:");
 
   // Install and load DuckLake extension
   await con.run("INSTALL parquet;");
