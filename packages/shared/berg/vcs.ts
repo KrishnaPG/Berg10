@@ -9,6 +9,7 @@ import type {
   TFsVcsDotDBPath,
   TFsVcsDotGitPath,
   TFsVcsRepoId,
+  TName,
 } from "@shared/types";
 import type { TGitSHA } from "@shared/types/git-internal.types";
 import fs from "fs-extra";
@@ -92,11 +93,18 @@ export class FsVCS {
       if (p.length >= 4) await Promise.all(p).then(() => (p.length = 0));
     }
     // wait for any pending promises, then return `this` for method chaining
-    return Promise.all(p).then(() => this);
+    return Promise.all(p)
+      .then(() => this.gitDL.refreshTable(this.dotDBFolder, "pack-index"))
+      .then(() => this);
   }
 
   async importCommits(srcGitShell: GitShell) {
-    const lastCommitTime = await this.gitDL.lastCommitTime() as any;
-    return streamCommitsToParquet(srcGitShell, this.dbCommitsFolderPath, "xyz" as TFsVcsDbCommitBaseName, lastCommitTime);
+    const lastCommitTime = (await this.gitDL.lastCommitTime()) as any; //TODO: use SELECT max(commit_time) FROM parquet_scan(?);
+    return streamCommitsToParquet(
+      srcGitShell,
+      this.dbCommitsFolderPath,
+      "xyz" as TFsVcsDbCommitBaseName,
+      lastCommitTime,
+    ).finally(() => this.gitDL.refreshTable(this.dotDBFolder, "commits"));
   }
 }

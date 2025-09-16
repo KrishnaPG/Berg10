@@ -1,5 +1,13 @@
+import path from "node:path";
 import { type BaseQueryExecutor, ensureTables, type Row } from "@shared/ducklake";
-import type { TDuckLakeDBName, TDuckLakeRootPath, TFsVcsDotDBPath, TSecSinceEpoch, TSQLString } from "@shared/types";
+import type {
+  TDuckLakeDBName,
+  TDuckLakeRootPath,
+  TFsVcsDotDBPath,
+  TName,
+  TSecSinceEpoch,
+  TSQLString,
+} from "@shared/types";
 
 /** Providers DuckLake interface over the VCS git db content 
  * ```sh
@@ -37,25 +45,18 @@ export class FsVcsGitDL {
     return ensureTables(
       rootPath as TDuckLakeRootPath,
       lakeDBName,
-      `
-      CREATE OR REPLACE VIEW commits AS
-        SELECT * FROM read_parquet('commits/*.parquet');
-  
-      CREATE OR REPLACE VIEW trees AS
-        SELECT * FROM read_parquet('trees/*.parquet');
-  
-      CREATE OR REPLACE VIEW blobs AS
-        SELECT * FROM read_parquet('blobs/*.parquet');
-  
-      CREATE OR REPLACE VIEW pack_index AS
-        SELECT * FROM read_parquet('pack-index/*.parquet');
-  
+      `select 'Hello, World!' as message;
       -- optional: helper view for commit_parents
-      CREATE OR REPLACE VIEW commit_parents AS
-        SELECT sha AS commit_sha, unnest(parent_shas) AS parent_sha, ordinality-1 AS idx
-        FROM commits;
+      -- CREATE OR REPLACE VIEW commit_parents AS
+      --   SELECT sha AS commit_sha, unnest(parent_shas) AS parent_sha, ordinality-1 AS idx
+      --   FROM commits;
       ` as TSQLString,
     ).then(({ db }) => new FsVcsGitDL(db));
+  }
+
+  refreshTable(rootPath: TFsVcsDotDBPath, tableName: string) {
+    const src = path.join(rootPath, tableName, "**", "*.parquet");
+    return this.q.exec`CREATE OR REPLACE VIEW ${tableName} AS SELECT * FROM read_parquet('${src}');`;
   }
 
   /* -------------------------------------------------- commits */
