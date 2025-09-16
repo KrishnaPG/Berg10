@@ -1,6 +1,7 @@
 import type { GitShell } from "@shared/git-shell";
 import type {
   TFilePath,
+  TFsVcsDbCommitBaseName,
   TFsVcsDbCommitsFolderPath,
   TFsVcsDbPIFilePath,
   TFsVcsDbPIFolderPath,
@@ -12,6 +13,7 @@ import type {
 import type { TGitSHA } from "@shared/types/git-internal.types";
 import fs from "fs-extra";
 import path from "path";
+import { streamCommitsToParquet } from "./git-import/commits-to-parquet";
 import { streamIDXtoParquet } from "./git-import/idx-to-parquet";
 import { FsVcsGitDL } from "./vcs-git-dl";
 import type { FsVCSManager } from "./vcs-manager";
@@ -93,18 +95,8 @@ export class FsVCS {
     return Promise.all(p).then(() => this);
   }
 
-  importCommits(srcGitShell: GitShell, lastCommit: TGitSHA) {
-    const args = ["rev-list", "--all", "--topo-order", "--parents", "--format=%H|%P|%T|%ct|%cn|%ce|%s"];
-    if (lastCommit) args.push(lastCommit);
-    return srcGitShell.execStream(args, (commitLinesBatch: string[]) => {
-      const p = [];
-      commitLinesBatch.forEach((commitLine) => {
-        const line = commitLine.trim();
-        if (!line || !line.startsWith("commit ")) return;
-        const [sha, parents, tree, ts, name, email, ...msgArr] = line.slice(7).split("|");
-        const currentCommit = sha;
-        const currentTree = tree;
-      });
-    });
+  async importCommits(srcGitShell: GitShell) {
+    const lastCommitTime = await this.gitDL.lastCommitTime() as any;
+    return streamCommitsToParquet(srcGitShell, this.dbCommitsFolderPath, "xyz" as TFsVcsDbCommitBaseName, lastCommitTime);
   }
 }

@@ -1,5 +1,5 @@
-import { type BaseQueryExecutor, ensureTables } from "@shared/ducklake";
-import type { TDuckLakeDBName, TDuckLakeRootPath, TFsVcsDotDBPath, TSQLString } from "@shared/types";
+import { type BaseQueryExecutor, ensureTables, type Row } from "@shared/ducklake";
+import type { TDuckLakeDBName, TDuckLakeRootPath, TFsVcsDotDBPath, TSecSinceEpoch, TSQLString } from "@shared/types";
 
 /** Providers DuckLake interface over the VCS git db content 
  * ```sh
@@ -32,7 +32,7 @@ export class FsVcsGitDL {
   /** Mounts a given vcs/<repoId>.db/ path as DuckLake DB */
   static async mount(
     rootPath: TFsVcsDotDBPath,
-    lakeDBName: TDuckLakeDBName = "gitDL" as TDuckLakeDBName,
+    lakeDBName: TDuckLakeDBName = "dl" as TDuckLakeDBName,
   ): Promise<FsVcsGitDL> {
     return ensureTables(
       rootPath as TDuckLakeRootPath,
@@ -62,16 +62,20 @@ export class FsVcsGitDL {
   log(opt: { max?: number; author?: string; since?: Date } = {}) {
     const { max = 100, author, since } = opt;
     return this.q.query`
-      SELECT sha, message, author_name, author_time
+      SELECT sha, message, author_name, commit_time
       FROM   commits
       WHERE  ${author ? `author_name LIKE ${"%" + author + "%"}` : "TRUE"}
-        AND  ${since ? `author_time >= ${since}` : "TRUE"}
-      ORDER  BY author_time DESC
+        AND  ${since ? `commit_time >= ${since}` : "TRUE"}
+      ORDER  BY commit_time DESC
       LIMIT  ${max}`;
   }
 
   async commit(sha: string) {
     return this.q.queryRow`SELECT * FROM commits WHERE sha = ${sha}`;
+  }
+
+  async lastCommitTime() {
+    return this.q.queryRow<Row<TSecSinceEpoch>>`SELECT max(commit_time) FROM commits`;
   }
 
   async parent(sha: string) {

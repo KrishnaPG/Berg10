@@ -30,7 +30,7 @@ export function streamCommitsToParquet(
   srcGitShell: GitShell,
   destFolder: TFsVcsDbCommitsFolderPath,
   destFileBaseName: TFsVcsDbCommitBaseName,
-  since: TSecSinceEpoch,
+  since?: TSecSinceEpoch,
 ) {
   const args = ["rev-list", "--all", "--topo-order", "--parents", "--format=%H|%P|%T|%ct|%cn|%ce|%s"];
   if (since) args.push(`--since=${since}`); // TODO: use SELECT max(commit_time) FROM parquet_scan(?);

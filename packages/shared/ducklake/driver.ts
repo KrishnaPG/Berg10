@@ -156,11 +156,6 @@ export class _BaseQueryExecutor {
     query: string,
     ...params: DuckDBValue[]
   ): AsyncGenerator<T> {
-    // Convert parameters to object format for DuckDB Node Neo API
-    const paramObj: Record<string, DuckDBValue> = {};
-    for (let i = 0; i < params.length; i++) {
-      paramObj[`$${i + 1}`] = params[i];
-    }
     const reader = await this.impl.runAndRead(query, params);
     const rows = reader.getRowObjects() as T[];
     for (const row of rows) {
@@ -170,7 +165,7 @@ export class _BaseQueryExecutor {
 
   /**
    * queryAll queries the database using a template string, replacing your placeholders in the template
-   * with parametrised values without risking SQL injections.
+   * with parametrized values without risking SQL injections.
    *
    * It returns an array of all results.
    *
@@ -245,11 +240,6 @@ export class _BaseQueryExecutor {
     query: string,
     ...params: DuckDBValue[]
   ): Promise<T | null> {
-    // Convert parameters to object format for DuckDB Node Neo API
-    const paramObj: Record<string, DuckDBValue> = {};
-    for (let i = 0; i < params.length; i++) {
-      paramObj[`$${i + 1}`] = params[i];
-    }
     const reader = await this.impl.runAndReadAll(query, params);
     const rows = reader.getRowObjects() as T[];
     return rows.length > 0 ? rows[0] : null;
@@ -437,7 +427,7 @@ export class _BaseQueryExecutor {
 
   retirableRun(
     sql: string,
-    values?: Record<string, DuckDBValue> | DuckDBValue[] | undefined,
+    values?: DuckDBValue[] | undefined,
     types?: DuckDBType[] | Record<string, DuckDBType | undefined>,
   ) {
     return createRetryableDatabaseOperation(() => this.impl.run(sql, values, types))();
