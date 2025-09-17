@@ -63,14 +63,17 @@ export class FsVcsGitDL {
 
   refreshTable(rootPath: TFsVcsDotDBPath, tableName: TGitDLTableName) {
     const src = path.join(rootPath, tableName, "**", "*.parquet");
-    console.debug(`Refreshing table: ${src}`);
-    return this.q.exec`CREATE OR REPLACE VIEW ${tableName} AS SELECT * FROM read_parquet('${src}');`;
+    console.debug(`Refreshing table: ${tableName}`);
+    const sql = `CREATE OR REPLACE VIEW '${tableName}' AS SELECT * FROM read_parquet('${src}');`;
+    return this.q.rawExec(sql).catch((ex) => console.error(`Failed to refresh table '${tableName}': ${ex.message}`));
   }
 
-  checkIfTableExists(tableName: TGitDLTableName) {
-    return this.q.queryRow`SELECT table_name
-    FROM duckdb_tables
-    WHERE table_name = '${tableName}';`;
+  checkIfViewExists(tableName: TGitDLTableName) {
+    const sql = `SELECT view_name FROM duckdb_views WHERE view_name = '${tableName}';`;
+    return this.q.rawQueryRow(sql).catch((ex) => {
+      console.warn(`checkIfTableExists('${tableName}') failed: ${ex.message}`);
+      return null;
+    });
   }
 
   /* -------------------------------------------------- commits */
@@ -90,7 +93,7 @@ export class FsVcsGitDL {
   }
 
   async lastCommitTime() {
-    return this.q.queryRow<Row<TSecSinceEpoch>>`SELECT max(commit_time) FROM commits`;
+    return this.q.queryRow<Row<TSecSinceEpoch>>`SELECT max('commit_time') FROM commits`;
   }
 
   async parent(sha: string) {

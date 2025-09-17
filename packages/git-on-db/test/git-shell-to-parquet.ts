@@ -190,31 +190,6 @@ async function newParquetWriter(schema: ParquetSchema, name: string) {
 async function run() {
   console.log(`Proceeding with options: ${JSON.stringify(runCtx, null, 2)}`);
 
-  if (finalCtx.abortPrevSync) {
-    lmdbEnv.transactionSync(() => {
-      db.checkpoint.delete("last_processed_commit");
-      // Clear progress
-      const tx = lmdbEnv.beginTxn();
-      const cursor = new LMDB.Cursor(tx, db.progress);
-      let result = cursor.goFirst();
-      while (result) {
-        db.progress.delete(result.key);
-        result = cursor.goNext();
-      }
-      tx.commit();
-      // Clear packsDone
-      const packsTx = lmdbEnv.beginTxn();
-      const packsCursor = new LMDB.Cursor(packsTx, db.packsDone);
-      result = packsCursor.goFirst();
-      while (result) {
-        db.packsDone.delete(result.key);
-        result = packsCursor.goNext();
-      }
-      packsTx.commit();
-    }, LMDB.TransactionFlags.SYNCHRONOUS_COMMIT);
-    console.log("Aborting previous sync: Cleared LMDB checkpoints and progress.");
-  }
-
   const bMgr = await BergManager.initialize(runCtx);
   await bMgr.importRepo(process.cwd() as TWorkTreePath);
 

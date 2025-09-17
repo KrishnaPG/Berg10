@@ -270,7 +270,7 @@ export class _BaseQueryExecutor {
    * @returns A promise that resolves when the query has been executed.
    */
   async rawExec(query: string, ...params: DuckDBValue[]): Promise<DuckDBMaterializedResult> {
-    return this.retirableRun(query, params);
+    return this.retryableRun(query, params);
   }
 
   // Generic insert method
@@ -296,7 +296,7 @@ export class _BaseQueryExecutor {
     const placeholders = columns.map(() => "?").join(", ");
     const sql = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES (${placeholders})`;
 
-    return this.retirableRun(sql, values);
+    return this.retryableRun(sql, values);
   }
 
   // Generic batch insert method
@@ -330,7 +330,7 @@ export class _BaseQueryExecutor {
     // Flatten values for parameterized query
     const values = processedItems.flatMap((item) => Object.values(item));
 
-    return this.retirableRun(sql, values);
+    return this.retryableRun(sql, values);
   }
 
   upsert<T extends Record<string, any>>(
@@ -357,7 +357,7 @@ export class _BaseQueryExecutor {
     			DO UPDATE SET ${updateClause}
     		`;
 
-    return this.retirableRun(sql, values);
+    return this.retryableRun(sql, values);
   }
 
   // Generic update method
@@ -395,7 +395,7 @@ export class _BaseQueryExecutor {
     // Combine update values and where values
     const allValues = [...updateValues, ...whereValues];
 
-    return this.retirableRun(sql, allValues);
+    return this.retryableRun(sql, allValues);
   }
 
   // Generic delete method
@@ -422,10 +422,10 @@ export class _BaseQueryExecutor {
 
     const sql = `DELETE FROM ${tableName} ${whereClause}`;
 
-    return this.retirableRun(sql, whereValues);
+    return this.retryableRun(sql, whereValues);
   }
 
-  retirableRun(
+  retryableRun(
     sql: string,
     values?: DuckDBValue[] | undefined,
     types?: DuckDBType[] | Record<string, DuckDBType | undefined>,

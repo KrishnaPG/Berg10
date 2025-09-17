@@ -99,8 +99,8 @@ export class FsVCS {
   }
 
   async importCommits(srcGitShell: GitShell) {
-    const tableExists = await this.gitDL.checkIfTableExists("commits" as TGitDLTableName);
-    const lastCommitTime = (await this.gitDL.lastCommitTime()) as any; //TODO: use SELECT max(commit_time) FROM parquet_scan(?);
+    const tableExists = await this.gitDL.checkIfViewExists("commits" as TGitDLTableName);
+    const lastCommitTime = tableExists && (await this.gitDL.lastCommitTime()) as any; //TODO: use SELECT max(commit_time) FROM parquet_scan(?);
     return streamCommitsToParquet(
       srcGitShell,
       this.dbCommitsFolderPath,

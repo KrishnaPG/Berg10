@@ -31,14 +31,14 @@ export function csvToParquet(
       WITH raw AS (
         SELECT regexp_split_to_array(line, '${delim}') AS c
         FROM read_csv_auto(
-            ${srcFilePath},
+            '${srcFilePath}',
             delim='\0',      -- we never want read_csv to split
             columns={'line': 'VARCHAR'},
             header=false
         )
       )
       SELECT ${colProjection} FROM raw 
-    ) TO ${tmpFilePath} (FORMAT PARQUET, COMPRESSION ZSTD);
+    ) TO '${tmpFilePath}' (FORMAT PARQUET, COMPRESSION ZSTD);
   `;
   return getDuckDbConnection().then((db) =>
     db

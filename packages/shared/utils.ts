@@ -34,8 +34,7 @@ export async function getPackageJsonFolder(currentDir: TFolderPath = getMainScri
 }
 
 export function getMainScriptDirectory(): TFolderPath {
-  const mainScriptPath = fileURLToPath(process.argv[1]);
-  return path.dirname(mainScriptPath) as TFolderPath;
+  return path.dirname(process.argv[1]) as TFolderPath;
 }
 
 export function atomicFileRename(oldFilePath: TFilePath, newFilePath: TFilePath) {
@@ -47,7 +46,9 @@ export function atomicFileRename(oldFilePath: TFilePath, newFilePath: TFilePath)
   // 2. fsync the *directory* so the inode entry is durable
   const dirPath = path.resolve(newFilePath, "..");
   const dirFd = fs.openSync(dirPath, "r");
-  fs.fsyncSync(dirFd);
+  try { fs.fsyncSync(dirFd); } catch(_ex) {
+    /** on Windows, fsync() throws */
+  }
   fs.closeSync(dirFd);
 
   // 3. atomic rename

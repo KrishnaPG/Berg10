@@ -20,7 +20,7 @@ export class GitShell {
 
   protected exec(args: string[], options?: object) {
     const cmd = ["git", ...this.gitDirArgs, ...args];
-    console.log(cmd);
+    console.debug(`cmd: ${cmd.join(" ")}`);
     return Bun.spawn(cmd, {
       stdout: "pipe",
       stderr: "inherit", // pipe to stderr of child process to the parent (this)
@@ -33,7 +33,7 @@ export class GitShell {
     const file = Bun.file(outFilePath);
     return this.exec(args, { stdout: file }).exited.then((exitCode) => {
       // if some problem, delete the file and throw error
-      if (!exitCode) {
+      if (exitCode) {
         file.unlink().finally(() => {
           throw new Error(`Command "${args.join(" ")}" exited with code ${exitCode}`);
         });

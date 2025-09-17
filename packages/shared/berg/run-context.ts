@@ -30,6 +30,7 @@ async function getDefaultRunCtx(): Promise<IRunContext> {
 
 /**
  * Merge base context with overrides (shallow merge, CLI > base).
+ * Only applies defined overrides, skipping undefined to preserve defaults.
  * @param base - Default context from getDefaultRunCtx
  * @param overrides - Parsed CLI args or other partials
  */

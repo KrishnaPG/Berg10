@@ -28,10 +28,8 @@ export function parseCliArgs(): TParsedCliArgs {
 
   const opts = program.parse(process.argv).opts();
 
-  return {
-    userHome: opts.userHome,
-    templDir: opts.templDir,
-    bergName: opts.bergName,
-    abortPrevSync: opts.abortPrevSync,
-  };
+  // return only valid/defined options
+  return Object.fromEntries(
+    Object.entries(opts).filter(([, v]) => v !== undefined),
+  );
 }
