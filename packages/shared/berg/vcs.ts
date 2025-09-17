@@ -16,7 +16,7 @@ import fs from "fs-extra";
 import path from "path";
 import { streamCommitsToParquet } from "./git-import/commits-to-parquet";
 import { streamIDXtoParquet } from "./git-import/idx-to-parquet";
-import { FsVcsGitDL } from "./vcs-git-dl";
+import { FsVcsGitDL, type TGitDLTableName } from "./vcs-git-dl";
 import type { FsVCSManager } from "./vcs-manager";
 
 /** Manages one specific vcs repo */
@@ -99,6 +99,7 @@ export class FsVCS {
   }
 
   async importCommits(srcGitShell: GitShell) {
+    const tableExists = await this.gitDL.checkIfTableExists("commits" as TGitDLTableName);
     const lastCommitTime = (await this.gitDL.lastCommitTime()) as any; //TODO: use SELECT max(commit_time) FROM parquet_scan(?);
     return streamCommitsToParquet(
       srcGitShell,

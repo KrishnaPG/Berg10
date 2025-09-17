@@ -430,6 +430,7 @@ export class _BaseQueryExecutor {
     values?: DuckDBValue[] | undefined,
     types?: DuckDBType[] | Record<string, DuckDBType | undefined>,
   ) {
+    console.debug(`sql: ${sql}\nvalues: ${JSON.stringify(values)}`);
     return createRetryableDatabaseOperation(() => this.impl.run(sql, values, types))();
   }
 }

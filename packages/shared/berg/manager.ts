@@ -16,30 +16,18 @@ import type { TGitDirPath, TGitRepoRootPath, TWorkTreePath } from "@shared/types
 import fs from "fs-extra";
 
 import path from "path";
-import { BergComponent } from "./base";
 import { LMDBManager } from "./lmdb-manager";
 import { FsVCSManager } from "./vcs-manager";
-
-/** The DuckLake Storage - for append only, immutable files */
-export class FsDLManager extends BergComponent {
-  constructor(protected fsDLRootPath: TFsDLRootPath) {
-    super(null!);
-  }
-}
 
 export class BergManager {
   constructor(
     protected _bergPath: TBergPath,
     protected _dbMgr: LMDBManager,
     protected _vcsMgr: FsVCSManager,
-    protected _dlMgr: FsDLManager,
   ) {}
 
   get vcs() {
     return this._vcsMgr;
-  }
-  get dl() {
-    return this._dlMgr;
   }
   get bergPath() {
     return this._bergPath;
@@ -59,10 +47,8 @@ export class BergManager {
       bergPath,
       new LMDBManager(lmdbRootPath),
       new FsVCSManager(fsVCSRootpath),
-      new FsDLManager(fsDLRootPath),
     );
     bMgr._vcsMgr._resetManager(bMgr);
-    bMgr._dlMgr._resetManager(bMgr);
     bMgr._dbMgr._resetManager(bMgr);
 
     return Promise.resolve(bMgr);
@@ -93,17 +79,7 @@ export class BergManager {
   }
 
   public cleanup(): Promise<unknown> {
-    return Promise.allSettled([this.vcs.cleanup(), this.db.cleanup(), this.dl.cleanup()]);
-  }
-
-  // Setup DuckDB lake database
-  private async setupDatabase(dbRootPath: TFsDLRootPath, lakeDBName: TDuckLakeDBName) {
-    console.log("Setting up DataLake...");
-    return setupLake(dbRootPath, lakeDBName)
-      .then(() => console.log("DataLake setup complete"))
-      .catch((error) => {
-        throw new Error(`Failed to setup DataLake at [${dbRootPath}].\n\t${(error as Error).message}\n`);
-      });
+    return Promise.allSettled([this.vcs.cleanup(), this.db.cleanup()]);
   }
 
   /**

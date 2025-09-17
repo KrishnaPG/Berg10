@@ -9,6 +9,8 @@ import type {
   TSQLString,
 } from "@shared/types";
 
+export type TGitDLTableName = "commits" | "pack-index" | "trees" | "blobs" | "refs;";
+
 /** Providers DuckLake interface over the VCS git db content 
  * ```sh
     /lake-root (vcs/<repoId>.db/)
@@ -42,6 +44,7 @@ export class FsVcsGitDL {
     rootPath: TFsVcsDotDBPath,
     lakeDBName: TDuckLakeDBName = "dl" as TDuckLakeDBName,
   ): Promise<FsVcsGitDL> {
+    console.debug(`Mounting lake ['${lakeDBName}'] at: ${rootPath}`);
     return ensureTables(
       rootPath as TDuckLakeRootPath,
       lakeDBName,
@@ -51,12 +54,23 @@ export class FsVcsGitDL {
       --   SELECT sha AS commit_sha, unnest(parent_shas) AS parent_sha, ordinality-1 AS idx
       --   FROM commits;
       ` as TSQLString,
-    ).then(({ db }) => new FsVcsGitDL(db));
+    )
+      .then(({ db }) => new FsVcsGitDL(db))
+      .catch((error) => {
+        throw new Error(`Failed to setup DataLake at [${rootPath}].\n\t${(error as Error).message}\n`);
+      });
   }
 
-  refreshTable(rootPath: TFsVcsDotDBPath, tableName: string) {
+  refreshTable(rootPath: TFsVcsDotDBPath, tableName: TGitDLTableName) {
     const src = path.join(rootPath, tableName, "**", "*.parquet");
+    console.debug(`Refreshing table: ${src}`);
     return this.q.exec`CREATE OR REPLACE VIEW ${tableName} AS SELECT * FROM read_parquet('${src}');`;
+  }
+
+  checkIfTableExists(tableName: TGitDLTableName) {
+    return this.q.queryRow`SELECT table_name
+    FROM duckdb_tables
+    WHERE table_name = '${tableName}';`;
   }
 
   /* -------------------------------------------------- commits */
