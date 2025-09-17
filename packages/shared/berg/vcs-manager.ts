@@ -27,8 +27,8 @@ export class FsVCSManager extends BergComponent {
   }
   public putImportRecord(rec: IRepoImportRecord) {
     return this.importsDB.putSync(rec.workTree, rec);
-  }  
-  
+  }
+
   public abortPrevSync(rec: IRepoImportRecord) {
     rec.syncInProgress = false;
     return this.putImportRecord(rec);
@@ -41,8 +41,8 @@ export class FsVCSManager extends BergComponent {
   }
 
   protected importReSync(rec: IRepoImportRecord) {
-    // check if a sync already in progress
-    if (rec.syncInProgress) throw new RepoSyncInProgress(`repo: ${rec.name}, Sync already in Progress.`);
+    //TODO: check if a sync already in progress
+    // if (rec.syncInProgress) throw new RepoSyncInProgress(`repo: ${rec.name}, Sync already in Progress.`);
     // mark sync as ON
     rec.syncInProgress = true;
     this.putImportRecord(rec);

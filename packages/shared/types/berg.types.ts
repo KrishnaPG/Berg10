@@ -8,14 +8,16 @@ import type { TGitDirPath } from "./git.types";
  * `TDriftPath` contains one or more `.berg10` folders (with different names, of course);
  */
 export type TDriftPath = Branded<TFolderPath, "Where Bergs Live">;
+/** usually this is `.berg10` */
+export type TBergName = Branded<TName, "BergName">;
 
 /**
- * Usually this is the `TDriftPath + "/.berg10"`;
+ * Usually this is the `TDriftPath + TBergName`;
  *  - e.g. `~/.berg10`;
  *
  * Contains {`vcs`, `db`, `dl`, `sem`} folders;
  */
-export type TBergPath = Branded<TFolderPath, "the .berg10 folder">;
+export type TBergPath = Branded<TFolderPath, ".berg10 folder path">;
 
 /**
  * Usually this is `TBergPath + "/db"`;

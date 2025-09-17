@@ -17,6 +17,7 @@ import fs from "fs-extra";
 
 import path from "path";
 import { LMDBManager } from "./lmdb-manager";
+import type { IRunContext } from "./run-context";
 import { FsVCSManager } from "./vcs-manager";
 
 export class BergManager {
@@ -40,14 +41,9 @@ export class BergManager {
   public static open(bergPath: TBergPath): Promise<BergManager> {
     console.log(`Opening ${bergPath} ...`);
     const fsVCSRootpath: TFsVCSRootPath = path.resolve(bergPath, "vcs") as TFsVCSRootPath;
-    const fsDLRootPath: TFsDLRootPath = path.resolve(bergPath, "dl") as TFsDLRootPath;
     const lmdbRootPath: TLMDBRootPath = path.resolve(bergPath, "db") as TLMDBRootPath;
 
-    const bMgr: BergManager = new BergManager(
-      bergPath,
-      new LMDBManager(lmdbRootPath),
-      new FsVCSManager(fsVCSRootpath),
-    );
+    const bMgr: BergManager = new BergManager(bergPath, new LMDBManager(lmdbRootPath), new FsVCSManager(fsVCSRootpath));
     bMgr._vcsMgr._resetManager(bMgr);
     bMgr._dbMgr._resetManager(bMgr);
 
@@ -56,13 +52,9 @@ export class BergManager {
 
   /**
    * Initialize the orchestrator on application startup. Creates the folder structure if needed. */
-  public static initialize(
-    userHome: TDriftPath, // the target path, usually user home `~/`
-    templDir: TFolderPath, // path of the "template" folder that has `.berg10/` inside
-    bergName: string = ".berg10", // the target bergName, if needs to be changed while copying
-  ): Promise<BergManager> {
-    const destPath: TBergPath = path.resolve(userHome, bergName) as TBergPath;
-    const srcPath: TFolderPath = path.resolve(templDir, ".berg10") as TFolderPath;
+  public static initialize(runCtx: IRunContext): Promise<BergManager> {
+    const destPath: TBergPath = path.resolve(runCtx.userHome, runCtx.bergName) as TBergPath;
+    const srcPath: TFolderPath = path.resolve(runCtx.templDir, ".berg10") as TFolderPath;
     // check if already exists, else copy the template folder to init
     return Bun.file(destPath)
       .exists()

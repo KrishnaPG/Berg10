@@ -1,21 +1,45 @@
 #!/usr/bin/env bun
 import { ParquetSchema, ParquetWriter } from "@dsnp/parquetjs";
 import { BergManager } from "@shared/berg/manager";
-import type { TDriftPath, TFileHandle, TFilePath, TFolderPath } from "@shared/types";
+import { runCtx } from "@shared/berg/run-context";
+import type { TDriftPath, TFileHandle, TFilePath, TFilePath, TFolderPath } from "@shared/types";
 import type { TGitDirPath, TGitRepoRootPath, TWorkTreePath } from "@shared/types/git.types";
-import { getPackageJsonFolder } from "@shared/utils";
 import * as arrow from "apache-arrow";
-import * as fs from "fs";
+import { spawn } from "child_process";
+import fs from "fs-extra";
 import * as LMDB from "lmdb";
 import os from "os";
 import * as path from "path";
-import { linesBatchedTransform } from "../../shared/git-shell/lines-batched-transform";
 
 /* ---------- Config ---------- */
 const GIT_DIR = process.env.GIT_DIR || ".";
 const DB_DIR = process.env.DB_DIR || "repo.db";
 const ROW_GROUP_SIZE = 5000;
 const CHECKPOINT_INTERVAL = 10000; // rows
+
+function git(args: string[]) {
+  const cmd = spawn("git", args, { cwd: GIT_DIR, stdio: "pipe" });
+  return cmd;
+}
+
+async function* lines(stream: any) {
+  for await (const chunk of stream) {
+    for (const line of chunk.toString().split("\n")) {
+      if (line) yield line;
+    }
+  }
+}
+
+async function loadIDXFile(idxPath: TFilePath): Promise<string> {
+  // Simple placeholder: Read and format as TSV; implement actual IDX parsing if needed
+  const content = fs.readFileSync(idxPath, "utf8");
+  // Basic transformation to TSV-like for demo; replace with real logic
+  return content
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
+}
 
 /* ---------- LMDB ---------- */
 const lmdbEnv = LMDB.open({
@@ -164,11 +188,34 @@ async function newParquetWriter(schema: ParquetSchema, name: string) {
 
 /* ---------- Main Transform ---------- */
 async function run() {
+  console.log(`Proceeding with options: ${JSON.stringify(runCtx, null, 2)}`);
 
-  const bMgr = await BergManager.initialize(
-    os.tmpdir() as TDriftPath,
-    path.resolve(await getPackageJsonFolder(import.meta.dir as TFolderPath), "template") as TFolderPath,
-  );
+  if (finalCtx.abortPrevSync) {
+    lmdbEnv.transactionSync(() => {
+      db.checkpoint.delete("last_processed_commit");
+      // Clear progress
+      const tx = lmdbEnv.beginTxn();
+      const cursor = new LMDB.Cursor(tx, db.progress);
+      let result = cursor.goFirst();
+      while (result) {
+        db.progress.delete(result.key);
+        result = cursor.goNext();
+      }
+      tx.commit();
+      // Clear packsDone
+      const packsTx = lmdbEnv.beginTxn();
+      const packsCursor = new LMDB.Cursor(packsTx, db.packsDone);
+      result = packsCursor.goFirst();
+      while (result) {
+        db.packsDone.delete(result.key);
+        result = packsCursor.goNext();
+      }
+      packsTx.commit();
+    }, LMDB.TransactionFlags.SYNCHRONOUS_COMMIT);
+    console.log("Aborting previous sync: Cleared LMDB checkpoints and progress.");
+  }
+
+  const bMgr = await BergManager.initialize(runCtx);
   await bMgr.importRepo(process.cwd() as TWorkTreePath);
 
   const lastCommit = db.checkpoint.get("last_processed_commit") || "";

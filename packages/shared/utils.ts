@@ -1,6 +1,7 @@
 import { sha256 } from "@fict/crypto";
 import fs from "fs-extra";
 import path from "path";
+import { fileURLToPath } from "url";
 import type { TFilePath, TFolderPath, TSHA256B58 } from "./types";
 import type { TGitRepoRootPath } from "./types/git.types";
 
@@ -24,12 +25,17 @@ export function maybeGitRepoRootPath(folderPath: TFolderPath): Promise<TGitRepoR
  *  Returns the first folder path that contains a package.json file.
  * @param currentDir the starting folder to start the search from
  */
-export async function getPackageJsonFolder(currentDir: TFolderPath): Promise<TFolderPath> {
+export async function getPackageJsonFolder(currentDir: TFolderPath = getMainScriptDirectory()): Promise<TFolderPath> {
   while (true) {
     const filePath = path.resolve(currentDir, "package.json");
     if (await Bun.file(filePath).exists()) return currentDir;
     currentDir = path.resolve(currentDir, "..") as TFolderPath;
   }
+}
+
+export function getMainScriptDirectory(): TFolderPath {
+  const mainScriptPath = fileURLToPath(process.argv[1]);
+  return path.dirname(mainScriptPath) as TFolderPath;
 }
 
 export function atomicFileRename(oldFilePath: TFilePath, newFilePath: TFilePath) {
