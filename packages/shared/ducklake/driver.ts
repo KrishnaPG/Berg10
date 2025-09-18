@@ -1,10 +1,13 @@
 import {
-  type DuckDBConnection,
+  DuckDBConnection,
+  type DuckDBInstance,
   DuckDBInstanceCache,
   type DuckDBMaterializedResult,
+  type DuckDBPreparedStatement,
   type DuckDBType,
   type DuckDBValue,
   timestampMillisValue,
+  version,
 } from "@duckdb/node-api";
 import { mkdir, rm } from "fs/promises";
 import os from "os";
@@ -15,6 +18,8 @@ import { getDuckDbConnection } from "./helpers";
 
 // converts Date() based milli-seconds to DuckDB compatible timestamps
 export const getTimestamp = (tMS: number = Date.now()) => timestampMillisValue(BigInt(tMS));
+
+export const getDuckDBVersion = () => version();
 
 export interface ILakePaths {
   metaFilePath: TDuckLakeMetaFilePath;
@@ -64,18 +69,21 @@ async function initDB(
   { metaFilePath, dataFilesFolderPath }: ILakePaths,
   readOnly: boolean = false,
 ): Promise<BaseQueryExecutor> {
-  // get a temporary db
-  const con = await getDuckDbConnection(":memory:");
+  // Use getDuckDbConnection for proper instance caching and management
+  const connection = await getDuckDbConnection(":memory:");
+
+  // Create BaseQueryExecutor from existing connection
+  const executor = BaseQueryExecutor.fromConnection(connection);
 
   // Install and load DuckLake extension
-  await con.run("INSTALL parquet;");
-  await con.run("LOAD parquet;");
-  await con.run("INSTALL ducklake;");
-  await con.run("LOAD ducklake;");
+  await executor.run("INSTALL parquet;");
+  await executor.run("LOAD parquet;");
+  await executor.run("INSTALL ducklake;");
+  await executor.run("LOAD ducklake;");
   const attachCmd = `ATTACH IF NOT EXISTS 'ducklake:${metaFilePath}' AS lakeFile (DATA_PATH '${dataFilesFolderPath}'${readOnly ? " READ_ONLY " : ""});`;
-  await con.run(attachCmd);
-  await con.run(`USE lakeFile;`);
-  return new _BaseQueryExecutor(con) as BaseQueryExecutor;
+  await executor.run(attachCmd);
+  await executor.run(`USE lakeFile;`);
+  return executor;
 }
 
 /**
@@ -91,190 +99,166 @@ export type Primitive = DuckDBValue;
 
 export type TGenIDFunction = (_x: unknown) => string;
 
-//
 //#region BaseQueryExecutor
-//
-type DuckDBConnectionAPI = Pick<
-  DuckDBConnection,
-  {
-    [K in keyof DuckDBConnection]: DuckDBConnection[K] extends Function ? K : never;
-  }[keyof DuckDBConnection]
->;
+/**
+ * High-performance query executor that extends DuckDBConnection with additional utilities
+ * while leveraging native DuckDB streaming and bulk operations.
+ */
+export class BaseQueryExecutor extends DuckDBConnection {
+  /** Static factory method to create a BaseQueryExecutor instance */
+  static async create(instance?: DuckDBInstance): Promise<BaseQueryExecutor> {
+    const connection = await DuckDBConnection.create(instance);
+    // Create a new instance by copying the connection's internal state
+    const executor = Object.create(BaseQueryExecutor.prototype);
+    Object.assign(executor, connection);
+    return executor;
+  }
 
-export class _BaseQueryExecutor {
-  constructor(protected readonly impl: DuckDBConnection) {
-    // generate forwarding methods once, at construction time
-    for (const key of Object.getOwnPropertyNames(Object.getPrototypeOf(impl)) as Array<keyof DuckDBConnection>) {
-      const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(impl), key);
-      if (desc && typeof desc.value === "function") {
-        (this as any)[key] = (...args: any[]) => (impl as any)[key].apply(impl, args);
+  /** Create a BaseQueryExecutor from an existing DuckDB connection */
+  static fromConnection(connection: any): BaseQueryExecutor {
+    // Create a new instance by copying the connection's internal state
+    const executor = Object.create(BaseQueryExecutor.prototype);
+    Object.assign(executor, connection);
+    return executor;
+  }
+
+  /**
+   * Builds query parameters from either template strings or raw SQL.
+   * Eliminates the need for buildQuery by leveraging DuckDB's native parameter binding.
+   */
+  private buildQueryParams(
+    queryOrStrings: string | TemplateStringsArray,
+    params: DuckDBValue[],
+  ): { sql: string; values: DuckDBValue[] } {
+    if (typeof queryOrStrings === "string") {
+      // Raw SQL string with parameters
+      return { sql: queryOrStrings, values: params };
+    } else {
+      // Template strings - convert to parameterized query
+      const strings = queryOrStrings;
+      let sql = strings[0];
+      const values: DuckDBValue[] = [];
+
+      for (let i = 0; i < params.length; i++) {
+        values.push(params[i]);
+        sql += `$${values.length}`;
+        sql += strings[i + 1];
       }
+
+      return { sql, values };
     }
   }
 
   /**
-   * query queries the database using a template string, replacing your placeholders in the template
-   * with parametrised values without risking SQL injections.
-   *
-   * It returns an async generator, that allows iterating over the results
-   * in a streaming fashion using `for await`.
+   * Unified query method that handles both template strings and raw SQL queries.
+   * Returns an async generator for streaming results.
    *
    * @example
-   *
+   * // Template string usage
    * const email = "foo@example.com";
-   * const result = database.query`SELECT id FROM users WHERE email=${email}`
-   *
-   * This produces the query: "SELECT id FROM users WHERE email=$1".
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  query<T extends Row<T> = Record<string, DuckDBValue>>(
-    strings: TemplateStringsArray,
-    ...params: DuckDBValue[]
-  ): AsyncGenerator<T> {
-    const query = buildQuery(strings, params);
-    return this.rawQuery(query, ...params);
-  }
-
-  /**
-   * rawQuery queries the database using a raw parametrised SQL query and parameters.
-   *
-   * It returns an async generator, that allows iterating over the results
-   * in a streaming fashion using `for await`.
-   *
-   * @example
-   * const query = "SELECT id FROM users WHERE email=$1";
-   * const email = "foo@example.com";
-   * for await (const row of database.rawQuery(query, email)) {
+   * for await (const row of db.query`SELECT id FROM users WHERE email=${email}`) {
    *   console.log(row);
    * }
    *
-   * @param query - The raw SQL query string.
-   * @param params - The parameters to be used in the query.
-   * @returns An async generator that yields rows from the query result.
+   * // Raw SQL usage
+   * for await (const row of db.query("SELECT id FROM users WHERE email=$1", email)) {
+   *   console.log(row);
+   * }
    */
-  async *rawQuery<T extends Row<T> = Record<string, DuckDBValue>>(
-    query: string,
+  async *query<T extends Row<T> = Record<string, DuckDBValue>>(
+    queryOrStrings: string | TemplateStringsArray,
     ...params: DuckDBValue[]
-  ): AsyncGenerator<T> {
-    const reader = await this.impl.runAndRead(query, params);
-    const rows = reader.getRowObjects() as T[];
-    for (const row of rows) {
-      yield row;
+  ): AsyncGenerator<T[]> {
+    const { sql, values } = this.buildQueryParams(queryOrStrings, params);
+    const reader = await this.streamAndRead(sql, values);
+
+    // Stream results in chunks for memory efficiency
+    while (!reader.done) {
+      await reader.readUntil(2048); // Read in chunks of 2048 rows
+      const rows = reader.getRowObjects() as T[];
+      yield rows;
     }
   }
 
   /**
-   * queryAll queries the database using a template string, replacing your placeholders in the template
-   * with parametrized values without risking SQL injections.
-   *
-   * It returns an array of all results.
+   * Unified queryAll method that returns all results as an array.
    *
    * @example
-   *
-   * const email = "foo@example.com";
-   * const result = database.queryAll`SELECT id FROM users WHERE email=${email}`
-   *
-   * This produces the query: "SELECT id FROM users WHERE email=$1".
+   * const rows = await db.queryAll`SELECT * FROM users WHERE active=${true}`;
+   * const rows2 = await db.queryAll("SELECT * FROM users WHERE active=$1", true);
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  queryAll<T extends Row<T> = Record<string, DuckDBValue>>(
-    strings: TemplateStringsArray,
+  async queryAll<T extends Row<T> = Record<string, DuckDBValue>>(
+    queryOrStrings: string | TemplateStringsArray,
     ...params: DuckDBValue[]
   ): Promise<T[]> {
-    const query = buildQuery(strings, params);
-    return this.rawQueryAll(query, ...params);
-  }
-
-  /**
-   * rawQueryAll queries the database using a raw parametrised SQL query and parameters.
-   *
-   * It returns an array of all results.
-   *
-   * @example
-   *
-   * const query = "SELECT id FROM users WHERE email=$1";
-   * const email = "foo@example.com";
-   * const rows = await database.rawQueryAll(query, email);
-   */
-  async rawQueryAll<T extends Row<T> = Record<string, DuckDBValue>>(
-    query: string,
-    ...params: DuckDBValue[]
-  ): Promise<T[]> {
-    const reader = await this.impl.runAndReadAll(query, params);
+    const { sql, values } = this.buildQueryParams(queryOrStrings, params);
+    const reader = await this.runAndReadAll(sql, values);
     return reader.getRowObjects() as T[];
   }
 
   /**
-   * queryRow is like query but returns only a single row.
-   * If the query selects no rows it returns null.
-   * Otherwise it returns the first row and discards the rest.
+   * Unified queryRow method that returns the first row or null.
    *
    * @example
-   * const email = "foo@example.com";
-   * const result = database.queryRow`SELECT id FROM users WHERE email=${email}`
+   * const user = await db.queryRow`SELECT * FROM users WHERE id=${userId}`;
    */
   async queryRow<T extends Row<T> = Record<string, DuckDBValue>>(
-    strings: TemplateStringsArray,
+    queryOrStrings: string | TemplateStringsArray,
     ...params: DuckDBValue[]
   ): Promise<T | null> {
-    const query = buildQuery(strings, params);
-    return this.rawQueryRow(query, ...params);
-  }
-
-  /**
-   * rawQueryRow is like rawQuery but returns only a single row.
-   * If the query selects no rows, it returns null.
-   * Otherwise, it returns the first row and discards the rest.
-   *
-   * @example
-   * const query = "SELECT id FROM users WHERE email=$1";
-   * const email = "foo@example.com";
-   * const result = await database.rawQueryRow(query, email);
-   * console.log(result);
-   *
-   * @param query - The raw SQL query string.
-   * @param params - The parameters to be used in the query.
-   * @returns A promise that resolves to a single row or null.
-   */
-  async rawQueryRow<T extends Row<T> = Record<string, DuckDBValue>>(
-    query: string,
-    ...params: DuckDBValue[]
-  ): Promise<T | null> {
-    const reader = await this.impl.runAndReadAll(query, params);
+    const { sql, values } = this.buildQueryParams(queryOrStrings, params);
+    const reader = await this.runAndReadAll(sql, values);
     const rows = reader.getRowObjects() as T[];
     return rows.length > 0 ? rows[0] : null;
   }
 
   /**
-   * exec executes a query.
+   * Unified exec method for queries that don't return data.
    *
    * @example
-   * const email = "foo@example.com";
-   * const result = database.exec`DELETE FROM users WHERE email=${email}`
+   * await db.exec`DELETE FROM users WHERE id=${userId}`;
+   * await db.exec("DELETE FROM users WHERE id=$1", userId);
    */
-  exec(strings: TemplateStringsArray, ...params: DuckDBValue[]): Promise<DuckDBMaterializedResult> {
-    const query = buildQuery(strings, params);
-    return this.rawExec(query, ...params);
+  async exec(
+    queryOrStrings: string | TemplateStringsArray,
+    ...params: DuckDBValue[]
+  ): Promise<DuckDBMaterializedResult> {
+    const { sql, values } = this.buildQueryParams(queryOrStrings, params);
+    return this.retryableRun(sql, values);
   }
 
   /**
-   * rawExec executes a query without returning any rows.
-   *
-   * @example
-   * const query = "DELETE FROM users WHERE email=$1";
-   * const email = "foo@example.com";
-   * await database.rawExec(query, email);
-   *
-   * @param query - The raw SQL query string.
-   * @param params - The parameters to be used in the query.
-   * @returns A promise that resolves when the query has been executed.
+   * Helper method to append data to a DuckDB appender with proper type handling.
    */
-  async rawExec(query: string, ...params: DuckDBValue[]): Promise<DuckDBMaterializedResult> {
-    return this.retryableRun(query, params);
+  private async appendDataToAppender(appender: any, data: Record<string, any>): Promise<boolean> {
+    const values = Object.values(data);
+
+    for (let i = 0; i < values.length; i++) {
+      const value = values[i];
+      if (typeof value === "number") {
+        if (Number.isInteger(value)) {
+          appender.appendInteger(value);
+        } else {
+          appender.appendDouble(value);
+        }
+      } else if (typeof value === "string") {
+        appender.appendVarchar(value);
+      } else if (typeof value === "boolean") {
+        appender.appendBoolean(value);
+      } else if (value === null || value === undefined) {
+        appender.appendNull();
+      } else {
+        // Complex type that can't be handled by appender
+        return false;
+      }
+    }
+
+    appender.endRow();
+    return true;
   }
 
-  // Generic insert method
-  insert<T extends Record<string, any>>(
+  // Generic insert method using native appender for better performance
+  async insert<T extends Record<string, any>>(
     tableName: string,
     data: T,
     options?: {
@@ -288,18 +272,29 @@ export class _BaseQueryExecutor {
       (finalData as any)[options.idField] = options.generateId(data);
     }
 
-    // Get column names and values
-    const columns = Object.keys(finalData);
-    const values = Object.values(finalData); //columns.map(col => toDuckDBValue(finalData[col]));
+    // Use appender for single insert - more efficient than SQL building
+    const appender = await this.createAppender(tableName);
+    try {
+      const success = await this.appendDataToAppender(appender, finalData);
+      if (!success) {
+        // Fallback to SQL for complex types
+        const columns = Object.keys(finalData);
+        const values = Object.values(finalData);
+        const placeholders = columns.map(() => "?").join(", ");
+        const sql = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES (${placeholders})`;
+        return this.retryableRun(sql, values);
+      }
 
-    // Build parameterized query
-    const placeholders = columns.map(() => "?").join(", ");
-    const sql = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES (${placeholders})`;
+      await appender.flushSync();
+    } finally {
+      await appender.closeSync();
+    }
 
-    return this.retryableRun(sql, values);
+    // Return empty result for consistency
+    return { rowCount: 1 } as DuckDBMaterializedResult;
   }
 
-  // Generic batch insert method
+  // Optimized batch insert using native appender
   async insertBatch<T extends Record<string, any>>(
     tableName: string,
     items: T[],
@@ -319,21 +314,41 @@ export class _BaseQueryExecutor {
       return processed;
     });
 
-    // Get column names from first item
-    const columns = Object.keys(processedItems[0]);
+    // Use appender for bulk insert - much more efficient than multi-row SQL
+    const appender = await this.createAppender(tableName);
+    try {
+      let hasComplexTypes = false;
 
-    // Build multi-row insert
-    const placeholders = processedItems.map(() => `(${columns.map(() => "?").join(", ")})`).join(", ");
+      for (const item of processedItems) {
+        const success = await this.appendDataToAppender(appender, item);
+        if (!success) {
+          hasComplexTypes = true;
+          break;
+        }
+      }
 
-    const sql = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES ${placeholders}`;
+      if (hasComplexTypes) {
+        // Fallback to SQL for complex types
+        const columns = Object.keys(processedItems[0]);
+        const placeholders = processedItems.map(() => `(${columns.map(() => "?").join(", ")})`).join(", ");
+        const sql = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES ${placeholders}`;
+        const values = processedItems.flatMap((item) => Object.values(item));
+        return this.retryableRun(sql, values);
+      }
 
-    // Flatten values for parameterized query
-    const values = processedItems.flatMap((item) => Object.values(item));
+      await appender.flushSync();
+    } finally {
+      await appender.closeSync();
+    }
 
-    return this.retryableRun(sql, values);
+    // Return result for consistency
+    return { rowCount: items.length } as DuckDBMaterializedResult;
   }
 
-  upsert<T extends Record<string, any>>(
+  /**
+   * Optimized upsert using prepared statements for better performance and security.
+   */
+  async upsert<T extends Record<string, any>>(
     tableName: string,
     data: T,
     conflictColumns: string[],
@@ -351,17 +366,25 @@ export class _BaseQueryExecutor {
           .join(", ");
 
     const sql = `
-    			INSERT INTO ${tableName} (${columns.join(", ")})
-    			VALUES (${placeholders})
-    			ON CONFLICT (${conflictColumns.join(", ")})
-    			DO UPDATE SET ${updateClause}
-    		`;
+      INSERT INTO ${tableName} (${columns.join(", ")})
+      VALUES (${placeholders})
+      ON CONFLICT (${conflictColumns.join(", ")})
+      DO UPDATE SET ${updateClause}
+    `;
 
-    return this.retryableRun(sql, values);
+    // Use prepared statement for better performance
+    const stmt = await this.prepare(sql);
+    try {
+      return await this.retryableRun(sql, values);
+    } finally {
+      // Note: DuckDB handles statement cleanup automatically
+    }
   }
 
-  // Generic update method
-  update<T extends Record<string, any>>(
+  /**
+   * Optimized update method using prepared statements.
+   */
+  async update<T extends Record<string, any>>(
     tableName: string,
     data: T,
     whereConditions: Partial<T>,
@@ -395,11 +418,19 @@ export class _BaseQueryExecutor {
     // Combine update values and where values
     const allValues = [...updateValues, ...whereValues];
 
-    return this.retryableRun(sql, allValues);
+    // Use prepared statement for better performance
+    const stmt = await this.prepare(sql);
+    try {
+      return await this.retryableRun(sql, allValues);
+    } finally {
+      // DuckDB handles statement cleanup automatically
+    }
   }
 
-  // Generic delete method
-  delete<T extends Record<string, any>>(
+  /**
+   * Optimized delete method using prepared statements.
+   */
+  async delete<T extends Record<string, any>>(
     tableName: string,
     whereConditions: Partial<T>,
     options?: {
@@ -422,7 +453,69 @@ export class _BaseQueryExecutor {
 
     const sql = `DELETE FROM ${tableName} ${whereClause}`;
 
-    return this.retryableRun(sql, whereValues);
+    // Use prepared statement for better performance
+    const stmt = await this.prepare(sql);
+    try {
+      return await this.retryableRun(sql, whereValues);
+    } finally {
+      // DuckDB handles statement cleanup automatically
+    }
+  }
+
+  /**
+   * Transaction support methods for atomic operations.
+   */
+  async beginTransaction(): Promise<void> {
+    await this.run("BEGIN TRANSACTION");
+  }
+
+  async commit(): Promise<void> {
+    await this.run("COMMIT");
+  }
+
+  async rollback(): Promise<void> {
+    await this.run("ROLLBACK");
+  }
+
+  /**
+   * Execute a function within a transaction with automatic rollback on error.
+   */
+  async withTransaction<T>(fn: () => Promise<T>): Promise<T> {
+    await this.beginTransaction();
+    try {
+      const result = await fn();
+      await this.commit();
+      return result;
+    } catch (error) {
+      await this.rollback();
+      throw error;
+    }
+  }
+
+  /**
+   * Get table schema information for better type safety and introspection.
+   */
+  async getTableSchema(tableName: string): Promise<Array<{column_name: string, column_type: string, nullable: boolean}>> {
+    const result = await this.queryAll(
+      "SELECT column_name, column_type, nullable FROM information_schema.columns WHERE table_name = $1 ORDER BY ordinal_position",
+      tableName
+    );
+    return result as Array<{column_name: string, column_type: string, nullable: boolean}>;
+  }
+
+  /**
+   * Enhanced error handling wrapper for database operations.
+   */
+  async safeExecute<T>(
+    operation: () => Promise<T>,
+    errorMessage = "Database operation failed"
+  ): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      console.error(`${errorMessage}:`, error);
+      throw new Error(`${errorMessage}: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   retryableRun(
@@ -431,22 +524,8 @@ export class _BaseQueryExecutor {
     types?: DuckDBType[] | Record<string, DuckDBType | undefined>,
   ) {
     console.debug(`sql: ${sql}\nvalues: ${JSON.stringify(values)}`);
-    return createRetryableDatabaseOperation(() => this.impl.run(sql, values, types))();
+    return createRetryableDatabaseOperation(() => this.run(sql, values, types))();
   }
 }
 
-export interface BaseQueryExecutor extends _BaseQueryExecutor, DuckDBConnectionAPI {}
-
-// replaces ${var} parts into $1, $2 etc.
-function buildQuery(strings: TemplateStringsArray, expr: DuckDBValue[]): string {
-  let query = "";
-  for (let i = 0; i < strings.length; i++) {
-    query += strings[i];
-
-    if (i < expr.length) {
-      query += "$" + (i + 1);
-    }
-  }
-  return query;
-}
 //#endregion

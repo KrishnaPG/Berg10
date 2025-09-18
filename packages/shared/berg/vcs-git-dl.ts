@@ -62,8 +62,8 @@ export class FsVcsGitDL {
   }
 
   refreshTable(rootPath: TFsVcsDotDBPath, tableName: TGitDLTableName) {
-    const src = path.join(rootPath, tableName, "**", "*.parquet");
     console.debug(`Refreshing table: ${tableName}`);
+    const src = path.join(rootPath, tableName, "**", "*.parquet");
     const sql = `CREATE OR REPLACE VIEW '${tableName}' AS SELECT * FROM read_parquet('${src}');`;
     return this.q.rawExec(sql).catch((ex) => console.error(`Failed to refresh table '${tableName}': ${ex.message}`));
   }
