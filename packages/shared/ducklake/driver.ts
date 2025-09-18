@@ -99,6 +99,17 @@ export type Primitive = DuckDBValue;
 
 export type TGenIDFunction = (_x: unknown) => string;
 
+/**
+ * Industry-standard logging: Use console with levels and structured output.
+ * For production, could integrate pino or winston, but keep simple here.
+ */
+function logQuery(level: "debug" | "info" | "warn", sql: string, params?: DuckDBValue[]) {
+  const timestamp = new Date().toISOString();
+  console[level](
+    `${timestamp} [DuckDB] ${level.toUpperCase()}: SQL: ${sql}${params ? ` | Params: ${JSON.stringify(params)}` : ""}`,
+  );
+}
+
 //#region BaseQueryExecutor
 /**
  * High-performance query executor that extends DuckDBConnection with additional utilities
@@ -130,23 +141,27 @@ export class BaseQueryExecutor extends DuckDBConnection {
     queryOrStrings: string | TemplateStringsArray,
     params: DuckDBValue[],
   ): { sql: string; values: DuckDBValue[] } {
+    
+    let sql: string;
+    let values: DuckDBValue[];
+
     if (typeof queryOrStrings === "string") {
       // Raw SQL string with parameters
-      return { sql: queryOrStrings, values: params };
+      sql = queryOrStrings;
+      values = params;
     } else {
       // Template strings - convert to parameterized query
       const strings = queryOrStrings;
-      let sql = strings[0];
-      const values: DuckDBValue[] = [];
-
+      sql = strings[0];
+      values = [];
       for (let i = 0; i < params.length; i++) {
         values.push(params[i]);
         sql += `$${values.length}`;
         sql += strings[i + 1];
       }
-
-      return { sql, values };
     }
+    logQuery("debug", sql, params);
+    return { sql, values };
   }
 
   /**
@@ -371,14 +386,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
       ON CONFLICT (${conflictColumns.join(", ")})
       DO UPDATE SET ${updateClause}
     `;
-
-    // Use prepared statement for better performance
-    const stmt = await this.prepare(sql);
-    try {
-      return await this.retryableRun(sql, values);
-    } finally {
-      // Note: DuckDB handles statement cleanup automatically
-    }
+    return this.retryableRun(sql, values);
   }
 
   /**
@@ -418,13 +426,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
     // Combine update values and where values
     const allValues = [...updateValues, ...whereValues];
 
-    // Use prepared statement for better performance
-    const stmt = await this.prepare(sql);
-    try {
-      return await this.retryableRun(sql, allValues);
-    } finally {
-      // DuckDB handles statement cleanup automatically
-    }
+    return this.retryableRun(sql, allValues);
   }
 
   /**
@@ -452,14 +454,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
     }
 
     const sql = `DELETE FROM ${tableName} ${whereClause}`;
-
-    // Use prepared statement for better performance
-    const stmt = await this.prepare(sql);
-    try {
-      return await this.retryableRun(sql, whereValues);
-    } finally {
-      // DuckDB handles statement cleanup automatically
-    }
+    return this.retryableRun(sql, whereValues);
   }
 
   /**
@@ -495,21 +490,20 @@ export class BaseQueryExecutor extends DuckDBConnection {
   /**
    * Get table schema information for better type safety and introspection.
    */
-  async getTableSchema(tableName: string): Promise<Array<{column_name: string, column_type: string, nullable: boolean}>> {
+  async getTableSchema(
+    tableName: string,
+  ): Promise<Array<{ column_name: string; column_type: string; nullable: boolean }>> {
     const result = await this.queryAll(
       "SELECT column_name, column_type, nullable FROM information_schema.columns WHERE table_name = $1 ORDER BY ordinal_position",
-      tableName
+      tableName,
     );
-    return result as Array<{column_name: string, column_type: string, nullable: boolean}>;
+    return result as Array<{ column_name: string; column_type: string; nullable: boolean }>;
   }
 
   /**
    * Enhanced error handling wrapper for database operations.
    */
-  async safeExecute<T>(
-    operation: () => Promise<T>,
-    errorMessage = "Database operation failed"
-  ): Promise<T> {
+  async safeExecute<T>(operation: () => Promise<T>, errorMessage = "Database operation failed"): Promise<T> {
     try {
       return await operation();
     } catch (error) {
@@ -523,7 +517,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
     values?: DuckDBValue[] | undefined,
     types?: DuckDBType[] | Record<string, DuckDBType | undefined>,
   ) {
-    console.debug(`sql: ${sql}\nvalues: ${JSON.stringify(values)}`);
+    logQuery("debug", sql, values);
     return createRetryableDatabaseOperation(() => this.run(sql, values, types))();
   }
 }
