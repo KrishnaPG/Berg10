@@ -231,15 +231,13 @@ export class BaseQueryExecutor extends DuckDBConnection {
    * Unified exec method for queries that don't return data.
    *
    * @example
-   * await db.exec`DELETE FROM users WHERE id=${userId}`;
-   * await db.exec("DELETE FROM users WHERE id=$1", userId);
+   * const sql = `DELETE FROM users WHERE id=${userId}`;
+   * await db.exec(sql);
    */
   async exec(
-    queryOrStrings: string | TemplateStringsArray,
-    ...params: DuckDBValue[]
+    sql: string,
   ): Promise<DuckDBMaterializedResult> {
-    const { sql, values } = this.buildQueryParams(queryOrStrings, params);
-    return this.retryableRun(sql, values);
+    return this.retryableRun(sql);
   }
 
   /**

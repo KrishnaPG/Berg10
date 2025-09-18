@@ -57,7 +57,7 @@ export class FsVcsGitDL {
     )
       .then(({ db }) => new FsVcsGitDL(db))
       .catch((error) => {
-        throw new Error(`Failed to setup DataLake at [${rootPath}].\n\t${(error as Error).message}\n`);
+        throw new Error(`Failed to setup DataLake at "${rootPath}".\n\t${(error as Error).message}\n`);
       });
   }
 
@@ -65,12 +65,12 @@ export class FsVcsGitDL {
     console.debug(`Refreshing table: ${tableName}`);
     const src = path.join(rootPath, tableName, "**", "*.parquet");
     const sql = `CREATE OR REPLACE VIEW '${tableName}' AS SELECT * FROM read_parquet('${src}');`;
-    return this.q.rawExec(sql).catch((ex) => console.error(`Failed to refresh table '${tableName}': ${ex.message}`));
+    return this.q.exec(sql).catch((ex) => console.error(`Failed to refresh table '${tableName}': ${ex.message}`));
   }
 
   checkIfViewExists(tableName: TGitDLTableName) {
     const sql = `SELECT view_name FROM duckdb_views WHERE view_name = '${tableName}';`;
-    return this.q.rawQueryRow(sql).catch((ex) => {
+    return this.q.queryRow(sql).catch((ex) => {
       console.warn(`checkIfTableExists('${tableName}') failed: ${ex.message}`);
       return null;
     });
