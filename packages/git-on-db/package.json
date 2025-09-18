@@ -17,6 +17,7 @@
     "@graphql-tools/schema": "^10.0.25",
     "@sinclair/typebox": "0.34.41",
     "apache-arrow": "21.0.0",
+    "chdb": "1.4.0",
     "commander": "14.0.1",
     "drizzle-orm": "^0.44.5",
     "elysia": "1.3.21",
