@@ -104,7 +104,7 @@ export class FsVCS {
     return streamCommitsToParquet(
       srcGitShell,
       this.dbCommitsFolderPath,
-      "xyz" as TFsVcsDbCommitBaseName, //TODO: currentTime + `since-{lastCommitTime}`
+      Date.now().toString(36) as TFsVcsDbCommitBaseName, //TODO: currentTime + `since-{lastCommitTime}`
       lastCommitTime,
     ).finally(() => this.gitDL.refreshView(this.dotDBFolder, "commits"));
   }

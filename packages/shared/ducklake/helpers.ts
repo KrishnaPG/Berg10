@@ -32,7 +32,7 @@ export function csvToParquet(
         SELECT regexp_split_to_array(line, '${delim}') AS c
         FROM read_csv_auto(
             '${srcFilePath}',
-            delim='\\0',      -- we never want read_csv to split
+            delim='\\0',
             columns={'line': 'VARCHAR'},
             header=false
         )

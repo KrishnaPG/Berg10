@@ -57,3 +57,7 @@ export function atomicFileRename(oldFilePath: TFilePath, newFilePath: TFilePath)
 export function getRandomId(now: number = Date.now()) {
   return `${Math.random().toString(36).slice(2)}-${now.toString(36)}`;
 }
+
+export function isFileEmpty(file: Bun.BunFile): Promise<boolean> {
+  return file.stat().then(({size}) => size===0);
+}

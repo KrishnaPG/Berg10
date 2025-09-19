@@ -1,5 +1,6 @@
 import type { TFilePath, TFolderPath } from "@shared/types";
 import type { TGitDirPath } from "@shared/types/git.types";
+import { isFileEmpty } from "@shared/utils";
 import fs from "fs-extra";
 import path from "path";
 import { linesBatchedTransform } from "./lines-batched-transform";
@@ -29,18 +30,20 @@ export class GitShell {
   }
 
   /** runs a command and saves the output to a file */
-  public execToFile(args: string[], outFilePath: TFilePath): Promise<Bun.BunFile> {
+  public execToFile(args: string[], outFilePath: TFilePath): Promise<Bun.BunFile | null> {
     const file = Bun.file(outFilePath);
-    return this.exec(args, { stdout: file }).exited.then((exitCode) => {
-      // if some problem, delete the file and throw error
-      if (exitCode) {
-        file.unlink().finally(() => {
-          throw new Error(`Command "${args.join(" ")}" exited with code ${exitCode}`);
-        });
-      }
-      // no problem, return the file instance
-      return file;
-    });
+    return this.exec(args, { stdout: file })
+      .exited.then((exitCode) => {
+        // if some problem, delete the file and throw error
+        if (exitCode) {
+          file.unlink().finally(() => {
+            throw new Error(`Command "${args.join(" ")}" exited with code ${exitCode}`);
+          });
+        }
+        // shell exec succeeded, but check if there is any output or just empty file
+        return isFileEmpty(file);
+      })
+      .then((isEmpty) => (isEmpty ? file.unlink().then((_) => null) : file));
   }
 
   /** runs a command and streams the output lines in batches */
