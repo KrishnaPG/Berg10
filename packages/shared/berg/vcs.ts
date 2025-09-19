@@ -10,6 +10,7 @@ import type {
   TFsVcsDotGitPath,
   TFsVcsRepoId,
   TName,
+  TSecSinceEpoch,
 } from "@shared/types";
 import type { TGitSHA } from "@shared/types/git-internal.types";
 import fs from "fs-extra";
@@ -100,12 +101,12 @@ export class FsVCS {
 
   async importCommits(srcGitShell: GitShell) {
     const tableExists = await this.gitDL.checkIfViewExists("commits" as TGitDLTableName);
-    const lastCommitTime = tableExists && (await this.gitDL.lastCommitTime()) as any; //TODO: use SELECT max(commit_time) FROM parquet_scan(?);
-    return streamCommitsToParquet(
-      srcGitShell,
-      this.dbCommitsFolderPath,
-      Date.now().toString(36) as TFsVcsDbCommitBaseName, //TODO: currentTime + `since-{lastCommitTime}`
-      lastCommitTime,
-    ).finally(() => this.gitDL.refreshView(this.dotDBFolder, "commits"));
+    const lastCommitTime = tableExists && (await this.gitDL.lastCommitTime());
+    const since: TSecSinceEpoch = (lastCommitTime ? lastCommitTime + 1 : 0) as TSecSinceEpoch;
+
+    const destFileBaseName = `from-${since}` as TFsVcsDbCommitBaseName;
+    return streamCommitsToParquet(srcGitShell, this.dbCommitsFolderPath, destFileBaseName, since).finally(() =>
+      this.gitDL.refreshView(this.dotDBFolder, "commits"),
+    );
   }
 }

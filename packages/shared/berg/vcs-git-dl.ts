@@ -1,5 +1,6 @@
 import path from "node:path";
-import { type BaseQueryExecutor, ensureTables, type Row } from "@shared/ducklake";
+import type { DuckDBTimestampTZValue } from "@duckdb/node-api";
+import { type BaseQueryExecutor, ensureTables } from "@shared/ducklake";
 import type {
   TDuckLakeDBName,
   TDuckLakeRootPath,
@@ -90,10 +91,13 @@ export class FsVcsGitDL {
 
   checkIfViewExists(tableName: TGitDLTableName) {
     const sql = `SELECT view_name FROM duckdb_views WHERE view_name = '${tableName}';`;
-    return this.q.queryRow(sql).catch((ex) => {
-      console.warn(`checkIfTableExists('${tableName}') failed: ${ex.message}`);
-      return null;
-    });
+    return this.q
+      .queryRow(sql)
+      .then(() => true)
+      .catch((ex) => {
+        console.warn(`checkIfTableExists('${tableName}') failed: ${ex.message}`);
+        return false;
+      });
   }
 
   /* -------------------------------------------------- commits */
@@ -112,8 +116,10 @@ export class FsVcsGitDL {
     return this.q.queryRow`SELECT * FROM commits WHERE sha = ${sha}`;
   }
 
-  async lastCommitTime() {
-    return this.q.queryRow<Row<TSecSinceEpoch>>`SELECT max('commit_time') FROM commits`;
+  async lastCommitTime(): Promise<TSecSinceEpoch|undefined> {
+    return this.q.queryRow<{ t: DuckDBTimestampTZValue }>`SELECT max(commit_time) as t FROM commits`.then(
+      (row) => row ? Number(row.t.micros / (1000n*1000n)) as TSecSinceEpoch: undefined,
+    );
   }
 
   async parent(sha: string) {

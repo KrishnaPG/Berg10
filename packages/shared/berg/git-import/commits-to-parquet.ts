@@ -29,15 +29,15 @@ export function streamCommitsToParquet(
   since?: TSecSinceEpoch,
 ) {
   const args = ["log", "--all", "--reverse", "--date-order", `--format=%H|%P|%T|%ct|%cn|%ce|%s`];
-  if (since) args.push(`--since=${since}`);
+  if (since) args.push(`--since='${since}'`);
 
   const tmpCSVFilePath = path.resolve(destFolder, `${destFileBaseName}.csv.tmp`) as TFilePath;
 
-  return srcGitShell.execToFile(args, tmpCSVFilePath).then((tmpCSVFile: Bun.BunFile|null) => {
+  return srcGitShell.execToFile(args, tmpCSVFilePath).then((tmpCSVFile: Bun.BunFile | null) => {
     // if the output csv file was empty, no records to process
-    if(!tmpCSVFile) {
+    if (!tmpCSVFile) {
       console.debug(`streamCommitsToParquet: No commits found since ${since}`);
-      return tmpCSVFile.unlink();
+      return;
     }
     // else, load into parquet
     const colProjection = `
