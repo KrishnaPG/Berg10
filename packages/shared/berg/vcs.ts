@@ -94,7 +94,7 @@ export class FsVCS {
     }
     // wait for any pending promises, then return `this` for method chaining
     return Promise.all(p)
-      .then(() => this.gitDL.refreshTable(this.dotDBFolder, "pack-index"))
+      .then(() => this.gitDL.refreshView(this.dotDBFolder, "pack-index"))
       .then(() => this);
   }
 
@@ -104,8 +104,8 @@ export class FsVCS {
     return streamCommitsToParquet(
       srcGitShell,
       this.dbCommitsFolderPath,
-      "xyz" as TFsVcsDbCommitBaseName,
+      "xyz" as TFsVcsDbCommitBaseName, //TODO: currentTime + `since-{lastCommitTime}`
       lastCommitTime,
-    ).finally(() => this.gitDL.refreshTable(this.dotDBFolder, "commits"));
+    ).finally(() => this.gitDL.refreshView(this.dotDBFolder, "commits"));
   }
 }

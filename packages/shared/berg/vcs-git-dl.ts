@@ -48,7 +48,27 @@ export class FsVcsGitDL {
     return ensureTables(
       rootPath as TDuckLakeRootPath,
       lakeDBName,
-      `select 'Hello, World!' as message;
+      `
+      CREATE TABLE IF NOT EXISTS runs (
+        run_id       VARCHAR NOT NULL,
+        created_at   TIMESTAMP WITH TIME ZONE,
+        chain_name   VARCHAR NOT NULL,
+        status       VARCHAR NOT NULL
+      ) WITH (
+          format = 'parquet'
+        );
+
+      CREATE TABLE IF NOT EXISTS steps (
+        run_id      VARCHAR NOT NULL,
+        step_idx    INTEGER NOT NULL,
+        created_at  TIMESTAMP WITH TIME ZONE,
+        input       VARCHAR,
+        output      VARCHAR,
+        error       VARCHAR
+      ) WITH (
+          format = 'parquet'
+        );
+       
       -- optional: helper view for commit_parents
       -- CREATE OR REPLACE VIEW commit_parents AS
       --   SELECT sha AS commit_sha, unnest(parent_shas) AS parent_sha, ordinality-1 AS idx
@@ -61,11 +81,11 @@ export class FsVcsGitDL {
       });
   }
 
-  refreshTable(rootPath: TFsVcsDotDBPath, tableName: TGitDLTableName) {
-    console.debug(`Refreshing table: ${tableName}`);
-    const src = path.join(rootPath, tableName, "**", "*.parquet");
-    const sql = `CREATE OR REPLACE VIEW '${tableName}' AS SELECT * FROM read_parquet('${src}');`;
-    return this.q.exec(sql).catch((ex) => console.error(`Failed to refresh table '${tableName}': ${ex.message}`));
+  refreshView(rootPath: TFsVcsDotDBPath, viewName: TGitDLTableName) {
+    console.debug(`Refreshing view: ${viewName}`);
+    const src = path.join(rootPath, viewName, "**", "*.parquet");
+    const sql = `CREATE OR REPLACE VIEW '${viewName}' AS SELECT * FROM read_parquet('${src}');`;
+    return this.q.exec(sql).catch((ex) => console.error(`Failed to refresh view '${viewName}': ${ex.message}`));
   }
 
   checkIfViewExists(tableName: TGitDLTableName) {

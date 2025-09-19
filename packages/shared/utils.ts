@@ -1,7 +1,6 @@
 import { sha256 } from "@fict/crypto";
 import fs from "fs-extra";
 import path from "path";
-import { fileURLToPath } from "url";
 import type { TFilePath, TFolderPath, TSHA256B58 } from "./types";
 import type { TGitRepoRootPath } from "./types/git.types";
 
@@ -53,4 +52,8 @@ export function atomicFileRename(oldFilePath: TFilePath, newFilePath: TFilePath)
 
   // 3. atomic rename
   return fs.renameSync(oldFilePath, newFilePath);
+}
+
+export function getRandomId(now: number = Date.now()) {
+  return `${Math.random().toString(36).slice(2)}-${now.toString(36)}`;
 }

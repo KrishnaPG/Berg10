@@ -28,6 +28,14 @@ export type TLMDBRootPath = Branded<TFolderPath, "LMDBRootPath">;
 export type TLMDBFilePath = Branded<TFilePath, "LMDBFilePath">;
 
 /**
+ * Usually this is `TBergPath + "/db"`;
+ * Same as ChDb root path that contains .chdb files
+ */
+export type TChDbRootPath = Branded<TFolderPath, "ChDbRootPath">;
+/** Usually `TLMDBRootPath + <name>.chdb` file path */
+export type TChDbFilePath = Branded<TFilePath, "ChDbFilePath">;
+
+/**
  * Usually this is `TBergPath + "/dl"`;
  *
  * Same as `TDuckLakeRootPath`, and contains {`TDuckLakeMetaFilePath`, `TDuckLakeDataFilesFolder`};

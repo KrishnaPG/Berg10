@@ -3,9 +3,7 @@ type MaybePromise<T> = T | Promise<T>;
 export const DROP = Symbol("drop");
 export type GenStepFn<I, O> = (input: I) => AsyncGenerator<O, void, unknown>; // allows to expand one chunk into 0..n chunks
 
-export type StepFn<I, O> = 
-  | ((input: I) => MaybePromise<O | typeof DROP>) // sync or async methods
-  | GenStepFn<I, O> // generator method
+export type StepFn<I, O> = ((input: I, stepId: number) => MaybePromise<O | typeof DROP>); // sync or async methods
 
 /**
  * A single step in the chain.
@@ -24,15 +22,15 @@ export type StepOrFn<I, O> = Step<I, O> | StepFn<I, O>;
 
 /** A tuple of Steps. Used to infer the stream input/output types. */
 export type StepOrFnChain = readonly StepOrFn<any, any>[];
-export type StepChain = readonly Step<any, any>[];
+export type StepChain = readonly Step<unknown, unknown>[];
 
 /** Helpers to infer input/output of a step/function */
-export type InputOf<T> = T extends StepFn<infer I, any> ? I : T extends Step<infer I, any> ? I : never;
+export type InputOf<T> = T extends StepFn<infer I, unknown> ? I : T extends Step<infer I, unknown> ? I : never;
 
-export type OutputOf<T> = T extends StepFn<any, infer O>
-  ? ReturnType<StepFn<any, O>>
-  : T extends Step<any, infer O>
-    ? ReturnType<Step<any, O>["transform"]>
+export type OutputOf<T> = T extends StepFn<unknown, infer O>
+  ? ReturnType<StepFn<unknown, O>>
+  : T extends Step<unknown, infer O>
+    ? ReturnType<Step<unknown, O>["transform"]>
     : never;
 
 /* Helpers to infer types of the chain */
@@ -65,36 +63,9 @@ export async function runStepsFrom<T extends StepChain>(
   let v: unknown = value;
   for (let i = fromIndex; i < steps.length; i++) {
     if (v === DROP) return v as LastOutput<T>;
-    v = await steps[i].transform(v);
+    v = await steps[i].transform(v, i);
   }
   return v as LastOutput<T>;
-}
-
-export function runStep<I, O>(s: StepOrFn<I, O>, v: I): OutputOf<StepOrFn<I, O>> {
-  return typeof s === "function" ? s(v) : s.transform(v);
-}
-
-/**
- * Run a single step.  Returns:
- * - DROP symbol  → drop this chunk
- * - O            → single value (legacy)
- * - AsyncGenerator → expand to 0..n values
- */
-export async function* runStepIterable<I, O>(
-  s: Step<I, O>,
-  v: I
-): AsyncGenerator<O, void, unknown> {
-  const res = s.transform(v);
-
-  // generator branch
-  if (res && typeof res === 'object' && Symbol.asyncIterator in res) {
-    yield* res as AsyncGenerator<O, void, unknown>;
-    return;
-  }
-
-  // classic single value (may be a promise)
-  const awaited = await res;
-  if (awaited !== DROP) yield awaited as O;
 }
 
 /**
@@ -156,8 +127,8 @@ type AsStepChain<Chain extends StepOrFnChain> = ValidateChain<{
 
 /*  true left-fold:  [A→B, B→C, C→D]  ok   ;  [A→B, C→D]  error  */
 type ValidateChain<T> = T extends readonly [infer A, infer B, ...infer Rest]
-  ? A extends StepOrFn<infer I, infer O>
-    ? B extends StepOrFn<O, infer P>
+  ? A extends StepOrFn<infer _I, infer O>
+    ? B extends StepOrFn<O, infer _P>
       ? [A, ...ValidateChain<[B, ...Rest]>]
       : never
     : never
@@ -197,17 +168,17 @@ export function compose<Chain extends StepOrFnChain>(chain: ValidateChain<Chain>
         s => s.length,
         n => n * 2
       ); // 10
- * @example
+ * @example 
     const discount = pipe(
       cart.items,
       items => items.filter(i => i.inStock),
       items => items.reduce((s, i) => s + i.price, 0),
       total => total * 0.9
     );
- */
+*/
 export function pipe<A, B>(a: A, fn: (x: A) => B): B;
 export function pipe<A, B, C>(a: A, fn1: (x: A) => B, fn2: (x: B) => C): C;
-export function pipe(a: any, ...fns: Array<(x: any) => any>) {
+export function pipe(a: unknown, ...fns: Array<(x: unknown) => unknown>) {
   return fns.reduce((v, fn) => fn(v), a);
 }
 

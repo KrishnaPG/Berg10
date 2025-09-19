@@ -13,7 +13,7 @@ export function getDuckDbConnection(
   return gDuckDBInstances.getOrCreateInstance(path, options).then((instance) => instance.connect());
 }
 
-export type TCsvDelims = `\t` | `,` | "|";
+export type TCsvDelims = `\t` | `,` | "\\|";
 
 /** converts the given csv-compatible file/content to parquet (using DuckDB)*/
 export function csvToParquet(
@@ -32,7 +32,7 @@ export function csvToParquet(
         SELECT regexp_split_to_array(line, '${delim}') AS c
         FROM read_csv_auto(
             '${srcFilePath}',
-            delim='\0',      -- we never want read_csv to split
+            delim='\\0',      -- we never want read_csv to split
             columns={'line': 'VARCHAR'},
             header=false
         )
