@@ -1,8 +1,8 @@
 import { ParquetSchema } from "@dsnp/parquetjs";
+import { TransactionalParquetWriter } from "@shared/ducklake/helpers";
 import type { GitShell } from "@shared/git-shell";
 import type { TFilePath, TFsVcsDbPIFolderPath, TFsVcsDbPIName } from "@shared/types";
 import type { TGitSHA } from "@shared/types/git-internal.types";
-import { TransactionalParquetWriter } from "../parquet-writer";
 
 // NOTE: this has to match the interface `IdxFileLine` below
 const idxFileLineSchema = new ParquetSchema({

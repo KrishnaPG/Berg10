@@ -11,6 +11,7 @@ import type {
   TSecSinceEpoch,
   TSQLString,
 } from "@shared/types";
+import { getRandomId } from "@shared/utils";
 import path from "path";
 
 export function shellCsvToParquet(
@@ -21,7 +22,7 @@ export function shellCsvToParquet(
   colProjection: TSQLString,
   csvDelimiter: TCsvDelim = `\\|`,
 ) {
-  const tmpCSVFilePath = path.resolve(destFolder, `${destFileBaseName}.csv.tmp`) as TFilePath;
+  const tmpCSVFilePath = path.resolve(destFolder, `${getRandomId()}.csv.tmp`) as TFilePath;
   return srcGitShell.execToFile(cmdArgs, tmpCSVFilePath).then((tmpCSVFile: Bun.BunFile | null) => {
     // if the output csv file was empty, no records to process
     if (!tmpCSVFile) {

@@ -20,7 +20,7 @@ import path from "path";
 import { streamCommitsToParquet } from "./git-import/commits-to-parquet";
 import { streamIDXtoParquet } from "./git-import/idx-to-parquet";
 import { streamLsTreeToParquet } from "./git-import/lstree-to-parquet";
-import { FsVcsGitDL, type TGitDLTableName } from "./vcs-git-dl";
+import { FsVcsGitDL, gitDLTableNames, type TGitDLTableName } from "./vcs-git-dl";
 import type { FsVCSManager } from "./vcs-manager";
 
 /** Manages one specific vcs repo */
@@ -35,10 +35,9 @@ export class FsVCS {
     const dotGitFolder = path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.git`) as TFsVcsDotGitPath;
     const dotDBFolder = path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.db`) as TFsVcsDotDBPath;
     // ensureDir for all required folders
-    const dirs = ["commits", "trees", "refs", "blobs", "pack-index"];
     return Promise.all([
       fs.ensureDir(dotGitFolder),
-      ...dirs.map((d) => fs.ensureDir(path.resolve(dotDBFolder, d))),
+      ...gitDLTableNames.map((d) => fs.ensureDir(path.resolve(dotDBFolder, d))),
     ]).then(() => {
       // setup DuckLake and mount GitDL
       return FsVcsGitDL.mount(dotDBFolder).then((gitDL) => new FsVCS(dotGitFolder, dotDBFolder, vcsMgr, gitDL));
@@ -106,7 +105,8 @@ export class FsVCS {
   }
 
   async importCommits(srcGitShell: GitShell) {
-    const tableExists = await this.gitDL.checkIfViewExists("commits" as TGitDLTableName);
+    // TODO: cleanup tmp files from previous runs
+    const tableExists = await this.gitDL.checkIfViewExists("commits");
     const lastCommitTime = tableExists && (await this.gitDL.lastCommitTime());
     const since: TSecSinceEpoch = (lastCommitTime ? lastCommitTime + 1 : 0) as TSecSinceEpoch;
 
@@ -117,6 +117,9 @@ export class FsVCS {
   }
 
   async importLsTree(srcGitShell: GitShell) {
+    // TODO: cleanup tmp files from previous runs
+    const tableExists = await this.gitDL.checkIfViewExists("tree-entries");
+    const sql = tableExists ? '' : `select sha, tree from commits`; //TODO: when table exists, do join of commits x tree-entries
     const tree: TGitSHA = Math.random().toString(36).slice(2) as TGitSHA;
     // TODO: for each commit from `commits` that has no `ls-tree` entry, do ...{}
     const destFileBaseName: TFileBaseName = `${tree}` as TFileBaseName;

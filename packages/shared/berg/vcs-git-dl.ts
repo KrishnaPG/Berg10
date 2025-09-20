@@ -10,7 +10,8 @@ import type {
   TSQLString,
 } from "@shared/types";
 
-export type TGitDLTableName = "commits" | "pack-index" | "trees" | "blobs" | "refs;";
+export const gitDLTableNames = ["commits", "pack-index", "tree-entries", "blobs", "refs"] as const;
+export type TGitDLTableName = (typeof gitDLTableNames)[number];
 
 /** Providers DuckLake interface over the VCS git db content 
  * ```sh
