@@ -17,7 +17,7 @@ const idxFileLineSchema = new ParquetSchema({
 
 // NOTE: this interface has to match the groups of `idxFileLineRegEx` below
 export interface IdxFileLine {
-  sha1: TGitSHA;
+  sha: TGitSHA;
   type: "commit" | "tree" | "blob" | "tag";
   size: number;
   sizeInPack: number;
@@ -29,7 +29,7 @@ export interface IdxFileLine {
 
 // The source of truth: comes from `git verify-pack -v` command output format
 const idxFileLineRegEx =
-  /^(?<sha1>[0-9a-f]{40})\s+(?<type>commit|tree|blob|tag)\s+(?<size>\d+)\s+(?<sizeInPack>\d+)\s+(?<offset>\d+)(?:\s+(?<depth>\d+)\s+(?<base>[0-9a-f]{40}))?$/;
+  /^(?<sha>[0-9a-f]{40,64})\s+(?<type>commit|tree|blob|tag)\s+(?<size>\d+)\s+(?<sizeInPack>\d+)\s+(?<offset>\d+)(?:\s+(?<depth>\d+)\s+(?<base>[0-9a-f]{40,64}))?$/;
 
 const ROW_BATCH_SIZE = 4096;
 
@@ -55,7 +55,7 @@ export function streamIDXtoParquet(
               if (!m?.groups) continue; // skip unnecessary lines
               const g = m.groups;
               const row: IdxFileLine = {
-                sha1: g.sha1 as TGitSHA,
+                sha: g.sha as TGitSHA,
                 type: g.type as IdxFileLine["type"],
                 size: Number(g.size),
                 sizeInPack: Number(g.sizeInPack),

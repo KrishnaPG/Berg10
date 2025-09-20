@@ -1,11 +1,13 @@
 import type { GitShell } from "@shared/git-shell";
 import type {
+  TFileBaseName,
   TFilePath,
   TFsVcsDbCommitBaseName,
   TFsVcsDbCommitsFolderPath,
   TFsVcsDbPIFilePath,
   TFsVcsDbPIFolderPath,
   TFsVcsDbPIName,
+  TFsVcsDbTreesFolderPath,
   TFsVcsDotDBPath,
   TFsVcsDotGitPath,
   TFsVcsRepoId,
@@ -17,6 +19,7 @@ import fs from "fs-extra";
 import path from "path";
 import { streamCommitsToParquet } from "./git-import/commits-to-parquet";
 import { streamIDXtoParquet } from "./git-import/idx-to-parquet";
+import { streamLsTreeToParquet } from "./git-import/lstree-to-parquet";
 import { FsVcsGitDL, type TGitDLTableName } from "./vcs-git-dl";
 import type { FsVCSManager } from "./vcs-manager";
 
@@ -53,6 +56,9 @@ export class FsVCS {
 
   get dbCommitsFolderPath(): TFsVcsDbCommitsFolderPath {
     return path.resolve(this.dotDBFolder, "commits") as TFsVcsDbCommitsFolderPath;
+  }
+  get dbTreesFolderPath(): TFsVcsDbTreesFolderPath {
+    return path.resolve(this.dotDBFolder, "trees") as TFsVcsDbTreesFolderPath;
   }
 
   /** ---------- Packfile Index Builder (idempotent) ----------
@@ -107,6 +113,13 @@ export class FsVCS {
     const destFileBaseName = `from-${since}` as TFsVcsDbCommitBaseName;
     return streamCommitsToParquet(srcGitShell, this.dbCommitsFolderPath, destFileBaseName, since).finally(() =>
       this.gitDL.refreshView(this.dotDBFolder, "commits"),
-    );
+    ).then(()=> this); // for method chaining
+  }
+
+  async importLsTree(srcGitShell: GitShell) {
+    const tree: TGitSHA = Math.random().toString(36).slice(2) as TGitSHA;
+    // TODO: for each commit from `commits` that has no `ls-tree` entry, do ...{}
+    const destFileBaseName: TFileBaseName = `${tree}` as TFileBaseName;
+    return streamLsTreeToParquet(srcGitShell, this.dbTreesFolderPath, destFileBaseName, tree);
   }
 }

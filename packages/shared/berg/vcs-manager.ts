@@ -52,6 +52,7 @@ export class FsVCSManager extends BergComponent {
     return FsVCS.getInstance(this, rec.repoId)
       .then((vcs) => vcs.buildGitPackIndex(srcGitShell))
       .then((vcs) => vcs.importCommits(srcGitShell))
+      .then((vcs) => vcs.importLsTree(srcGitShell))
       .finally(() => {
         // mark sync as OFF
         return this.putImportRecord({

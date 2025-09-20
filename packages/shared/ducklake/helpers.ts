@@ -13,7 +13,7 @@ export function getDuckDbConnection(
   return gDuckDBInstances.getOrCreateInstance(path, options).then((instance) => instance.connect());
 }
 
-export type TCsvDelims = `\t` | `,` | "\\|";
+export type TCsvDelim = `\t` | `,` | "\\|";
 
 /** converts the given csv-compatible file/content to parquet (using DuckDB)*/
 export function csvToParquet(
@@ -21,7 +21,7 @@ export function csvToParquet(
   colProjection: TSQLString,
   destFolder: TFolderPath,
   destFileBaseName: TFileBaseName,
-  delim: TCsvDelims = "\t",
+  delim: TCsvDelim = "\t",
 ) {
   const tmpFilePath = path.resolve(destFolder, `${destFileBaseName}.tmp`) as TFilePath;
   const finalFilePath = path.resolve(destFolder, `${destFileBaseName}.parquet`) as TFilePath;
