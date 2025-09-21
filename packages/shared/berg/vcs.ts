@@ -16,6 +16,7 @@ import type {
 } from "@shared/types";
 import type { TGitSHA } from "@shared/types/git-internal.types";
 import fs from "fs-extra";
+import os from "os";
 import path from "path";
 import { streamCommitsToParquet } from "./git-import/commits-to-parquet";
 import { streamIDXtoParquet } from "./git-import/idx-to-parquet";
@@ -26,12 +27,13 @@ import type { FsVCSManager } from "./vcs-manager";
 /** Manages one specific vcs repo */
 export class FsVCS {
   constructor(
+    protected srcGitShell: GitShell,  // git shell command executor (on the source repo)
     protected dotGitFolder: TFsVcsDotGitPath, // aux .git folder, probably `vcs/<repoId>.git/`, if exists
     protected dotDBFolder: TFsVcsDotDBPath, // db folder: `vcs/<repoId>.db/`
     protected vcsMgr: FsVCSManager,
     protected gitDL: FsVcsGitDL,
   ) {}
-  public static getInstance(vcsMgr: FsVCSManager, vcsRepoId: TFsVcsRepoId): Promise<FsVCS> {
+  public static getInstance(vcsMgr: FsVCSManager, vcsRepoId: TFsVcsRepoId, srcGitShell: GitShell): Promise<FsVCS> {
     const dotGitFolder = path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.git`) as TFsVcsDotGitPath;
     const dotDBFolder = path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.db`) as TFsVcsDotDBPath;
     // ensureDir for all required folders
@@ -40,7 +42,9 @@ export class FsVCS {
       ...gitDLTableNames.map((d) => fs.ensureDir(path.resolve(dotDBFolder, d))),
     ]).then(() => {
       // setup DuckLake and mount GitDL
-      return FsVcsGitDL.mount(dotDBFolder).then((gitDL) => new FsVCS(dotGitFolder, dotDBFolder, vcsMgr, gitDL));
+      return FsVcsGitDL.mount(dotDBFolder).then(
+        (gitDL) => new FsVCS(srcGitShell, dotGitFolder, dotDBFolder, vcsMgr, gitDL),
+      );
     });
   }
   get dbPIFolderPath(): TFsVcsDbPIFolderPath {
@@ -96,7 +100,7 @@ export class FsVCS {
       p.push(streamIDXtoParquet(srcGitShell, srcIdxPath as TFilePath, this.dbPIFolderPath, packName));
 
       // run multiple in parallel, but do not stress the system too much
-      if (p.length >= 4) await Promise.all(p).then(() => (p.length = 0));
+      if (p.length >= os.availableParallelism()) await Promise.all(p).then(() => (p.length = 0));
     }
     // wait for any pending promises, then return `this` for method chaining
     return Promise.all(p)
@@ -111,18 +115,43 @@ export class FsVCS {
     const since: TSecSinceEpoch = (lastCommitTime ? lastCommitTime + 1 : 0) as TSecSinceEpoch;
 
     const destFileBaseName = `from-${since}` as TFsVcsDbCommitBaseName;
-    return streamCommitsToParquet(srcGitShell, this.dbCommitsFolderPath, destFileBaseName, since).finally(() =>
-      this.gitDL.refreshView(this.dotDBFolder, "commits"),
-    ).then(()=> this); // for method chaining
+    return streamCommitsToParquet(srcGitShell, this.dbCommitsFolderPath, destFileBaseName, since)
+      .then(() => this.gitDL.refreshView(this.dotDBFolder, "commits"))
+      .then(() => this); // for method chaining
   }
 
   async importLsTree(srcGitShell: GitShell) {
-    // TODO: cleanup tmp files from previous runs
-    const tableExists = await this.gitDL.checkIfViewExists("tree-entries");
-    const sql = tableExists ? '' : `select sha, tree from commits`; //TODO: when table exists, do join of commits x tree-entries
-    const tree: TGitSHA = Math.random().toString(36).slice(2) as TGitSHA;
-    // TODO: for each commit from `commits` that has no `ls-tree` entry, do ...{}
-    const destFileBaseName: TFileBaseName = `${tree}` as TFileBaseName;
-    return streamLsTreeToParquet(srcGitShell, this.dbTreesFolderPath, destFileBaseName, tree);
+    const p: Promise<void>[] = [];
+    for await (const rowBatch of this.gitDL.getUnlistedCommits()) {
+      rowBatch.forEach(async (row) => {
+        const destFileBaseName: TFileBaseName = row.sha as any as TFileBaseName;
+        p.push(streamLsTreeToParquet(srcGitShell, this.dbTreesFolderPath, destFileBaseName, row.tree));
+        if (p.length >= os.availableParallelism()) await Promise.all(p).then(() => (p.length = 0));
+      });
+    }
+    return Promise.all(p)
+      .then(() => this.gitDL.refreshView(this.dotDBFolder, "tree-entries"))
+      .then(() => this);
+  }
+
+  protected shellCsvToParquet(
+    srcGitShell: GitShell,
+    cmdArgs: string[],
+    destFolder: TFolderPath,
+    destFileBaseName: TFileBaseName,
+    colProjection: TSQLString,
+    csvDelimiter: TCsvDelim = `\\|`,
+  ) {
+    const tmpCSVFilePath = path.resolve(destFolder, `${getRandomId()}-csv.tmp`) as TFilePath;
+    return srcGitShell.execToFile(cmdArgs, tmpCSVFilePath).then((bytesWritten: number) => {
+      // if the output csv file was empty, no records to process
+      if (!bytesWritten) {
+        return console.debug(`shellCsvToParquet: command produced empty csv.`);
+      }
+      // else, load into parquet
+      return csvToParquet(tmpCSVFilePath, colProjection, destFolder, destFileBaseName, csvDelimiter).finally(() =>
+        unlink(tmpCSVFilePath),
+      );
+    });
   }
 }

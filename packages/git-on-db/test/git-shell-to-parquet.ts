@@ -172,7 +172,7 @@ async function buildPackIndex(dotGitFolderPath: TGitDirPath): Promise<void | voi
         }),
     );
 
-    if (p.length >= 4) await Promise.all(p).then(() => (p.length = 0));
+    if (p.length >= os.availableParallelism()) await Promise.all(p).then(() => (p.length = 0));
   }
   return Promise.all(p);
 }

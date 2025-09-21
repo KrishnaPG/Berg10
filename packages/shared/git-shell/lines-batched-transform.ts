@@ -1,3 +1,5 @@
+import { Transform } from "stream";
+
 /**
  * Build a TransformStream<Uint8Array, string[]>
  * Back-pressure is managed by the stream itself: when the downstream
@@ -19,24 +21,19 @@
       })); 
  * ```
  */
-export function linesBatchedTransform(
-  _maxLines?: number,
-): TransformStream<Uint8Array, string[]> {
+export function linesBatchedTransform(_maxLines?: number): Transform {
   const maxLines = _maxLines ?? 1000;
 
   const dec = new TextDecoder();
   let buf = "";
-  let pending: string[] = [];
+  const pending: string[] = [];
 
-  const flush = (controller: TransformStreamDefaultController<string[]>) => {
-    if (pending.length) {
-      controller.enqueue(pending);
-      pending = [];
-    }
-  };
+  return new Transform({
+    readableObjectMode: true,
+    writableObjectMode: false,
+    highWaterMark: 256,
 
-  return new TransformStream<Uint8Array, string[]>({
-    transform(chunk, controller) {
+    transform(chunk: Buffer, _encoding, callback) {
       buf += dec.decode(chunk, { stream: true });
 
       let eol: number;
@@ -44,13 +41,18 @@ export function linesBatchedTransform(
         pending.push(buf.slice(0, eol));
         buf = buf.slice(eol + 1);
 
-        if (pending.length >= maxLines) flush(controller);
+        if (pending.length >= maxLines) {
+          this.push(pending);
+          pending.length = 0;
+        }
       }
+      callback();
     },
 
-    flush(controller) {
+    flush(callback) {
       if (buf.length) pending.push(buf);
-      flush(controller);
+      if (pending.length) this.push(pending);
+      callback();
     },
   });
 }

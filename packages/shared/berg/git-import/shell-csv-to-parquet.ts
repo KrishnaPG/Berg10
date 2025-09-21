@@ -1,4 +1,3 @@
-import { csvToParquet, type TCsvDelim } from "@shared/ducklake";
 import type { GitShell } from "@shared/git-shell";
 import type {
   TEMail,
@@ -12,6 +11,7 @@ import type {
   TSQLString,
 } from "@shared/types";
 import { getRandomId } from "@shared/utils";
+import { unlink } from "fs/promises";
 import path from "path";
 
 export function shellCsvToParquet(
@@ -22,16 +22,15 @@ export function shellCsvToParquet(
   colProjection: TSQLString,
   csvDelimiter: TCsvDelim = `\\|`,
 ) {
-  const tmpCSVFilePath = path.resolve(destFolder, `${getRandomId()}.csv.tmp`) as TFilePath;
-  return srcGitShell.execToFile(cmdArgs, tmpCSVFilePath).then((tmpCSVFile: Bun.BunFile | null) => {
+  const tmpCSVFilePath = path.resolve(destFolder, `${getRandomId()}-csv.tmp`) as TFilePath;
+  return srcGitShell.execToFile(cmdArgs, tmpCSVFilePath).then((bytesWritten: number) => {
     // if the output csv file was empty, no records to process
-    if (!tmpCSVFile) {
-      console.debug(`shellCsvToParquet: command produced empty csv.`);
-      return;
+    if (!bytesWritten) {
+      return console.debug(`shellCsvToParquet: command produced empty csv.`);
     }
     // else, load into parquet
     return csvToParquet(tmpCSVFilePath, colProjection, destFolder, destFileBaseName, csvDelimiter).finally(() =>
-      tmpCSVFile.unlink(),
+      unlink(tmpCSVFilePath),
     );
   });
 }

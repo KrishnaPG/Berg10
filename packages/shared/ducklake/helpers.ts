@@ -14,40 +14,6 @@ export function getDuckDbConnection(
   return gDuckDBInstances.getOrCreateInstance(path, options).then((instance) => instance.connect());
 }
 
-export type TCsvDelim = `\t` | `,` | "\\|";
-
-/** converts the given csv-compatible file/content to parquet (using DuckDB)*/
-export function csvToParquet(
-  srcFilePath: TFilePath, // can be csv file path or csv file content in string form
-  colProjection: TSQLString,
-  destFolder: TFolderPath,
-  destFileBaseName: TFileBaseName,
-  delim: TCsvDelim = "\t",
-) {
-  const tmpFilePath = path.resolve(destFolder, `${destFileBaseName}.tmp`) as TFilePath;
-  const finalFilePath = path.resolve(destFolder, `${destFileBaseName}.parquet`) as TFilePath;
-
-  const sql = `
-    COPY (
-      WITH raw AS (
-        SELECT regexp_split_to_array(line, '${delim}') AS c
-        FROM read_csv_auto(
-            '${srcFilePath}',
-            delim='\\0',
-            columns={'line': 'VARCHAR'},
-            header=false
-        )
-      )
-      SELECT ${colProjection} FROM raw 
-    ) TO '${tmpFilePath}' (FORMAT PARQUET, COMPRESSION ZSTD);
-  `;
-  return getDuckDbConnection().then((db) =>
-    db
-      .run(sql)
-      .then(() => atomicFileRename(tmpFilePath, finalFilePath))
-      .finally(() => db.closeSync()),
-  );
-}
 
 /** ParquetWriter class with atomic file rename */
 export class TransactionalParquetWriter {

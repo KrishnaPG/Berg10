@@ -1,19 +1,27 @@
 import {
   DuckDBConnection,
   type DuckDBInstance,
-  DuckDBInstanceCache,
   type DuckDBMaterializedResult,
-  type DuckDBPreparedStatement,
   type DuckDBType,
   type DuckDBValue,
   timestampMillisValue,
   version,
 } from "@duckdb/node-api";
+import { atomicFileRename, getRandomId } from "@shared/utils";
 import { mkdir, rm } from "fs/promises";
 import os from "os";
 import path from "path";
 import { createRetryableDatabaseOperation } from "../retry";
-import type { TDuckLakeDataFilesFolder, TDuckLakeDBName, TDuckLakeMetaFilePath, TDuckLakeRootPath } from "../types";
+import type {
+  TDuckLakeDataFilesFolder,
+  TDuckLakeDBName,
+  TDuckLakeMetaFilePath,
+  TDuckLakeRootPath,
+  TFileBaseName,
+  TFilePath,
+  TFolderPath,
+  TSQLString,
+} from "../types";
 import { getDuckDbConnection } from "./helpers";
 
 // converts Date() based milli-seconds to DuckDB compatible timestamps
@@ -141,7 +149,6 @@ export class BaseQueryExecutor extends DuckDBConnection {
     queryOrStrings: string | TemplateStringsArray,
     params: DuckDBValue[],
   ): { sql: string; values: DuckDBValue[] } {
-    
     let sql: string;
     let values: DuckDBValue[];
 
@@ -181,7 +188,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
    * }
    */
   async *query<T extends Row<T> = Record<string, DuckDBValue>>(
-    queryOrStrings: string | TemplateStringsArray,
+    queryOrStrings: TSQLString | TemplateStringsArray,
     ...params: DuckDBValue[]
   ): AsyncGenerator<T[]> {
     const { sql, values } = this.buildQueryParams(queryOrStrings, params);
@@ -189,7 +196,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
 
     // Stream results in chunks for memory efficiency
     while (!reader.done) {
-      await reader.readUntil(2048); // Read in chunks of 2048 rows
+      await reader.readUntil(10); // Read in chunks of 2048 rows
       const rows = reader.getRowObjects() as T[];
       yield rows;
     }
@@ -203,7 +210,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
    * const rows2 = await db.queryAll("SELECT * FROM users WHERE active=$1", true);
    */
   async queryAll<T extends Row<T> = Record<string, DuckDBValue>>(
-    queryOrStrings: string | TemplateStringsArray,
+    queryOrStrings: TSQLString | TemplateStringsArray,
     ...params: DuckDBValue[]
   ): Promise<T[]> {
     const { sql, values } = this.buildQueryParams(queryOrStrings, params);
@@ -218,7 +225,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
    * const user = await db.queryRow`SELECT * FROM users WHERE id=${userId}`;
    */
   async queryRow<T extends Row<T> = Record<string, DuckDBValue>>(
-    queryOrStrings: string | TemplateStringsArray,
+    queryOrStrings: TSQLString | TemplateStringsArray,
     ...params: DuckDBValue[]
   ): Promise<T | null> {
     const { sql, values } = this.buildQueryParams(queryOrStrings, params);
@@ -234,9 +241,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
    * const sql = `DELETE FROM users WHERE id=${userId}`;
    * await db.exec(sql);
    */
-  async exec(
-    sql: string,
-  ): Promise<DuckDBMaterializedResult> {
+  async exec(sql: TSQLString): Promise<DuckDBMaterializedResult> {
     return this.retryableRun(sql);
   }
 
@@ -491,10 +496,9 @@ export class BaseQueryExecutor extends DuckDBConnection {
   async getTableSchema(
     tableName: string,
   ): Promise<Array<{ column_name: string; column_type: string; nullable: boolean }>> {
-    const result = await this.queryAll(
-      "SELECT column_name, column_type, nullable FROM information_schema.columns WHERE table_name = $1 ORDER BY ordinal_position",
-      tableName,
-    );
+    const sql: TSQLString =
+      "SELECT column_name, column_type, nullable FROM information_schema.columns WHERE table_name = $1 ORDER BY ordinal_position" as TSQLString;
+    const result = await this.queryAll(sql, tableName);
     return result as Array<{ column_name: string; column_type: string; nullable: boolean }>;
   }
 
@@ -511,7 +515,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
   }
 
   retryableRun(
-    sql: string,
+    sql: TSQLString,
     values?: DuckDBValue[] | undefined,
     types?: DuckDBType[] | Record<string, DuckDBType | undefined>,
   ) {

@@ -1,8 +1,13 @@
 import type { TFilePath, TFolderPath } from "@shared/types";
 import type { TGitDirPath } from "@shared/types/git.types";
 import { isFileEmpty } from "@shared/utils";
-import fs from "fs-extra";
-import path from "path";
+import { spawn } from "child_process";
+import { once } from "events";
+import fs, { createWriteStream, unlink } from "fs-extra";
+import path, { resolve } from "path";
+import { Writable } from "stream";
+import { pipeline } from "stream/promises";
+import { asyncSink, syncSink } from "./helpers";
 import { linesBatchedTransform } from "./lines-batched-transform";
 
 export class GitShell {
@@ -20,37 +25,40 @@ export class GitShell {
   }
 
   protected exec(args: string[], options?: object) {
-    const cmd = ["git", ...this.gitDirArgs, ...args];
-    console.debug(`cmd: ${cmd.join(" ")}`);
-    return Bun.spawn(cmd, {
-      stdout: "pipe",
-      stderr: "inherit", // pipe to stderr of child process to the parent (this)
+    const cmdArgs = [...this.gitDirArgs, ...args];
+    console.debug(`cmd: git ${cmdArgs.join(" ")}`);
+    return spawn("git", cmdArgs, {
+      stdio: ["ignore", "pipe", "inherit"], // stdout piped, stderr inherited
       ...options,
     });
   }
 
   /** runs a command and saves the output to a file */
-  public execToFile(args: string[], outFilePath: TFilePath): Promise<Bun.BunFile | null> {
-    const file = Bun.file(outFilePath);
-    return this.exec(args, { stdout: file })
-      .exited.then((exitCode) => {
-        // if some problem, delete the file and throw error
-        if (exitCode) {
-          file.unlink().finally(() => {
-            throw new Error(`Command "${args.join(" ")}" exited with code ${exitCode}`);
-          });
-        }
-        // shell exec succeeded, but check if there is any output or just empty file
-        return isFileEmpty(file);
-      })
-      .then((isEmpty) => (isEmpty ? file.unlink().then((_) => null) : file));
+  public async execToFile(args: string[], outFilePath: TFilePath): Promise<number> {
+    const outStream = createWriteStream(outFilePath, { highWaterMark: 64 * 1024 });
+    // spawn the child process and redirect the stdout
+    const child = this.exec(args);
+    const childExitP = once(child, "close");
+    try {
+      await pipeline(child.stdout, outStream); // back-pressure + flush
+      const [exitCode, _signal] = await childExitP; // wait for real exit
+      if (exitCode !== 0 || outStream.bytesWritten === 0) {
+        await unlink(outFilePath);
+        if (exitCode !== 0) throw new Error(`git ${args.join(" ")} exited with ${exitCode}`);
+      }
+      return outStream.bytesWritten;
+    } catch (err) {
+      child.kill("SIGKILL");
+      await childExitP.catch(() => {}); // reap zombie
+      await unlink(outFilePath).catch(() => {});
+      throw new Error(`execToFile failed with ${(err as Error).message}`, { cause: err });
+    }
   }
 
   /** runs a command and streams the output lines in batches */
-  public execStream(args: string[], write: UnderlyingSinkWriteCallback<string[]>, linesBatch = 1024) {
-    return this.exec(args)
-      .stdout.pipeThrough(linesBatchedTransform(linesBatch))
-      .pipeTo(new WritableStream<string[]>({ write }));
+  public execStream(args: string[], write: (x: string[]) => void | Promise<unknown>, linesBatch = 1024) {
+    const sink = write.length === 0 ? syncSink(write) : asyncSink(write as (b: string[]) => Promise<unknown>);
+    return pipeline(this.exec(args).stdout, linesBatchedTransform(linesBatch), sink);
   }
 
   // sets up an external git repo for workTree

@@ -3,6 +3,7 @@ import type { TFsVCSDotGitPath } from "@shared/types/fs-vcs.types";
 import type { TGitDirPath, TGitRepoRootPath } from "@shared/types/git.types";
 import fs from "fs-extra";
 import path from "path";
+import { Writable } from "stream";
 
 // Custom Error Types
 export class NotAGitRepo extends Error {
@@ -58,3 +59,18 @@ export function assertRepo(gitRepo: TGitRepoRootPath): Promise<TGitDirPath> {
       throw new InvalidGitRepo(`"${gitEntityPath}" is not a valid .git folder nor repo`);
     });
 }
+
+/** ------ Stream Helpers ---------- */
+export const syncSink  = (w: (b: string[]) => void) =>
+  new Writable({
+    objectMode: true,
+    write(batch, _enc, cb) {
+      try { w(batch); cb(); } catch (e) { cb(e as Error); }
+    }
+  });
+
+export const asyncSink = (w: (b: string[]) => Promise<unknown>) =>
+  new Writable({
+    objectMode: true,
+    write(batch, _enc, cb) { w(batch).then(() => cb(), cb); }
+  });

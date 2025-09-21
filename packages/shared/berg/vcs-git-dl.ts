@@ -1,17 +1,29 @@
 import path from "node:path";
 import type { DuckDBTimestampTZValue } from "@duckdb/node-api";
-import { type BaseQueryExecutor, ensureTables } from "@shared/ducklake";
+import { type BaseQueryExecutor, ensureTables, Row } from "@shared/ducklake";
 import type {
   TDuckLakeDBName,
   TDuckLakeRootPath,
+  TFileBaseName,
+  TFilePath,
+  TFolderPath,
   TFsVcsDotDBPath,
   TName,
   TSecSinceEpoch,
   TSQLString,
 } from "@shared/types";
+import type { TGitSHA } from "@shared/types/git-internal.types";
+import { atomicFileRename } from "@shared/utils";
 
 export const gitDLTableNames = ["commits", "pack-index", "tree-entries", "blobs", "refs"] as const;
 export type TGitDLTableName = (typeof gitDLTableNames)[number];
+
+export type TCsvDelim = `\t` | `,` | "\\|";
+
+export interface IUnlistedCommit {
+  sha: TGitSHA;
+  tree: TGitSHA;
+}
 
 /** Providers DuckLake interface over the VCS git db content 
  * ```sh
@@ -56,9 +68,7 @@ export class FsVcsGitDL {
         created_at   TIMESTAMP WITH TIME ZONE,
         chain_name   VARCHAR NOT NULL,
         status       VARCHAR NOT NULL
-      ) WITH (
-          format = 'parquet'
-        );
+      ) WITH (format = 'parquet');
 
       CREATE TABLE IF NOT EXISTS steps (
         run_id      VARCHAR NOT NULL,
@@ -67,9 +77,7 @@ export class FsVcsGitDL {
         input       VARCHAR,
         output      VARCHAR,
         error       VARCHAR
-      ) WITH (
-          format = 'parquet'
-        );
+      ) WITH (format = 'parquet');
        
       -- optional: helper view for commit_parents
       -- CREATE OR REPLACE VIEW commit_parents AS
@@ -86,12 +94,12 @@ export class FsVcsGitDL {
   refreshView(rootPath: TFsVcsDotDBPath, viewName: TGitDLTableName) {
     console.debug(`Refreshing view: ${viewName}`);
     const src = path.join(rootPath, viewName, "**", "*.parquet");
-    const sql = `CREATE OR REPLACE VIEW '${viewName}' AS SELECT * FROM read_parquet('${src}');`;
+    const sql = `CREATE OR REPLACE VIEW '${viewName}' AS SELECT * FROM read_parquet('${src}');` as TSQLString;
     return this.q.exec(sql).catch((ex) => console.error(`Failed to refresh view '${viewName}': ${ex.message}`));
   }
 
   checkIfViewExists(tableName: TGitDLTableName) {
-    const sql = `SELECT view_name FROM duckdb_views WHERE view_name = '${tableName}';`;
+    const sql = `SELECT view_name FROM duckdb_views WHERE view_name = '${tableName}';` as TSQLString;
     return this.q
       .queryRow(sql)
       .then(() => true)
@@ -113,13 +121,13 @@ export class FsVcsGitDL {
       LIMIT  ${max}`;
   }
 
-  async commit(sha: string) {
+  async commit(sha: TGitSHA) {
     return this.q.queryRow`SELECT * FROM commits WHERE sha = ${sha}`;
   }
 
-  async lastCommitTime(): Promise<TSecSinceEpoch|undefined> {
-    return this.q.queryRow<{ t: DuckDBTimestampTZValue }>`SELECT max(commit_time) as t FROM commits`.then(
-      (row) => row ? Number(row.t.micros / (1000n*1000n)) as TSecSinceEpoch: undefined,
+  async lastCommitTime(): Promise<TSecSinceEpoch | undefined> {
+    return this.q.queryRow<{ t: DuckDBTimestampTZValue }>`SELECT max(commit_time) as t FROM commits`.then((row) =>
+      row ? (Number(row.t.micros / (1000n * 1000n)) as TSecSinceEpoch) : undefined,
     );
   }
 
@@ -136,6 +144,13 @@ export class FsVcsGitDL {
       SELECT c.* FROM commits c
       JOIN commit_parents p ON c.sha = p.commit_sha
       WHERE p.parent_sha = ${sha}`;
+  }
+
+  /** returns the entries that are in `commits` table but not in `tree-entries` table */
+  async *getUnlistedCommits(): AsyncGenerator<IUnlistedCommit[], void, unknown> {
+    const tableExists = await this.checkIfViewExists("tree-entries");
+    const sql = (tableExists ? "" : `select sha, tree from commits`) as TSQLString; //TODO: when table exists, do join of commits x tree-entries
+    for await (const rowBatch of this.q.query<IUnlistedCommit>(sql)) yield rowBatch;
   }
 
   /* -------------------------------------------------- trees / files */
@@ -159,5 +174,36 @@ export class FsVcsGitDL {
     const r = await this.q.queryRow`
       SELECT commit_sha FROM refs WHERE name = ${ref}`;
     return r?.commit_sha ?? null;
+  }
+
+  /* -------------------------------------------------- helpers */
+
+  /** converts the given csv-compatible file/content to parquet (using DuckDB)*/
+  csvToParquet(
+    srcFilePath: TFilePath, // can be csv file path or csv file content in string form
+    colProjection: TSQLString,
+    destFolder: TFolderPath,
+    destFileBaseName: TFileBaseName,
+    delim: TCsvDelim = "\t",
+  ) {
+    //const tmpFilePath = path.resolve(destFolder, `${getRandomId()}-par.tmp`) as TFilePath;
+    const finalFilePath = path.resolve(destFolder, `${destFileBaseName}.parquet`) as TFilePath;
+    const sql = `
+      BEGIN TRANSACTION;
+        COPY (
+          WITH raw AS (
+            SELECT regexp_split_to_array(line, '${delim}') AS c
+            FROM read_csv_auto(
+                '${srcFilePath}',
+                delim='\\0',
+                columns={'line': 'VARCHAR'},
+                header=false
+            )
+          )
+          SELECT ${colProjection} FROM raw 
+        ) TO '${finalFilePath}' (FORMAT PARQUET, COMPRESSION ZSTD);
+      COMMIT;
+    `;
+    return this.q.run(sql); //.then(() => atomicFileRename(tmpFilePath, finalFilePath));
   }
 }
