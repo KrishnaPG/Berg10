@@ -6,6 +6,9 @@ export type TGitRepoRootPath = Branded<TFolderPath, "GitRepoRoot">;
 /** The `.git` folder path; Usually `<TGitRepoRootPath>/.git/` */
 export type TGitDirPath = Branded<TFolderPath, "GitDir">;
 
+/** The git source `pack` folder; Usually `<TGitDirPath>/objects/pack` */
+export type TGitPackDirPath = Branded<TFolderPath, "GitPackDir">;
+
 /** `TWorkTreePath` always refers to a user owned/controlled source files root path. 
  *  When `.git` folder exists inside it, it becomes same as `TGitRepoRootPath`;
  *  Otherwise, `TWorkTreePath` may just hold the source files, and the 

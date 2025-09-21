@@ -1,24 +1,57 @@
+import { unlink } from "node:fs/promises";
 import path from "node:path";
+import { ParquetSchema } from "@dsnp/parquetjs";
 import type { DuckDBTimestampTZValue } from "@duckdb/node-api";
-import { type BaseQueryExecutor, ensureTables, Row } from "@shared/ducklake";
+import { type BaseQueryExecutor, ensureTables, Row, TransactionalParquetWriter } from "@shared/ducklake";
+import type { GitShell } from "@shared/git-shell";
 import type {
   TDuckLakeDBName,
   TDuckLakeRootPath,
   TFileBaseName,
   TFilePath,
   TFolderPath,
+  TFsVcsDbCommitBaseName,
+  TFsVcsDbCommitsFolderPath,
+  TFsVcsDbPIFolderPath,
+  TFsVcsDbPIName,
   TFsVcsDotDBPath,
   TName,
   TSecSinceEpoch,
   TSQLString,
 } from "@shared/types";
 import type { TGitSHA } from "@shared/types/git-internal.types";
-import { atomicFileRename } from "@shared/utils";
+import { atomicFileRename, getRandomId } from "@shared/utils";
 
 export const gitDLTableNames = ["commits", "pack-index", "tree-entries", "blobs", "refs"] as const;
 export type TGitDLTableName = (typeof gitDLTableNames)[number];
 
 export type TCsvDelim = `\t` | `,` | "\\|";
+
+// NOTE: this has to match the interface `IdxFileLine` below
+const idxFileLineSchema = new ParquetSchema({
+  sha1: { type: "UTF8", encoding: "PLAIN", compression: "BROTLI" },
+  type: { type: "UTF8", encoding: "PLAIN" }, // use RLE for repeating values in the column
+  size: { type: "INT64", encoding: "PLAIN", compression: "BROTLI" },
+  sizeInPack: { type: "INT64", encoding: "PLAIN", compression: "BROTLI" },
+  offset: { type: "INT64", encoding: "PLAIN", compression: "BROTLI" },
+  depth: { type: "INT64", optional: true },
+  base: { type: "UTF8", encoding: "PLAIN", compression: "BROTLI", optional: true },
+});
+
+// NOTE: this interface has to match the groups of `idxFileLineRegEx` below
+export interface IdxFileLine {
+  sha: TGitSHA;
+  type: "commit" | "tree" | "blob" | "tag";
+  size: number;
+  sizeInPack: number;
+  offset: number;
+  depth?: number;
+  base?: TGitSHA;
+  [key: string]: unknown; // to make it compatible with ParquetWriter.appendRow()
+}
+// The source of truth: comes from `git verify-pack -v` command output format
+const idxFileLineRegEx =
+  /^(?<sha>[0-9a-f]{40,64})\s+(?<type>commit|tree|blob|tag)\s+(?<size>\d+)\s+(?<sizeInPack>\d+)\s+(?<offset>\d+)(?:\s+(?<depth>\d+)\s+(?<base>[0-9a-f]{40,64}))?$/;
 
 export interface IUnlistedCommit {
   sha: TGitSHA;
@@ -51,10 +84,14 @@ export interface IUnlistedCommit {
   ```
 */
 export class FsVcsGitDL {
-  private constructor(private q: BaseQueryExecutor) {}
+  private constructor(
+    protected srcGitShell: GitShell, // source git shell command executor (on the original source repo, third-party files)
+    protected q: BaseQueryExecutor, // the target db driver (duck lake)
+  ) {}
 
   /** Mounts a given vcs/<repoId>.db/ path as DuckLake DB */
   static async mount(
+    srcGitShell: GitShell,
     rootPath: TFsVcsDotDBPath,
     lakeDBName: TDuckLakeDBName = "dl" as TDuckLakeDBName,
   ): Promise<FsVcsGitDL> {
@@ -85,7 +122,7 @@ export class FsVcsGitDL {
       --   FROM commits;
       ` as TSQLString,
     )
-      .then(({ db }) => new FsVcsGitDL(db))
+      .then(({ db }) => new FsVcsGitDL(srcGitShell, db))
       .catch((error) => {
         throw new Error(`Failed to setup DataLake at "${rootPath}".\n\t${(error as Error).message}\n`);
       });
@@ -179,12 +216,12 @@ export class FsVcsGitDL {
   /* -------------------------------------------------- helpers */
 
   /** converts the given csv-compatible file/content to parquet (using DuckDB)*/
-  csvToParquet(
-    srcFilePath: TFilePath, // can be csv file path or csv file content in string form
-    colProjection: TSQLString,
+  public csvToParquet(
+    srcFilePath: TFilePath, // csv or compatible file path
     destFolder: TFolderPath,
     destFileBaseName: TFileBaseName,
-    delim: TCsvDelim = "\t",
+    colProjection: TSQLString,
+    csvDelim: TCsvDelim = "\t",
   ) {
     //const tmpFilePath = path.resolve(destFolder, `${getRandomId()}-par.tmp`) as TFilePath;
     const finalFilePath = path.resolve(destFolder, `${destFileBaseName}.parquet`) as TFilePath;
@@ -192,7 +229,7 @@ export class FsVcsGitDL {
       BEGIN TRANSACTION;
         COPY (
           WITH raw AS (
-            SELECT regexp_split_to_array(line, '${delim}') AS c
+            SELECT regexp_split_to_array(line, '${csvDelim}') AS c
             FROM read_csv_auto(
                 '${srcFilePath}',
                 delim='\\0',
@@ -205,5 +242,91 @@ export class FsVcsGitDL {
       COMMIT;
     `;
     return this.q.run(sql); //.then(() => atomicFileRename(tmpFilePath, finalFilePath));
+  }
+
+  protected shellCsvToParquet(
+    cmdArgs: string[],
+    destFolder: TFolderPath,
+    destFileBaseName: TFileBaseName,
+    colProjection: TSQLString,
+    csvDelimiter: TCsvDelim = `\\|`,
+  ) {
+    const tmpCSVFilePath = path.resolve(destFolder, `${getRandomId()}-csv.tmp`) as TFilePath;
+    return this.srcGitShell.execToFile(cmdArgs, tmpCSVFilePath).then((bytesWritten: number) => {
+      // if the output csv file was empty, no records to process
+      if (!bytesWritten) {
+        return console.debug(`shellCsvToParquet: command produced empty csv.`);
+      }
+      // else, load into parquet
+      this.csvToParquet(tmpCSVFilePath, destFolder, destFileBaseName, colProjection, csvDelimiter).finally(() =>
+        unlink(tmpCSVFilePath),
+      );
+    });
+  }
+
+  public streamLsTreeToParquet(destFolder: TFolderPath, destFileBaseName: TFileBaseName, tree: TGitSHA) {
+    const args = ["ls-tree", "-r", `--format=%(objectmode)|%(objecttype)|%(objectname)|%(objectsize)|%(path)`, tree];
+    const colProjection = `
+      c[1]::UINT32 AS mode,
+      c[2] AS type,
+      c[3] AS sha,
+      c[4]::BIGINT AS size,
+      c[5] AS path
+    `;
+    return this.shellCsvToParquet(args, destFolder, destFileBaseName, colProjection as TSQLString);
+  }
+
+  public streamCommitsToParquet(
+    destFolder: TFsVcsDbCommitsFolderPath,
+    destFileBaseName: TFsVcsDbCommitBaseName,
+    since?: TSecSinceEpoch,
+  ) {
+    const args = ["log", "--all", "--reverse", "--date-order", `--format=%H|%P|%T|%ct|%cn|%ce|%s`];
+    if (since) args.push(`--since='${since}'`);
+    const colProjection = `
+      c[1] AS sha,
+      string_split(c[2],' ') AS parents,
+      c[3] AS tree,
+      to_timestamp(c[4]::BIGINT) AS commit_time,
+      c[5] AS author_name,
+      c[6] AS author_email,
+      c[7] AS subject
+    `;
+    return this.shellCsvToParquet(args, destFolder, destFileBaseName, colProjection as TSQLString);
+  }
+
+  // read the idx file and write the content to output file
+  streamIDXtoParquet(srcIdxPath: TFilePath, destFolder: TFsVcsDbPIFolderPath, destFileBaseName: TFsVcsDbPIName) {
+    const rowGroupSize = 4096;
+    return TransactionalParquetWriter.open(idxFileLineSchema, destFolder, destFileBaseName, { rowGroupSize }).then(
+      (writer) =>
+        this.srcGitShell
+          .execStream(
+            ["verify-pack", "-v", srcIdxPath],
+            (idxLinesBatch: string[]) => {
+              const p = [];
+              // convert each line to a row and write to parquet
+              for (const idxLine of idxLinesBatch) {
+                const m = idxLine.match(idxFileLineRegEx);
+                if (!m?.groups) continue; // skip unnecessary lines
+                const g = m.groups;
+                const row: IdxFileLine = {
+                  sha: g.sha as TGitSHA,
+                  type: g.type as IdxFileLine["type"],
+                  size: Number(g.size),
+                  sizeInPack: Number(g.sizeInPack),
+                  offset: Number(g.offset),
+                  depth: g.depth ? Number(g.depth) : undefined,
+                  base: g.base as TGitSHA,
+                };
+                p.push(writer.appendRow(row));
+              }
+              // wait for the the pending writes
+              return Promise.all(p).then(() => {});
+            },
+            rowGroupSize,
+          )
+          .then(() => writer.commit()), // commit to disk and rename the file atomically
+    );
   }
 }

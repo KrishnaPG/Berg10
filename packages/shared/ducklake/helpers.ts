@@ -14,7 +14,6 @@ export function getDuckDbConnection(
   return gDuckDBInstances.getOrCreateInstance(path, options).then((instance) => instance.connect());
 }
 
-
 /** ParquetWriter class with atomic file rename */
 export class TransactionalParquetWriter {
   constructor(

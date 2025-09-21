@@ -7,7 +7,6 @@ import {
   timestampMillisValue,
   version,
 } from "@duckdb/node-api";
-import { atomicFileRename, getRandomId } from "@shared/utils";
 import { mkdir, rm } from "fs/promises";
 import os from "os";
 import path from "path";
@@ -17,9 +16,6 @@ import type {
   TDuckLakeDBName,
   TDuckLakeMetaFilePath,
   TDuckLakeRootPath,
-  TFileBaseName,
-  TFilePath,
-  TFolderPath,
   TSQLString,
 } from "../types";
 import { getDuckDbConnection } from "./helpers";

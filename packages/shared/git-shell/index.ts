@@ -1,11 +1,12 @@
-import type { TFilePath, TFolderPath } from "@shared/types";
-import type { TGitDirPath } from "@shared/types/git.types";
-import { isFileEmpty } from "@shared/utils";
+import type {
+  TFilePath,
+  TFolderPath,
+} from "@shared/types";
+import type { TGitDirPath, TGitPackDirPath } from "@shared/types/git.types";
 import { spawn } from "child_process";
 import { once } from "events";
-import fs, { createWriteStream, unlink } from "fs-extra";
-import path, { resolve } from "path";
-import { Writable } from "stream";
+import { createWriteStream, unlink } from "fs-extra";
+import path from "path";
 import { pipeline } from "stream/promises";
 import { asyncSink, syncSink } from "./helpers";
 import { linesBatchedTransform } from "./lines-batched-transform";
@@ -17,11 +18,11 @@ export class GitShell {
     this.gitDirArgs = ["--git-dir", _gitDir];
   }
 
-  public get gitDir() {
+  public get gitDir(): TGitDirPath {
     return this._gitDir;
   }
-  public get packDir() {
-    return path.resolve(this.gitDir, "objects", "pack");
+  public get packDir(): TGitPackDirPath {
+    return path.resolve(this.gitDir, "objects", "pack") as TGitPackDirPath;
   }
 
   protected exec(args: string[], options?: object) {
