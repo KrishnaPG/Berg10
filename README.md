@@ -38,3 +38,7 @@ Berg10 uses file system storage as the single source of truth for its operations
 - For local files: `SELECT * FROM read_parquet('/path/to/*.parquet')`
 
 - Keep parquet files immutable, DuckDB will happily query them.
+
+## Run
+
+Debug the `packages/git-on-db/test/git-sheel-to-parquet.ts` file and step through.
