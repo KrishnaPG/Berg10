@@ -8,7 +8,7 @@ import type {
   TFsVcsDbPIFilePath,
   TFsVcsDbPIFolderPath,
   TFsVcsDbPIName,
-  TFsVcsDbTreesFolderPath,
+  TFsVcsDbTreeCFolderPath,
   TFsVcsDotDBPath,
   TFsVcsDotGitPath,
   TFsVcsRepoId,
@@ -56,8 +56,8 @@ export class FsVCS {
   get dbCommitsFolderPath(): TFsVcsDbCommitsFolderPath {
     return path.resolve(this.dotDBFolder, "commits") as TFsVcsDbCommitsFolderPath;
   }
-  get dbTreesFolderPath(): TFsVcsDbTreesFolderPath {
-    return path.resolve(this.dotDBFolder, "trees") as TFsVcsDbTreesFolderPath;
+  get dbTreeCFolderPath(): TFsVcsDbTreeCFolderPath {
+    return path.resolve(this.dotDBFolder, "tree-contents") as TFsVcsDbTreeCFolderPath;
   }
 
   /** ---------- Packfile Index Builder (idempotent) ----------
@@ -120,11 +120,11 @@ export class FsVCS {
   async importLsTree() {
     const p: Promise<void>[] = [];
     for await (const rowBatch of this.gitDL.getUnlistedCommits()) {
-      rowBatch.forEach(async (row) => {
+      for (const row of rowBatch) {
         const destFileBaseName: TFileBaseName = row.sha as any as TFileBaseName;
-        p.push(this.gitDL.streamLsTreeToParquet(this.dbTreesFolderPath, destFileBaseName, row.tree));
+        p.push(this.gitDL.streamLsTreeToParquet(this.dbTreeCFolderPath, destFileBaseName, row.tree));
         if (p.length >= os.availableParallelism()) await Promise.all(p).then(() => (p.length = 0));
-      });
+      }
     }
     return Promise.all(p)
       .then(() => this.gitDL.refreshView(this.dotDBFolder, "tree-entries"))

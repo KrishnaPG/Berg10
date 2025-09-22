@@ -15,12 +15,12 @@ import type {
   TFsVcsDbPIFolderPath,
   TFsVcsDbPIName,
   TFsVcsDotDBPath,
-  TName,
   TSecSinceEpoch,
   TSQLString,
 } from "@shared/types";
 import type { TGitSHA } from "@shared/types/git-internal.types";
-import { atomicFileRename, getRandomId } from "@shared/utils";
+import { getRandomId } from "@shared/utils";
+import fs from "fs-extra";
 
 export const gitDLTableNames = ["commits", "pack-index", "tree-entries", "blobs", "refs"] as const;
 export type TGitDLTableName = (typeof gitDLTableNames)[number];
@@ -135,11 +135,11 @@ export class FsVcsGitDL {
     return this.q.exec(sql).catch((ex) => console.error(`Failed to refresh view '${viewName}': ${ex.message}`));
   }
 
-  checkIfViewExists(tableName: TGitDLTableName) {
+  checkIfViewExists(tableName: TGitDLTableName): Promise<boolean> {
     const sql = `SELECT view_name FROM duckdb_views WHERE view_name = '${tableName}';` as TSQLString;
     return this.q
       .queryRow(sql)
-      .then(() => true)
+      .then((row) => row !== null)
       .catch((ex) => {
         console.warn(`checkIfTableExists('${tableName}') failed: ${ex.message}`);
         return false;
@@ -218,13 +218,12 @@ export class FsVcsGitDL {
   /** converts the given csv-compatible file/content to parquet (using DuckDB)*/
   public csvToParquet(
     srcFilePath: TFilePath, // csv or compatible file path
-    destFolder: TFolderPath,
-    destFileBaseName: TFileBaseName,
+    destFilePath: TFilePath,
     colProjection: TSQLString,
     csvDelim: TCsvDelim = "\t",
   ) {
     //const tmpFilePath = path.resolve(destFolder, `${getRandomId()}-par.tmp`) as TFilePath;
-    const finalFilePath = path.resolve(destFolder, `${destFileBaseName}.parquet`) as TFilePath;
+    const finalFilePath = destFilePath;
     const sql = `
       BEGIN TRANSACTION;
         COPY (
@@ -251,16 +250,22 @@ export class FsVcsGitDL {
     colProjection: TSQLString,
     csvDelimiter: TCsvDelim = `\\|`,
   ) {
-    const tmpCSVFilePath = path.resolve(destFolder, `${getRandomId()}-csv.tmp`) as TFilePath;
-    return this.srcGitShell.execToFile(cmdArgs, tmpCSVFilePath).then((bytesWritten: number) => {
-      // if the output csv file was empty, no records to process
-      if (!bytesWritten) {
-        return console.debug(`shellCsvToParquet: command produced empty csv.`);
-      }
-      // else, load into parquet
-      this.csvToParquet(tmpCSVFilePath, destFolder, destFileBaseName, colProjection, csvDelimiter).finally(() =>
-        unlink(tmpCSVFilePath),
-      );
+    const destFilePath = path.resolve(destFolder, `${destFileBaseName}.parquet`) as TFilePath;
+    return fs.exists(destFilePath).then((exists) => {
+      // if destination already (in case of dataLake sync race conditions), return with a warning
+      if (exists) return console.warn(`shellCsvToParquet: destination "${destFilePath}" already exists !`);
+      // load the shell results into temp CSV file first
+      const tmpCSVFilePath = path.resolve(destFolder, `${getRandomId()}-csv.tmp`) as TFilePath;
+      return this.srcGitShell.execToFile(cmdArgs, tmpCSVFilePath).then((bytesWritten: number) => {
+        // if the output csv file was empty, no records to process
+        if (!bytesWritten) {
+          return console.debug(`shellCsvToParquet: command produced empty csv.`);
+        }
+        // else, load the csv into parquet
+        this.csvToParquet(tmpCSVFilePath, destFilePath, colProjection, csvDelimiter).finally(() =>
+          unlink(tmpCSVFilePath),
+        );
+      });
     });
   }
 
