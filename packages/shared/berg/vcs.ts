@@ -30,9 +30,8 @@ export class FsVCS {
   constructor(
     protected repoId: TFsVcsRepoId,
     protected dotGitFolder: TFsVcsDotGitPath, // aux .git folder, probably `vcs/<repoId>.git/`, if exists
-    protected dotDBFolder: TFsVcsDotDBPath, // db folder: `vcs/<repoId>.db/`
+    protected gitDL: FsVcsGitDL,  // holds the db folder: `vcs/<repoId>.db/` and shell executor for original source
     protected vcsMgr: FsVCSManager,
-    protected gitDL: FsVcsGitDL,
   ) {}
 
   public static getInstance(vcsMgr: FsVCSManager, vcsRepoId: TFsVcsRepoId, srcGitShell: GitShell): Promise<FsVCS> {
@@ -45,10 +44,12 @@ export class FsVCS {
     ]).then(() => {
       // setup DuckLake and mount GitDL
       return FsVcsGitDL.mount(srcGitShell, dotDBFolder).then(
-        (gitDL) => new FsVCS(vcsRepoId, dotGitFolder, dotDBFolder, vcsMgr, gitDL),
+        (gitDL) => new FsVCS(vcsRepoId, dotGitFolder, gitDL, vcsMgr),
       );
     });
   }
+
+  get dotDBFolder(): TFsVcsDotDBPath { return this.gitDL.rootPath; }
 
   get syncLockFilePath() {
     return path.resolve(this.dotDBFolder, "_sync") as TFolderPath; // this becomes _sync.lock/ folder
@@ -147,14 +148,13 @@ export class FsVCS {
   }
 
   async importCommits() {
-    // TODO: cleanup tmp files from previous runs
     const tableExists = await this.gitDL.checkIfViewExists("commits");
     const lastCommitTime = tableExists && (await this.gitDL.lastCommitTime());
     const since: TSecSinceEpoch = (lastCommitTime ? lastCommitTime + 1 : 0) as TSecSinceEpoch;
     const destFilePath = path.resolve(this.dbCommitsFolderPath, `from-${since}.parquet`) as TFilePath;
     return this.gitDL
       .streamCommitsToParquet(destFilePath, since)
-      .then(() => this.gitDL.refreshView(this.dotDBFolder, "commits"))
+      .then(() => this.gitDL.refreshView("commits"))
       .then(() => this); // for method chaining
   }
 
@@ -169,7 +169,7 @@ export class FsVCS {
       }
     }
     return Promise.all(p)
-      .then(() => this.gitDL.refreshView(this.dotDBFolder, "tree-entries"))
+      .then(() => this.gitDL.refreshView("tree-entries"))
       .then(() => this); // for method chaining
   }
 }

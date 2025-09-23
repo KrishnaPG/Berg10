@@ -86,8 +86,11 @@ export interface IUnlistedCommit {
 export class FsVcsGitDL {
   private constructor(
     protected srcGitShell: GitShell, // source git shell command executor (on the original source repo, third-party files)
+    protected dlRootPath: TFsVcsDotDBPath, // db folder: `vcs/<repoId>.db/`
     protected q: BaseQueryExecutor, // the target db driver (duck lake)
   ) {}
+
+  get rootPath(): TFsVcsDotDBPath { return this.dlRootPath; }
 
   /** Mounts a given vcs/<repoId>.db/ path as DuckLake DB */
   static async mount(
@@ -122,28 +125,36 @@ export class FsVcsGitDL {
       --   FROM commits;
       ` as TSQLString,
     )
-      .then(({ db }) => new FsVcsGitDL(srcGitShell, db))
+      .then(({ db }) => new FsVcsGitDL(srcGitShell, rootPath, db))
       .catch((error) => {
         throw new Error(`Failed to setup DataLake at "${rootPath}".\n\t${(error as Error).message}\n`);
       });
   }
 
-  refreshView(rootPath: TFsVcsDotDBPath, viewName: TGitDLTableName) {
+  refreshView(viewName: TGitDLTableName) {
     console.debug(`Refreshing view: ${viewName}`);
-    const src = path.join(rootPath, viewName, "**", "*.parquet");
+    const src = path.join(this.rootPath, viewName, "**", "*.parquet");
     const sql = `CREATE OR REPLACE VIEW '${viewName}' AS SELECT * FROM read_parquet('${src}');` as TSQLString;
-    return this.q.exec(sql).catch((ex) => console.error(`Failed to refresh view '${viewName}': ${ex.message}`));
+    return this.q.exec(sql).catch((ex) => console.warn(`Failed to refresh view '${viewName}': ${ex.message}`));
   }
 
-  checkIfViewExists(tableName: TGitDLTableName): Promise<boolean> {
-    const sql = `SELECT view_name FROM duckdb_views WHERE view_name = '${tableName}';` as TSQLString;
-    return this.q
-      .queryRow(sql)
-      .then((row) => row !== null)
-      .catch((ex) => {
-        console.warn(`checkIfTableExists('${tableName}') failed: ${ex.message}`);
-        return false;
-      });
+  checkIfViewExists(viewName: TGitDLTableName): Promise<boolean> {
+    // there could be parquet files in the view folder but the view
+    // may not have been created (in case of app crash/error). So
+    // we have to first refresh the view to give a chance to load 
+    // those parquet files before we check for existence of view in the DL.
+    // Of course, if there are no parquet files, refreshView throws, so we
+    // handle the catch silently.
+    return this.refreshView(viewName).catch(()=>{}).then(()=>{
+      const sql = `SELECT view_name FROM duckdb_views WHERE view_name = '${viewName}';` as TSQLString;
+      return this.q
+        .queryRow(sql)
+        .then((row) => row !== null)
+        .catch((ex) => {
+          console.warn(`checkIfViewExists('${viewName}') failed: ${ex.message}`);
+          return false;
+        });      
+    });
   }
 
   /* -------------------------------------------------- commits */
@@ -186,7 +197,7 @@ export class FsVcsGitDL {
   /** returns the entries that are in `commits` table but not in `tree-entries` table */
   async *getUnlistedCommits(): AsyncGenerator<IUnlistedCommit[], void, unknown> {
     const tableExists = await this.checkIfViewExists("tree-entries");
-    const sql = (tableExists ? "" : `select sha, tree from commits`) as TSQLString; //TODO: when table exists, do join of commits x tree-entries
+    const sql = (tableExists ? "" : `select sha, tree from commits order by commit_time`) as TSQLString; //TODO: when table exists, do join of commits x tree-entries
     for await (const rowBatch of this.q.query<IUnlistedCommit>(sql)) yield rowBatch;
   }
 
@@ -254,7 +265,7 @@ export class FsVcsGitDL {
     colProjection: TSQLString,
     csvDelimiter: TCsvDelim = `\\|`,
   ) {
-    const tmpCSVFilePath = genTempFilePath(finalFilePath, "-csv.tmp"); //path.resolve(destFolder, `${getRandomId()}-csv.tmp`) as TFilePath;
+    const tmpCSVFilePath = genTempFilePath(finalFilePath, "-csv.tmp"); 
     return fs.exists(finalFilePath).then((exists) => {
       // if destination already (in case of dataLake sync race conditions), return with a warning
       if (exists) return console.warn(`shellCsvToParquet: destination "${finalFilePath}" already exists !`);
@@ -278,7 +289,7 @@ export class FsVcsGitDL {
       c[1]::UINT32 AS mode,
       c[2] AS type,
       c[3] AS sha,
-      c[4]::BIGINT AS size,
+      c[4] AS size, -- should be c[4]::BIGINT
       c[5] AS path
     `;
     return this.shellCsvToParquet(args, destFilePath, colProjection as TSQLString);

@@ -97,7 +97,10 @@ export type TFsVcsDbCommitsFolderPath = Branded<TFolderPath, "VcsDbCommitsRoot">
 export type TFsVcsDbCommitBaseName = Branded<TFileBaseName, "VcsDbCommitBaseName">;
 export type TFsVcsDbCommitFilePath = Branded<TParquetFilePath, "<VcsDbCommitBaseName>.Parquet">;
 
+/** Usually this is `TFsVCSDotDBPath + tree-entries/` */
 export type TFsVcsDbTreeEntFolderPath = Branded<TFolderPath, "VcsDbTreeEntriesFolder">;
+/** A file under the `tree-entries` folder. Usually `TFsVcsDbTreeEntFolderPath` + `<commitSha>.parquet`  */
+export type TFsVcsDbTreeEntFilePath = Branded<TFolderPath, "VcsDbTreeFilePath">
 
 
 export type TBergShelfPath = TLMDBRootPath | TFsDLRootPath | TFsSemRootPath | TFsVcsRootPath;
