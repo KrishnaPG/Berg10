@@ -1,5 +1,5 @@
 import { sha256 } from "@fict/crypto";
-import fs from "fs-extra";
+import fs from "fs/promises";
 import path from "path";
 import type { TFilePath, TFolderPath, TSHA256B58 } from "../types";
 import type { TGitRepoRootPath } from "../types/git.types";
@@ -36,25 +36,25 @@ export function getMainScriptDirectory(): TFolderPath {
   return path.dirname(process.argv[1]) as TFolderPath;
 }
 
-/** renames a file reliably */
-export function atomicFileRename(oldFilePath: TFilePath, newFilePath: TFilePath) {
-  // 1. fsync the file
-  const fd = fs.openSync(oldFilePath, "r+");
-  fs.fsyncSync(fd);
-  fs.closeSync(fd);
+/**
+ * Crash-safe rename(2) using only promise-based APIs.
+ * Returns a promise that resolves when both file data and the
+ * directory entry are known to be on-disk.
+ */
+export async function atomicFileRename(oldFilePath: TFilePath, newFilePath: TFilePath) {
+  // 1. Flush the *old* file’s data blocks.
+  const fileH = await fs.open(oldFilePath, "r+");
+  await fileH.sync(); // fsync
+  await fileH.close();
 
-  // 2. fsync the *directory* so the inode entry is durable
-  const dirPath = path.resolve(newFilePath, "..");
-  const dirFd = fs.openSync(dirPath, "r");
-  try {
-    fs.fsyncSync(dirFd);
-  } catch (_ex) {
-    /** on Windows, fsync() throws */
-  }
-  fs.closeSync(dirFd);
+  // 2. Atomic rename.
+  await fs.rename(oldFilePath, newFilePath);
 
-  // 3. atomic rename
-  return fs.renameSync(oldFilePath, newFilePath);
+  // 3. Flush the *destination* directory.
+  const dir = path.dirname(newFilePath);
+  const dirH = await fs.open(dir, fs.constants.O_RDWR | fs.constants.O_DIRECTORY);
+  await dirH.sync(); // fsync
+  await dirH.close();
 }
 
 export function getRandomId(now: number = Date.now()) {

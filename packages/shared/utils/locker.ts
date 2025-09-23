@@ -1,5 +1,6 @@
 import { constants } from "node:fs";
 import { type FileHandle, open, unlink } from "node:fs/promises";
+import type { TFilePath } from "@shared/types";
 import { FILESYSTEM_RETRY_OPTIONS, retry } from "./retry";
 
 export interface LockLogger {
@@ -21,7 +22,7 @@ export class Locker {
   private locked = false;
 
   constructor(
-    private readonly file: string,
+    private readonly file: TFilePath,
     private readonly opts: LockerOptions = {},
   ) {}
 
@@ -134,7 +135,7 @@ export class Locker {
 /* ------------------------------------------------------ */
 /* Helper: run a critical section with automatic cleanup  */
 /* ------------------------------------------------------ */
-export async function withLock<T>(file: string, fn: () => Promise<T>, opts: LockerOptions = {}): Promise<T> {
+export async function withLock<T>(file: TFilePath, fn: () => Promise<T>, opts: LockerOptions = {}): Promise<T> {
   const lock = new Locker(file, opts);
   await lock.acquire();
   try {

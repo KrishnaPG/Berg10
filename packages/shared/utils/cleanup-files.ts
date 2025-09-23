@@ -1,8 +1,8 @@
 import type { Dirent, Stats } from "node:fs";
 import { opendir, stat, unlink } from "node:fs/promises";
-import { cpus } from "node:os";
 import { join } from "node:path";
 import fastq from "fastq"; // tiny worker-queue
+import os from "os";
 import type { TFilePath, TFolderPath } from "../types/";
 
 async function* readdir(root: string, filterExts: string[]): AsyncGenerator<TFilePath> {
@@ -13,7 +13,6 @@ async function* readdir(root: string, filterExts: string[]): AsyncGenerator<TFil
 
     if (dirent.isDirectory())
       yield* readdir(fullPath, filterExts); // recurse in sub-folder
-
     else if (dirent.isFile()) {
       // check if extension is matching
       const ext = dirent.name.split(".").pop()?.toLowerCase();
@@ -27,12 +26,14 @@ async function* readdir(root: string, filterExts: string[]): AsyncGenerator<TFil
   }
 }
 
-const worker = fastq.promise((path: TFilePath) => unlink(path).then(() => console.log("deleted", path)), cpus().length); // saturate I/O
+const worker = fastq.promise(
+  (path: TFilePath) => unlink(path).then(() => console.debug("deleted", path)),
+  os.availableParallelism(),
+); // saturate I/O
 
 /** deletes zero-length files and files that match the given extensions */
 export async function cleanupFiles(root: TFolderPath, exts: string[]) {
-  for await (const filePath of readdir(root, exts)) 
-      worker.push(filePath);
+  for await (const filePath of readdir(root, exts)) worker.push(filePath);
 
-  return worker.drained().then(() => console.log("done"));
+  return worker.drained().then(() => console.debug("TempFile cleanup done"));
 }

@@ -15,20 +15,26 @@ import type {
   TSecSinceEpoch,
 } from "@shared/types";
 import type { TGitPackDirPath } from "@shared/types/git.types";
+import { cleanupFiles } from "@shared/utils/cleanup-files";
+import { Locker } from "@shared/utils/locker";
 import fs from "fs-extra";
 import os from "os";
 import path from "path";
+import lockfile from "proper-lockfile";
+import { RepoSyncInProgress } from "./errors";
 import { FsVcsGitDL, gitDLTableNames, type TGitDLTableName } from "./vcs-git-dl";
 import type { FsVCSManager } from "./vcs-manager";
 
 /** Manages one specific vcs repo */
 export class FsVCS {
   constructor(
+    protected repoId: TFsVcsRepoId,
     protected dotGitFolder: TFsVcsDotGitPath, // aux .git folder, probably `vcs/<repoId>.git/`, if exists
     protected dotDBFolder: TFsVcsDotDBPath, // db folder: `vcs/<repoId>.db/`
     protected vcsMgr: FsVCSManager,
     protected gitDL: FsVcsGitDL,
   ) {}
+
   public static getInstance(vcsMgr: FsVCSManager, vcsRepoId: TFsVcsRepoId, srcGitShell: GitShell): Promise<FsVCS> {
     const dotGitFolder = path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.git`) as TFsVcsDotGitPath;
     const dotDBFolder = path.resolve(vcsMgr.vcsRootFolder, `${vcsRepoId}.db`) as TFsVcsDotDBPath;
@@ -39,9 +45,40 @@ export class FsVCS {
     ]).then(() => {
       // setup DuckLake and mount GitDL
       return FsVcsGitDL.mount(srcGitShell, dotDBFolder).then(
-        (gitDL) => new FsVCS(dotGitFolder, dotDBFolder, vcsMgr, gitDL),
+        (gitDL) => new FsVCS(vcsRepoId, dotGitFolder, dotDBFolder, vcsMgr, gitDL),
       );
     });
+  }
+
+  get syncLockFilePath() {
+    return path.resolve(this.dotDBFolder, "_sync") as TFolderPath; // this becomes _sync.lock/ folder
+  }
+
+  /** removes any tmp files from previous import runs */
+  cleanupTempFiles() {
+    return cleanupFiles(this.dotDBFolder, ["tmp"]);
+  }
+
+  /** triggers a git -> db sync */
+  public initSync(srcPackDir: TGitPackDirPath) {
+    return lockfile
+      .lock(this.syncLockFilePath, {realpath: false})
+      .then(async (lockRelease) => {
+        await this.cleanupTempFiles(); // remove tmp files of prev runs, if any
+        await this.buildGitPackIndex(srcPackDir);
+        await this.importCommits();
+        await this.importLsTree();
+        // Call the provided release function when done,
+        // which will also return a promise
+        return lockRelease();
+      })
+      .catch((e) => {
+        // either lock could not be acquired
+        if (e.code === "ELOCKED")
+          throw new RepoSyncInProgress(`repo: ${this.repoId}, Sync already in Progress.`, { cause: e });
+        // or releasing it failed
+        console.error(e);
+      });
   }
 
   protected dlTableFolderPath(tableName: TGitDLTableName) {
@@ -126,7 +163,7 @@ export class FsVCS {
     const p: Promise<void>[] = [];
     for await (const rowBatch of this.gitDL.getUnlistedCommits()) {
       for (const row of rowBatch) {
-        const destFilePath = path.resolve(dbTreeEntFolderPath, `${row.sha}.parquet`) as TFilePath
+        const destFilePath = path.resolve(dbTreeEntFolderPath, `${row.sha}.parquet`) as TFilePath;
         p.push(this.gitDL.streamLsTreeToParquet(destFilePath, row.tree));
         if (p.length >= os.availableParallelism()) await Promise.all(p).then(() => (p.length = 0));
       }

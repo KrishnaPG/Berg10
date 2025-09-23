@@ -222,7 +222,7 @@ export class FsVcsGitDL {
     colProjection: TSQLString,
     csvDelim: TCsvDelim = "\t",
   ) {
-    const tmpFilePath = genTempFilePath(destFilePath, "-par.tmp") as TFilePath;
+    const tmpParFilePath = genTempFilePath(destFilePath, "-par.tmp") as TFilePath;
     const finalFilePath = destFilePath;
     const sql = `
         COPY (
@@ -236,14 +236,14 @@ export class FsVcsGitDL {
             )
           )
           SELECT ${colProjection} FROM raw 
-        ) TO '${tmpFilePath}' (FORMAT PARQUET, COMPRESSION ZSTD);
+        ) TO '${tmpParFilePath}' (FORMAT PARQUET, COMPRESSION ZSTD);
     `;
     return this.q
       .run(sql)
-      .then(() => atomicFileRename(tmpFilePath, finalFilePath))
+      .then(() => atomicFileRename(tmpParFilePath, finalFilePath))
       .catch((ex) => {
-        return unlink(tmpFilePath).finally(() => {
-          throw new Error(`csvToParquet failed for "${finalFilePath}". ${(ex as Error).message}`, {cause: ex});
+        return unlink(tmpParFilePath).finally(() => {
+          throw new Error(`csvToParquet failed for "${finalFilePath}". ${(ex as Error).message}`, { cause: ex });
         });
       });
   }
@@ -265,7 +265,7 @@ export class FsVcsGitDL {
           return console.debug(`shellCsvToParquet: command produced empty csv.`);
         }
         // else, load the csv into parquet
-        this.csvToParquet(tmpCSVFilePath, finalFilePath, colProjection, csvDelimiter).finally(() =>
+        return this.csvToParquet(tmpCSVFilePath, finalFilePath, colProjection, csvDelimiter).finally(() =>
           unlink(tmpCSVFilePath).catch(console.warn),
         );
       });

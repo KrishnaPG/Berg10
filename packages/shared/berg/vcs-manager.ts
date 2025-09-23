@@ -4,7 +4,6 @@ import type { TFolderPath, TFsVcsRepoId, TMSSinceEpoch, TName } from "@shared/ty
 import type { TFsVCSRootPath } from "@shared/types/fs-vcs.types";
 import type { TGitDirPath, TGitRepoRootPath, TWorkTreePath } from "@shared/types/git.types";
 import { BergComponent } from "./base";
-import { RepoSyncInProgress } from "./errors";
 import type { IRepoImportRecord } from "./lmdb-manager";
 import { FsVCS } from "./vcs";
 
@@ -29,11 +28,6 @@ export class FsVCSManager extends BergComponent {
     return this.importsDB.putSync(rec.workTree, rec);
   }
 
-  public abortPrevSync(rec: IRepoImportRecord) {
-    rec.syncInProgress = false;
-    return this.putImportRecord(rec);
-  }
-
   /** We need to setup an internal VCS for the given working directory */
   protected setupGit(_workDir: TFolderPath): Promise<TGitDirPath> {
     throw new Error("Local VCS Setup Not Yet Implemented");
@@ -41,26 +35,11 @@ export class FsVCSManager extends BergComponent {
   }
 
   protected importReSync(rec: IRepoImportRecord) {
-    //TODO: check if a sync already in progress
-    // if (rec.syncInProgress) throw new RepoSyncInProgress(`repo: ${rec.name}, Sync already in Progress.`);
-    // mark sync as ON
-    rec.syncInProgress = true;
-    this.putImportRecord(rec);
-
     const srcGitShell = new GitShell(rec.gitDir);
     // ... do the import ...
     return FsVCS.getInstance(this, rec.repoId, srcGitShell)
-      .then((vcs) => vcs.buildGitPackIndex(srcGitShell.packDir))
-      .then((vcs) => vcs.importCommits())
-      .then((vcs) => vcs.importLsTree())
-      .finally(() => {
-        // mark sync as OFF
-        return this.putImportRecord({
-          ...rec,
-          syncInProgress: false,
-          lastSyncAt: Date.now() as TMSSinceEpoch,
-        });
-      });
+      .then((vcs) => vcs.initSync(srcGitShell.packDir))
+      .then(() => this.putImportRecord({ ...rec, lastSyncAt: Date.now() as TMSSinceEpoch })); // update the record
   }
   protected importNewSync(srcWorkTree: TWorkTreePath, srcGitDir: TGitDirPath, repoName?: TName) {
     // this is a fresh import, first add an entry into the LMDB
@@ -72,7 +51,6 @@ export class FsVCSManager extends BergComponent {
       gitDir: srcGitDir,
       firstImportAt: now,
       lastSyncAt: now,
-      syncInProgress: false,
     };
     this.putImportRecord(rec);
     // starts a fresh resync

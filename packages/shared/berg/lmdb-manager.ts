@@ -14,7 +14,6 @@ export interface IRepoImportRecord {
   gitDir: TGitDirPath; // the source .git/ folder (could be `vcs/<repoId>.git/` or external)
   firstImportAt: TMSSinceEpoch;
   lastSyncAt: TMSSinceEpoch;
-  syncInProgress: boolean;
 }
 
 export type ImportsLMDB = Database<IRepoImportRecord, TWorkTreePath>;
