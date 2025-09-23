@@ -6,11 +6,11 @@ import type { TFsDLRootPath } from "@shared/types/fs-dl.types";
 import type { TFsVCSDotGitPath, TFsVCSRootPath } from "@shared/types/fs-vcs.types";
 import fs from "fs-extra";
 import os from "os";
+import { Locker } from "../../../shared/utils/locker";
 import { DuckStateUpdater } from "./duckstate";
 import { GitCli } from "./git-cli";
 import { getCheckpoint, putCheckpoint } from "./lmdb-store";
 import { loadConfig } from "./load-config";
-import { Locker } from "./locker";
 import { ParquetWriter } from "./parquet";
 import { streamObjects } from "./streamer";
 

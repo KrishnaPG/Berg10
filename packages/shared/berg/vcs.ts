@@ -114,10 +114,9 @@ export class FsVCS {
     const tableExists = await this.gitDL.checkIfViewExists("commits");
     const lastCommitTime = tableExists && (await this.gitDL.lastCommitTime());
     const since: TSecSinceEpoch = (lastCommitTime ? lastCommitTime + 1 : 0) as TSecSinceEpoch;
-
-    const destFileBaseName = `from-${since}` as TFsVcsDbCommitBaseName;
+    const destFilePath = path.resolve(this.dbCommitsFolderPath, `from-${since}.parquet`) as TFilePath;
     return this.gitDL
-      .streamCommitsToParquet(this.dbCommitsFolderPath, destFileBaseName, since)
+      .streamCommitsToParquet(destFilePath, since)
       .then(() => this.gitDL.refreshView(this.dotDBFolder, "commits"))
       .then(() => this); // for method chaining
   }
@@ -127,8 +126,8 @@ export class FsVCS {
     const p: Promise<void>[] = [];
     for await (const rowBatch of this.gitDL.getUnlistedCommits()) {
       for (const row of rowBatch) {
-        const destFileBaseName: TFileBaseName = row.sha as any as TFileBaseName;
-        p.push(this.gitDL.streamLsTreeToParquet(dbTreeEntFolderPath, destFileBaseName, row.tree));
+        const destFilePath = path.resolve(dbTreeEntFolderPath, `${row.sha}.parquet`) as TFilePath
+        p.push(this.gitDL.streamLsTreeToParquet(destFilePath, row.tree));
         if (p.length >= os.availableParallelism()) await Promise.all(p).then(() => (p.length = 0));
       }
     }

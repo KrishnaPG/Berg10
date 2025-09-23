@@ -1,8 +1,8 @@
 import { sha256 } from "@fict/crypto";
 import fs from "fs-extra";
 import path from "path";
-import type { TFilePath, TFolderPath, TSHA256B58 } from "./types";
-import type { TGitRepoRootPath } from "./types/git.types";
+import type { TFilePath, TFolderPath, TSHA256B58 } from "../types";
+import type { TGitRepoRootPath } from "../types/git.types";
 
 /**
  * Generates a SHA256 and Encodes it as Base58
@@ -36,6 +36,7 @@ export function getMainScriptDirectory(): TFolderPath {
   return path.dirname(process.argv[1]) as TFolderPath;
 }
 
+/** renames a file reliably */
 export function atomicFileRename(oldFilePath: TFilePath, newFilePath: TFilePath) {
   // 1. fsync the file
   const fd = fs.openSync(oldFilePath, "r+");
@@ -45,7 +46,9 @@ export function atomicFileRename(oldFilePath: TFilePath, newFilePath: TFilePath)
   // 2. fsync the *directory* so the inode entry is durable
   const dirPath = path.resolve(newFilePath, "..");
   const dirFd = fs.openSync(dirPath, "r");
-  try { fs.fsyncSync(dirFd); } catch(_ex) {
+  try {
+    fs.fsyncSync(dirFd);
+  } catch (_ex) {
     /** on Windows, fsync() throws */
   }
   fs.closeSync(dirFd);
@@ -59,5 +62,13 @@ export function getRandomId(now: number = Date.now()) {
 }
 
 export function isFileEmpty(file: Bun.BunFile): Promise<boolean> {
-  return file.stat().then(({size}) => size===0);
+  return file.stat().then(({ size }) => size === 0);
+}
+
+/** replaces the file extension with a random suffixed temp
+ * (e.g. `c:\\abc\\filename.parquet` -> `c:\\abc\\filename-a0tjh3jkw7c-mfvxm6fl-csv.tmp`)
+ * */
+const swapExt = (p: string, newExt: string) => p.replace(/\.[^.\\/:*?"<>|\r\n]+$/, newExt); // strip last dot–suffix
+export function genTempFilePath(filePath: TFilePath, newExt: string = ".tmp") {
+  return swapExt(filePath, `-${getRandomId()}${newExt}`) as TFilePath;
 }

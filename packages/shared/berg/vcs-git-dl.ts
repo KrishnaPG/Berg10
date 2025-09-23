@@ -18,8 +18,8 @@ import type {
   TSecSinceEpoch,
   TSQLString,
 } from "@shared/types";
-import type { TGitSHA } from "@shared/types/git-internal.types";
-import { getRandomId } from "@shared/utils";
+import type { TCommitHash, TGitSHA, TTreeHash } from "@shared/types/git-internal.types";
+import { atomicFileRename, genTempFilePath, getRandomId } from "@shared/utils";
 import fs from "fs-extra";
 
 export const gitDLTableNames = ["commits", "pack-index", "tree-entries", "blobs", "refs"] as const;
@@ -54,8 +54,8 @@ const idxFileLineRegEx =
   /^(?<sha>[0-9a-f]{40,64})\s+(?<type>commit|tree|blob|tag)\s+(?<size>\d+)\s+(?<sizeInPack>\d+)\s+(?<offset>\d+)(?:\s+(?<depth>\d+)\s+(?<base>[0-9a-f]{40,64}))?$/;
 
 export interface IUnlistedCommit {
-  sha: TGitSHA;
-  tree: TGitSHA;
+  sha: TCommitHash;
+  tree: TTreeHash;
 }
 
 /** Providers DuckLake interface over the VCS git db content 
@@ -222,10 +222,9 @@ export class FsVcsGitDL {
     colProjection: TSQLString,
     csvDelim: TCsvDelim = "\t",
   ) {
-    //const tmpFilePath = path.resolve(destFolder, `${getRandomId()}-par.tmp`) as TFilePath;
+    const tmpFilePath = genTempFilePath(destFilePath, "-par.tmp") as TFilePath;
     const finalFilePath = destFilePath;
     const sql = `
-      BEGIN TRANSACTION;
         COPY (
           WITH raw AS (
             SELECT regexp_split_to_array(line, '${csvDelim}') AS c
@@ -237,39 +236,43 @@ export class FsVcsGitDL {
             )
           )
           SELECT ${colProjection} FROM raw 
-        ) TO '${finalFilePath}' (FORMAT PARQUET, COMPRESSION ZSTD);
-      COMMIT;
+        ) TO '${tmpFilePath}' (FORMAT PARQUET, COMPRESSION ZSTD);
     `;
-    return this.q.run(sql); //.then(() => atomicFileRename(tmpFilePath, finalFilePath));
+    return this.q
+      .run(sql)
+      .then(() => atomicFileRename(tmpFilePath, finalFilePath))
+      .catch((ex) => {
+        return unlink(tmpFilePath).finally(() => {
+          throw new Error(`csvToParquet failed for "${finalFilePath}". ${(ex as Error).message}`, {cause: ex});
+        });
+      });
   }
 
   protected shellCsvToParquet(
     cmdArgs: string[],
-    destFolder: TFolderPath,
-    destFileBaseName: TFileBaseName,
+    finalFilePath: TFilePath,
     colProjection: TSQLString,
     csvDelimiter: TCsvDelim = `\\|`,
   ) {
-    const destFilePath = path.resolve(destFolder, `${destFileBaseName}.parquet`) as TFilePath;
-    return fs.exists(destFilePath).then((exists) => {
+    const tmpCSVFilePath = genTempFilePath(finalFilePath, "-csv.tmp"); //path.resolve(destFolder, `${getRandomId()}-csv.tmp`) as TFilePath;
+    return fs.exists(finalFilePath).then((exists) => {
       // if destination already (in case of dataLake sync race conditions), return with a warning
-      if (exists) return console.warn(`shellCsvToParquet: destination "${destFilePath}" already exists !`);
+      if (exists) return console.warn(`shellCsvToParquet: destination "${finalFilePath}" already exists !`);
       // load the shell results into temp CSV file first
-      const tmpCSVFilePath = path.resolve(destFolder, `${getRandomId()}-csv.tmp`) as TFilePath;
       return this.srcGitShell.execToFile(cmdArgs, tmpCSVFilePath).then((bytesWritten: number) => {
         // if the output csv file was empty, no records to process
         if (!bytesWritten) {
           return console.debug(`shellCsvToParquet: command produced empty csv.`);
         }
         // else, load the csv into parquet
-        this.csvToParquet(tmpCSVFilePath, destFilePath, colProjection, csvDelimiter).finally(() =>
-          unlink(tmpCSVFilePath),
+        this.csvToParquet(tmpCSVFilePath, finalFilePath, colProjection, csvDelimiter).finally(() =>
+          unlink(tmpCSVFilePath).catch(console.warn),
         );
       });
     });
   }
 
-  public streamLsTreeToParquet(destFolder: TFolderPath, destFileBaseName: TFileBaseName, tree: TGitSHA) {
+  public streamLsTreeToParquet(destFilePath: TFilePath, tree: TTreeHash) {
     const args = ["ls-tree", "-r", `--format=%(objectmode)|%(objecttype)|%(objectname)|%(objectsize)|%(path)`, tree];
     const colProjection = `
       c[1]::UINT32 AS mode,
@@ -278,14 +281,10 @@ export class FsVcsGitDL {
       c[4]::BIGINT AS size,
       c[5] AS path
     `;
-    return this.shellCsvToParquet(args, destFolder, destFileBaseName, colProjection as TSQLString);
+    return this.shellCsvToParquet(args, destFilePath, colProjection as TSQLString);
   }
 
-  public streamCommitsToParquet(
-    destFolder: TFsVcsDbCommitsFolderPath,
-    destFileBaseName: TFsVcsDbCommitBaseName,
-    since?: TSecSinceEpoch,
-  ) {
+  public streamCommitsToParquet(destFilePath: TFilePath, since?: TSecSinceEpoch) {
     const args = ["log", "--all", "--reverse", "--date-order", `--format=%H|%P|%T|%ct|%cn|%ce|%s`];
     if (since) args.push(`--since='${since}'`);
     const colProjection = `
@@ -297,7 +296,7 @@ export class FsVcsGitDL {
       c[6] AS author_email,
       c[7] AS subject
     `;
-    return this.shellCsvToParquet(args, destFolder, destFileBaseName, colProjection as TSQLString);
+    return this.shellCsvToParquet(args, destFilePath, colProjection as TSQLString);
   }
 
   // read the idx file and write the content to output file

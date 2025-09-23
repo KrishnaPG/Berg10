@@ -10,7 +10,6 @@ import {
 import { mkdir, rm } from "fs/promises";
 import os from "os";
 import path from "path";
-import { createRetryableDatabaseOperation } from "../retry";
 import type {
   TDuckLakeDataFilesFolder,
   TDuckLakeDBName,
@@ -18,6 +17,7 @@ import type {
   TDuckLakeRootPath,
   TSQLString,
 } from "../types";
+import { createRetryableDatabaseOperation } from "../utils/retry";
 import { getDuckDbConnection } from "./helpers";
 
 // converts Date() based milli-seconds to DuckDB compatible timestamps
