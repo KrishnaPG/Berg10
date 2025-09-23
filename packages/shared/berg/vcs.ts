@@ -8,7 +8,7 @@ import type {
   TFsVcsDbPIFilePath,
   TFsVcsDbPIFolderPath,
   TFsVcsDbPIName,
-  TFsVcsDbTreeCFolderPath,
+  TFsVcsDbTreeEntFolderPath,
   TFsVcsDotDBPath,
   TFsVcsDotGitPath,
   TFsVcsRepoId,
@@ -18,7 +18,7 @@ import type { TGitPackDirPath } from "@shared/types/git.types";
 import fs from "fs-extra";
 import os from "os";
 import path from "path";
-import { FsVcsGitDL, gitDLTableNames } from "./vcs-git-dl";
+import { FsVcsGitDL, gitDLTableNames, type TGitDLTableName } from "./vcs-git-dl";
 import type { FsVCSManager } from "./vcs-manager";
 
 /** Manages one specific vcs repo */
@@ -43,8 +43,13 @@ export class FsVCS {
       );
     });
   }
+
+  protected dlTableFolderPath(tableName: TGitDLTableName) {
+    return path.resolve(this.dotDBFolder, tableName);
+  }
+
   get dbPIFolderPath(): TFsVcsDbPIFolderPath {
-    return path.resolve(this.dotDBFolder, "pack-index") as TFsVcsDbPIFolderPath;
+    return this.dlTableFolderPath("pack-index") as TFsVcsDbPIFolderPath;
   }
   getDBPackFilePath(packName: TFsVcsDbPIName): TFsVcsDbPIFilePath {
     return path.resolve(this.dbPIFolderPath, `${packName}.parquet`) as TFsVcsDbPIFilePath;
@@ -54,10 +59,10 @@ export class FsVCS {
   }
 
   get dbCommitsFolderPath(): TFsVcsDbCommitsFolderPath {
-    return path.resolve(this.dotDBFolder, "commits") as TFsVcsDbCommitsFolderPath;
+    return this.dlTableFolderPath("commits") as TFsVcsDbCommitsFolderPath;
   }
-  get dbTreeCFolderPath(): TFsVcsDbTreeCFolderPath {
-    return path.resolve(this.dotDBFolder, "tree-contents") as TFsVcsDbTreeCFolderPath;
+  get dbTreeEntFolderPath(): TFsVcsDbTreeEntFolderPath {
+    return this.dlTableFolderPath("tree-entries") as TFsVcsDbTreeEntFolderPath;
   }
 
   /** ---------- Packfile Index Builder (idempotent) ----------
@@ -118,11 +123,12 @@ export class FsVCS {
   }
 
   async importLsTree() {
+    const dbTreeEntFolderPath = this.dbTreeEntFolderPath;
     const p: Promise<void>[] = [];
     for await (const rowBatch of this.gitDL.getUnlistedCommits()) {
       for (const row of rowBatch) {
         const destFileBaseName: TFileBaseName = row.sha as any as TFileBaseName;
-        p.push(this.gitDL.streamLsTreeToParquet(this.dbTreeCFolderPath, destFileBaseName, row.tree));
+        p.push(this.gitDL.streamLsTreeToParquet(dbTreeEntFolderPath, destFileBaseName, row.tree));
         if (p.length >= os.availableParallelism()) await Promise.all(p).then(() => (p.length = 0));
       }
     }

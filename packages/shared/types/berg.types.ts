@@ -97,7 +97,7 @@ export type TFsVcsDbCommitsFolderPath = Branded<TFolderPath, "VcsDbCommitsRoot">
 export type TFsVcsDbCommitBaseName = Branded<TFileBaseName, "VcsDbCommitBaseName">;
 export type TFsVcsDbCommitFilePath = Branded<TParquetFilePath, "<VcsDbCommitBaseName>.Parquet">;
 
-export type TFsVcsDbTreeCFolderPath = Branded<TFolderPath, "VcsDbTreeContentsFolder">;
+export type TFsVcsDbTreeEntFolderPath = Branded<TFolderPath, "VcsDbTreeEntriesFolder">;
 
 
 export type TBergShelfPath = TLMDBRootPath | TFsDLRootPath | TFsSemRootPath | TFsVcsRootPath;
