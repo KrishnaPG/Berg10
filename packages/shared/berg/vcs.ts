@@ -1,22 +1,18 @@
 import type { GitShell } from "@shared/git-shell";
 import type {
-  TFileBaseName,
   TFilePath,
   TFolderPath,
-  TFsVcsDbCommitBaseName,
-  TFsVcsDbCommitsFolderPath,
   TFsVcsDbPIFilePath,
-  TFsVcsDbPIFolderPath,
   TFsVcsDbPIName,
-  TFsVcsDbTreeEntFolderPath,
+  TFsVcsDbPITblPath,
   TFsVcsDotDBPath,
+  TFsVcsDotDbTablePath,
   TFsVcsDotGitPath,
   TFsVcsRepoId,
   TSecSinceEpoch,
 } from "@shared/types";
 import type { TGitPackDirPath } from "@shared/types/git.types";
 import { cleanupFiles } from "@shared/utils/cleanup-files";
-import { Locker } from "@shared/utils/locker";
 import fs from "fs-extra";
 import os from "os";
 import path from "path";
@@ -30,8 +26,9 @@ export class FsVCS {
   constructor(
     protected repoId: TFsVcsRepoId,
     protected dotGitFolder: TFsVcsDotGitPath, // aux .git folder, probably `vcs/<repoId>.git/`, if exists
-    protected gitDL: FsVcsGitDL,  // holds the db folder: `vcs/<repoId>.db/` and shell executor for original source
+    protected dotDBFolder: TFsVcsDotDBPath, // db folder: `vcs/<repoId>.db/`
     protected vcsMgr: FsVCSManager,
+    protected gitDL: FsVcsGitDL,
   ) {}
 
   public static getInstance(vcsMgr: FsVCSManager, vcsRepoId: TFsVcsRepoId, srcGitShell: GitShell): Promise<FsVCS> {
@@ -40,19 +37,17 @@ export class FsVCS {
     // ensureDir for all required folders
     return Promise.all([
       fs.ensureDir(dotGitFolder),
-      ...gitDLTableNames.map((d) => fs.ensureDir(path.resolve(dotDBFolder, d))),
+      ...gitDLTableNames.map((d) => fs.ensureDir(path.join(dotDBFolder, d))),
     ]).then(() => {
       // setup DuckLake and mount GitDL
       return FsVcsGitDL.mount(srcGitShell, dotDBFolder).then(
-        (gitDL) => new FsVCS(vcsRepoId, dotGitFolder, gitDL, vcsMgr),
+        (gitDL) => new FsVCS(vcsRepoId, dotGitFolder, dotDBFolder, vcsMgr, gitDL),
       );
     });
   }
 
-  get dotDBFolder(): TFsVcsDotDBPath { return this.gitDL.rootPath; }
-
   get syncLockFilePath() {
-    return path.resolve(this.dotDBFolder, "_sync") as TFolderPath; // this becomes _sync.lock/ folder
+    return path.join(this.dotDBFolder, "_sync") as TFolderPath; // this becomes _sync.lock/ folder
   }
 
   /** removes any tmp files from previous import runs */
@@ -63,7 +58,7 @@ export class FsVCS {
   /** triggers a git -> db sync */
   public initSync(srcPackDir: TGitPackDirPath) {
     return lockfile
-      .lock(this.syncLockFilePath, {realpath: false})
+      .lock(this.syncLockFilePath, { realpath: false })
       .then(async (lockRelease) => {
         await this.cleanupTempFiles(); // remove tmp files of prev runs, if any
         await this.buildGitPackIndex(srcPackDir);
@@ -82,25 +77,34 @@ export class FsVCS {
       });
   }
 
-  protected dlTableFolderPath(tableName: TGitDLTableName) {
-    return path.resolve(this.dotDBFolder, tableName);
+  protected getDBTableFolderPath(tableName: TGitDLTableName): TFsVcsDotDbTablePath {
+    return path.join(this.dotDBFolder, tableName) as TFsVcsDotDbTablePath;
   }
 
-  get dbPIFolderPath(): TFsVcsDbPIFolderPath {
-    return this.dlTableFolderPath("pack-index") as TFsVcsDbPIFolderPath;
+  get dbPITablePath(): TFsVcsDbPITblPath {
+    return this.getDBTableFolderPath("pack-index") as TFsVcsDbPITblPath;
   }
   getDBPackFilePath(packName: TFsVcsDbPIName): TFsVcsDbPIFilePath {
-    return path.resolve(this.dbPIFolderPath, `${packName}.parquet`) as TFsVcsDbPIFilePath;
+    return path.join(this.dbPITablePath, `${packName}.parquet`) as TFsVcsDbPIFilePath;
   }
   isPackImported(packName: TFsVcsDbPIName): boolean {
     return fs.existsSync(this.getDBPackFilePath(packName));
   }
 
-  get dbCommitsFolderPath(): TFsVcsDbCommitsFolderPath {
-    return this.dlTableFolderPath("commits") as TFsVcsDbCommitsFolderPath;
+  refreshView(viewName: TGitDLTableName) {
+    return this.gitDL.refreshView(viewName, this.getDBTableFolderPath(viewName));
   }
-  get dbTreeEntFolderPath(): TFsVcsDbTreeEntFolderPath {
-    return this.dlTableFolderPath("tree-entries") as TFsVcsDbTreeEntFolderPath;
+
+  checkIfViewExists(viewName: TGitDLTableName): Promise<boolean> {
+    // there could be parquet files in the view folder but the view
+    // may not have been created (in case of app crash/error). So
+    // we have to first refresh the view to give a chance to load
+    // those parquet files before we check for existence of view in the DL.
+    // Of course, if there are no parquet files, refreshView throws, so we
+    // handle the catch silently.
+    return this.refreshView(viewName)
+      .catch(() => {})
+      .then(() => this.gitDL.checkIfViewExists(viewName));
   }
 
   /** ---------- Packfile Index Builder (idempotent) ----------
@@ -136,14 +140,14 @@ export class FsVCS {
       if (this.isPackImported(packName)) continue; // already captured
 
       // write to parquet file with atomic filename swap
-      p.push(this.gitDL.streamIDXtoParquet(srcIdxPath as TFilePath, this.dbPIFolderPath, packName));
+      p.push(this.gitDL.streamIDXtoParquet(srcIdxPath as TFilePath, this.dbPITablePath, packName));
 
       // run multiple in parallel, but do not stress the system too much
       if (p.length >= os.availableParallelism()) await Promise.all(p).then(() => (p.length = 0));
     }
     // wait for any pending promises, then return `this` for method chaining
     return Promise.all(p)
-      .then(() => this.gitDL.refreshView(this.dotDBFolder, "pack-index"))
+      .then(() => this.refreshView("pack-index"))
       .then(() => this); // for method chaining
   }
 
@@ -151,25 +155,30 @@ export class FsVCS {
     const tableExists = await this.gitDL.checkIfViewExists("commits");
     const lastCommitTime = tableExists && (await this.gitDL.lastCommitTime());
     const since: TSecSinceEpoch = (lastCommitTime ? lastCommitTime + 1 : 0) as TSecSinceEpoch;
-    const destFilePath = path.resolve(this.dbCommitsFolderPath, `from-${since}.parquet`) as TFilePath;
+    const destFilePath = path.join(this.getDBTableFolderPath("commits"), `from-${since}.parquet`) as TFilePath;
+
     return this.gitDL
       .streamCommitsToParquet(destFilePath, since)
-      .then(() => this.gitDL.refreshView("commits"))
+      .then(() => this.refreshView("commits"))
       .then(() => this); // for method chaining
   }
 
   async importLsTree() {
-    const dbTreeEntFolderPath = this.dbTreeEntFolderPath;
+    const tableExists = await this.checkIfViewExists("tree-entries");
+
+    const dbTreeEntFolderPath = this.getDBTableFolderPath("tree-entries");
     const p: Promise<void>[] = [];
-    for await (const rowBatch of this.gitDL.getUnlistedCommits()) {
+
+    for await (const rowBatch of this.gitDL.getUnlistedCommits(tableExists)) {
       for (const row of rowBatch) {
-        const destFilePath = path.resolve(dbTreeEntFolderPath, `${row.sha}.parquet`) as TFilePath;
+        const destFilePath = path.join(dbTreeEntFolderPath, `${row.sha}.parquet`) as TFilePath;
         p.push(this.gitDL.streamLsTreeToParquet(destFilePath, row.tree));
         if (p.length >= os.availableParallelism()) await Promise.all(p).then(() => (p.length = 0));
       }
     }
+
     return Promise.all(p)
-      .then(() => this.gitDL.refreshView("tree-entries"))
+      .then(() => this.refreshView("tree-entries"))
       .then(() => this); // for method chaining
   }
 }

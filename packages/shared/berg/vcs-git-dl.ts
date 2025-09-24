@@ -2,24 +2,21 @@ import { unlink } from "node:fs/promises";
 import path from "node:path";
 import { ParquetSchema } from "@dsnp/parquetjs";
 import type { DuckDBTimestampTZValue } from "@duckdb/node-api";
-import { type BaseQueryExecutor, ensureTables, Row, TransactionalParquetWriter } from "@shared/ducklake";
+import { type BaseQueryExecutor, ensureTables, TransactionalParquetWriter } from "@shared/ducklake";
 import type { GitShell } from "@shared/git-shell";
 import type {
   TDuckLakeDBName,
   TDuckLakeRootPath,
-  TFileBaseName,
   TFilePath,
-  TFolderPath,
-  TFsVcsDbCommitBaseName,
-  TFsVcsDbCommitsFolderPath,
-  TFsVcsDbPIFolderPath,
   TFsVcsDbPIName,
+  TFsVcsDbPITblPath,
   TFsVcsDotDBPath,
+  TFsVcsDotDbTablePath,
   TSecSinceEpoch,
   TSQLString,
 } from "@shared/types";
 import type { TCommitHash, TGitSHA, TTreeHash } from "@shared/types/git-internal.types";
-import { atomicFileRename, genTempFilePath, getRandomId } from "@shared/utils";
+import { atomicFileRename, genTempFilePath } from "@shared/utils";
 import fs from "fs-extra";
 
 export const gitDLTableNames = ["commits", "pack-index", "tree-entries", "blobs", "refs"] as const;
@@ -90,7 +87,9 @@ export class FsVcsGitDL {
     protected q: BaseQueryExecutor, // the target db driver (duck lake)
   ) {}
 
-  get rootPath(): TFsVcsDotDBPath { return this.dlRootPath; }
+  get rootPath(): TFsVcsDotDBPath {
+    return this.dlRootPath;
+  }
 
   /** Mounts a given vcs/<repoId>.db/ path as DuckLake DB */
   static async mount(
@@ -131,30 +130,21 @@ export class FsVcsGitDL {
       });
   }
 
-  refreshView(viewName: TGitDLTableName) {
-    console.debug(`Refreshing view: ${viewName}`);
-    const src = path.join(this.rootPath, viewName, "**", "*.parquet");
+  refreshView(viewName: TGitDLTableName, viewTblPath: TFsVcsDotDbTablePath) {
+    const src = path.join(viewTblPath, "**", "*.parquet");
     const sql = `CREATE OR REPLACE VIEW '${viewName}' AS SELECT * FROM read_parquet('${src}');` as TSQLString;
     return this.q.exec(sql).catch((ex) => console.warn(`Failed to refresh view '${viewName}': ${ex.message}`));
   }
 
   checkIfViewExists(viewName: TGitDLTableName): Promise<boolean> {
-    // there could be parquet files in the view folder but the view
-    // may not have been created (in case of app crash/error). So
-    // we have to first refresh the view to give a chance to load 
-    // those parquet files before we check for existence of view in the DL.
-    // Of course, if there are no parquet files, refreshView throws, so we
-    // handle the catch silently.
-    return this.refreshView(viewName).catch(()=>{}).then(()=>{
-      const sql = `SELECT view_name FROM duckdb_views WHERE view_name = '${viewName}';` as TSQLString;
-      return this.q
-        .queryRow(sql)
-        .then((row) => row !== null)
-        .catch((ex) => {
-          console.warn(`checkIfViewExists('${viewName}') failed: ${ex.message}`);
-          return false;
-        });      
-    });
+    const sql = `SELECT view_name FROM duckdb_views WHERE view_name = '${viewName}';` as TSQLString;
+    return this.q
+      .queryRow(sql)
+      .then((row) => row !== null)
+      .catch((ex) => {
+        console.warn(`checkIfViewExists('${viewName}') failed: ${ex.message}`);
+        return false;
+      });
   }
 
   /* -------------------------------------------------- commits */
@@ -195,8 +185,7 @@ export class FsVcsGitDL {
   }
 
   /** returns the entries that are in `commits` table but not in `tree-entries` table */
-  async *getUnlistedCommits(): AsyncGenerator<IUnlistedCommit[], void, unknown> {
-    const tableExists = await this.checkIfViewExists("tree-entries");
+  async *getUnlistedCommits(tableExists: boolean): AsyncGenerator<IUnlistedCommit[], void, unknown> {
     const sql = (tableExists ? "" : `select sha, tree from commits order by commit_time`) as TSQLString; //TODO: when table exists, do join of commits x tree-entries
     for await (const rowBatch of this.q.query<IUnlistedCommit>(sql)) yield rowBatch;
   }
@@ -265,7 +254,7 @@ export class FsVcsGitDL {
     colProjection: TSQLString,
     csvDelimiter: TCsvDelim = `\\|`,
   ) {
-    const tmpCSVFilePath = genTempFilePath(finalFilePath, "-csv.tmp"); 
+    const tmpCSVFilePath = genTempFilePath(finalFilePath, "-csv.tmp");
     return fs.exists(finalFilePath).then((exists) => {
       // if destination already (in case of dataLake sync race conditions), return with a warning
       if (exists) return console.warn(`shellCsvToParquet: destination "${finalFilePath}" already exists !`);
@@ -311,7 +300,7 @@ export class FsVcsGitDL {
   }
 
   // read the idx file and write the content to output file
-  streamIDXtoParquet(srcIdxPath: TFilePath, destFolder: TFsVcsDbPIFolderPath, destFileBaseName: TFsVcsDbPIName) {
+  streamIDXtoParquet(srcIdxPath: TFilePath, destFolder: TFsVcsDbPITblPath, destFileBaseName: TFsVcsDbPIName) {
     const rowGroupSize = 4096;
     return TransactionalParquetWriter.open(idxFileLineSchema, destFolder, destFileBaseName, { rowGroupSize }).then(
       (writer) =>

@@ -83,24 +83,27 @@ export type TFsVcsDotGitPath = TGitDirPath;
  */
 export type TFsVcsDotDBPath = Branded<TFolderPath, "VcsDbFolder">; 
 
+/** The path of  `commits/` `ref/` `tree-entries/` etc. under the `TFsVcsDotDBPath` */
+export type TFsVcsDotDbTablePath = Branded<TFolderPath, "VcsDbTableFolder">; 
+
 /** The pack-index root folder under TFsVCSDotDBPath;
  * 
  *  Usually this is `TFsVCSDotDBPath + pack-index/`
  */
-export type TFsVcsDbPIFolderPath = Branded<TFolderPath, "VcsDbPIRoot">;
+export type TFsVcsDbPITblPath = Branded<TFsVcsDotDbTablePath, "VcsDbPIRoot">;
 /** usually source .git/ will have `pack/<PackIndexName>.idx` files */
 export type TFsVcsDbPIName = Branded<TFileBaseName, "VcsDbPIName">;
 /** `TFsVcsDbPIFilePath = <TFsVcsDbPIFolderPath>/<TFsVcsDbPIName>.parquet`  */
 export type TFsVcsDbPIFilePath = Branded<TParquetFilePath, "<VcsDbPIName>.Parquet">;
 
-export type TFsVcsDbCommitsFolderPath = Branded<TFolderPath, "VcsDbCommitsRoot">;
+export type TFsVcsDbCommitsTblPath = Branded<TFsVcsDotDbTablePath, "VcsDbCommitsRoot">;
 export type TFsVcsDbCommitBaseName = Branded<TFileBaseName, "VcsDbCommitBaseName">;
-export type TFsVcsDbCommitFilePath = Branded<TParquetFilePath, "<VcsDbCommitBaseName>.Parquet">;
+export type TFsVcsDbCommitFilePath = Branded<TParquetFilePath, "from-<sinceTS>.Parquet">;
 
 /** Usually this is `TFsVCSDotDBPath + tree-entries/` */
-export type TFsVcsDbTreeEntFolderPath = Branded<TFolderPath, "VcsDbTreeEntriesFolder">;
-/** A file under the `tree-entries` folder. Usually `TFsVcsDbTreeEntFolderPath` + `<commitSha>.parquet`  */
-export type TFsVcsDbTreeEntFilePath = Branded<TFolderPath, "VcsDbTreeFilePath">
+export type TFsVcsDbTreeEntTblPath = Branded<TFsVcsDotDbTablePath, "VcsDbTreeEntriesFolder">;
+/** A file under the `tree-entries` folder. Usually `TFsVcsDbTreeEntTblPath` + `<commitSha>.parquet`  */
+export type TFsVcsDbTreeEntFilePath = Branded<TParquetFilePath, "<commitSha>.parquet">
 
 
 export type TBergShelfPath = TLMDBRootPath | TFsDLRootPath | TFsSemRootPath | TFsVcsRootPath;
