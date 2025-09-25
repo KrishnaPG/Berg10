@@ -288,7 +288,7 @@ export class FsVcsGitDL {
     const args = ["log", "--all", "--reverse", "--date-order", `--format=%H|%P|%T|%ct|%cn|%ce|%s`];
     if (since) args.push(`--since='${since}'`);
     const colProjection = `
-      c[1] AS sha,
+      c[1] AS commit,
       string_split(c[2],' ') AS parents,
       c[3] AS tree,
       to_timestamp(c[4]::BIGINT) AS commit_time,
