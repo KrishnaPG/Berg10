@@ -28,7 +28,7 @@ export class FsVCS {
     protected dotGitFolder: TFsVcsDotGitPath, // aux .git folder, probably `vcs/<repoId>.git/`, if exists
     protected dotDBFolder: TFsVcsDotDBPath, // db folder: `vcs/<repoId>.db/`
     protected vcsMgr: FsVCSManager,
-    protected gitDL: FsVcsGitDL,
+    protected gitDL: FsVcsGitDL,  // TODO: implement close on this
   ) {}
 
   public static getInstance(vcsMgr: FsVCSManager, vcsRepoId: TFsVcsRepoId, srcGitShell: GitShell): Promise<FsVCS> {

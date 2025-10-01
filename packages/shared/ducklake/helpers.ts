@@ -1,17 +1,18 @@
+import path from "node:path";
 import { type ParquetSchema, ParquetWriter, type WriterOptions } from "@dsnp/parquetjs";
-import type duckdb from "@duckdb/node-api";
-import { DuckDBInstanceCache } from "@duckdb/node-api";
-import type { TFileBaseName, TFilePath, TFolderPath, TParquetFilePath, TSQLString } from "@shared/types";
+import { type DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
+import type { TFileBaseName, TFilePath, TFolderPath, TParquetFilePath } from "@shared/types";
 import { atomicFileRename, getRandomId } from "@shared/utils";
-import path from "path";
 
-const gDuckDBInstances = new DuckDBInstanceCache();
+//const _gDuckDBInstances = new DuckDBInstanceCache();
+//return gDuckDBInstances.getOrCreateInstance(path, options).then((instance) => instance.connect());
+
 /** Returns a DuckDB connection */
 export function getDuckDbConnection(
   path: string = ":memory:",
   options?: Record<string, string> | undefined,
-): Promise<duckdb.DuckDBConnection> {
-  return gDuckDBInstances.getOrCreateInstance(path, options).then((instance) => instance.connect());
+): Promise<DuckDBConnection> {
+  return DuckDBInstance.create(path, options).then((instance) => instance.connect());
 }
 
 /** ParquetWriter class with atomic file rename */
