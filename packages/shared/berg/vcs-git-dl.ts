@@ -37,7 +37,7 @@ const idxFileLineSchema = new ParquetSchema({
 
 // NOTE: this interface has to match the groups of `idxFileLineRegEx` below
 export interface IdxFileLine {
-  sha: TGitSHA;
+  sha1: TGitSHA;
   type: "commit" | "tree" | "blob" | "tag";
   size: number;
   sizeInPack: number;
@@ -48,10 +48,10 @@ export interface IdxFileLine {
 }
 // The source of truth: comes from `git verify-pack -v` command output format
 const idxFileLineRegEx =
-  /^(?<sha>[0-9a-f]{40,64})\s+(?<type>commit|tree|blob|tag)\s+(?<size>\d+)\s+(?<sizeInPack>\d+)\s+(?<offset>\d+)(?:\s+(?<depth>\d+)\s+(?<base>[0-9a-f]{40,64}))?$/;
+  /^(?<sha1>[0-9a-f]{40,64})\s+(?<type>commit|tree|blob|tag)\s+(?<size>\d+)\s+(?<sizeInPack>\d+)\s+(?<offset>\d+)(?:\s+(?<depth>\d+)\s+(?<base>[0-9a-f]{40,64}))?$/;
 
 export interface IUnlistedCommit {
-  sha: TCommitHash;
+  commit: TCommitHash;
   tree: TTreeHash;
 }
 
@@ -159,8 +159,8 @@ export class FsVcsGitDL {
       LIMIT  ${max}`;
   }
 
-  async commit(sha: TGitSHA) {
-    return this.q.queryRow`SELECT * FROM commits WHERE sha = ${sha}`;
+  async getCommit(commit: TCommitHash) {
+    return this.q.queryRow`SELECT * FROM commits WHERE commit = ${commit}`;
   }
 
   async lastCommitTime(): Promise<TSecSinceEpoch | undefined> {
@@ -169,41 +169,40 @@ export class FsVcsGitDL {
     );
   }
 
-  async parent(sha: string) {
+  async parent(sha1: TGitSHA) {
     return this.q.queryRow`
       SELECT c.* FROM commits c
       JOIN commit_parents p ON c.sha = p.parent_sha
-      WHERE p.commit_sha = ${sha}
+      WHERE p.commit_sha = ${sha1}
       ORDER BY p.idx LIMIT 1`;
   }
 
-  async children(sha: string) {
+  async children(sha1: TGitSHA) {
     return this.q.queryAll`
       SELECT c.* FROM commits c
       JOIN commit_parents p ON c.sha = p.commit_sha
-      WHERE p.parent_sha = ${sha}`;
+      WHERE p.parent_sha = ${sha1}`;
   }
 
   /** returns the entries that are in `commits` table but not in `tree-entries` table */
   async *getUnlistedCommits(tableExists: boolean): AsyncGenerator<IUnlistedCommit[], void, unknown> {
-    const sql = (tableExists ? "" : `select sha, tree from commits order by commit_time`) as TSQLString; //TODO: when table exists, do join of commits x tree-entries
+    const sql = (tableExists ? "" : `select commit, tree from commits order by commit_time`) as TSQLString; //TODO: when table exists, do join of commits x tree-entries
     for await (const rowBatch of this.q.query<IUnlistedCommit>(sql)) yield rowBatch;
   }
 
   /* -------------------------------------------------- trees / files */
-  async listFiles(sha: string) {
+  async listFiles(commit: TCommitHash) {
     return this.q.queryAll`
-      SELECT t.path, t.mode, b.size
+      SELECT t.path, t.mode, t.size
       FROM   tree_entries t
-      JOIN   blobs        b ON t.blob_sha = b.sha
-      WHERE  t.tree_sha = (
-          SELECT tree_sha FROM commits WHERE sha = ${sha}
+      WHERE  t.tree = (
+          SELECT tree FROM commits WHERE commit = ${commit}
       )`;
   }
 
   /* -------------------------------------------------- pack index */
-  async packIndex(sha: string) {
-    return this.q.queryRow`SELECT * FROM pack_index WHERE object_sha = ${sha}`;
+  async packIndex(sha1: string) {
+    return this.q.queryRow`SELECT * FROM pack_index WHERE sha1 = ${sha1}`;
   }
 
   /* -------------------------------------------------- refs */
@@ -272,14 +271,16 @@ export class FsVcsGitDL {
     });
   }
 
-  public streamLsTreeToParquet(destFilePath: TFilePath, tree: TTreeHash) {
-    const args = ["ls-tree", "-r", `--format=%(objectmode)|%(objecttype)|%(objectname)|%(objectsize)|%(path)`, tree];
+  public streamLsTreeToParquet(destFilePath: TFilePath, row: IUnlistedCommit) {
+    const args = ["ls-tree", "-r", `--format=${row.commit}|${row.tree}|%(objectmode)|%(objecttype)|%(objectname)|%(objectsize)|%(path)`, row.tree];
     const colProjection = `
-      c[1]::UINT32 AS mode,
-      c[2] AS type,
-      c[3] AS sha,
-      c[4] AS size, -- should be c[4]::BIGINT
-      c[5] AS path
+      c[1] AS commit,       -- commit_sha1
+      c[2] AS tree,         -- tree_sha1
+      c[3]::UINT32 AS mode,
+      c[4] AS type,
+      c[5] AS sha1,         -- blob_sha1 if type == 'blob'
+      c[6] AS size,         -- should be c[4]::BIGINT
+      c[7] AS path
     `;
     return this.shellCsvToParquet(args, destFilePath, colProjection as TSQLString);
   }
@@ -315,7 +316,7 @@ export class FsVcsGitDL {
                 if (!m?.groups) continue; // skip unnecessary lines
                 const g = m.groups;
                 const row: IdxFileLine = {
-                  sha: g.sha as TGitSHA,
+                  sha1: g.sha1 as TGitSHA,
                   type: g.type as IdxFileLine["type"],
                   size: Number(g.size),
                   sizeInPack: Number(g.sizeInPack),

@@ -295,7 +295,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
         const columns = Object.keys(finalData);
         const values = Object.values(finalData);
         const placeholders = columns.map(() => "?").join(", ");
-        const sql = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES (${placeholders})`;
+        const sql = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES (${placeholders})` as TSQLString;
         return this.retryableRun(sql, values);
       }
 
@@ -345,7 +345,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
         // Fallback to SQL for complex types
         const columns = Object.keys(processedItems[0]);
         const placeholders = processedItems.map(() => `(${columns.map(() => "?").join(", ")})`).join(", ");
-        const sql = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES ${placeholders}`;
+        const sql = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES ${placeholders}` as TSQLString;
         const values = processedItems.flatMap((item) => Object.values(item));
         return this.retryableRun(sql, values);
       }
@@ -384,7 +384,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
       VALUES (${placeholders})
       ON CONFLICT (${conflictColumns.join(", ")})
       DO UPDATE SET ${updateClause}
-    `;
+    ` as TSQLString;
     return this.retryableRun(sql, values);
   }
 
@@ -420,7 +420,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
     // Build SET clause
     const setClause = updateColumns.map((col) => `${col} = ?`).join(", ");
 
-    const sql = `UPDATE ${tableName} SET ${setClause} ${whereClause}`;
+    const sql = `UPDATE ${tableName} SET ${setClause} ${whereClause}` as TSQLString;
 
     // Combine update values and where values
     const allValues = [...updateValues, ...whereValues];
@@ -452,7 +452,7 @@ export class BaseQueryExecutor extends DuckDBConnection {
       whereValues = whereColumns.map((col) => whereConditions[col]);
     }
 
-    const sql = `DELETE FROM ${tableName} ${whereClause}`;
+    const sql = `DELETE FROM ${tableName} ${whereClause}` as TSQLString;
     return this.retryableRun(sql, whereValues);
   }
 

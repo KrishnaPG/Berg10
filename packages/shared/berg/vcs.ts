@@ -171,8 +171,8 @@ export class FsVCS {
 
     for await (const rowBatch of this.gitDL.getUnlistedCommits(tableExists)) {
       for (const row of rowBatch) {
-        const destFilePath = path.join(dbTreeEntFolderPath, `${row.sha}.parquet`) as TFilePath;
-        p.push(this.gitDL.streamLsTreeToParquet(destFilePath, row.tree));
+        const destFilePath = path.join(dbTreeEntFolderPath, `${row.tree}.parquet`) as TFilePath;
+        p.push(this.gitDL.streamLsTreeToParquet(destFilePath, row));
         if (p.length >= os.availableParallelism()) await Promise.all(p).then(() => (p.length = 0));
       }
     }
